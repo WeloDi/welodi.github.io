@@ -1,0 +1,9 @@
+<% if (theme.profile && page.current === 1) { %>
+  <%- partial('partial/profile') %>
+<% } %>
+<div class="post-list">
+  <% page.posts.each(function(post){ %>
+    <%- partial('partial/post-card', {post: post}) %>
+  <% }) %>
+</div>
+<%- partial('partial/pagination') %>

@@ -1,0 +1,40 @@
+# Warmpaper Theme Configuration
+
+# Navigation menu
+menu:
+  Home: /
+  Archives: /archives
+  Tags: /tags
+  Categories: /categories
+  About: /about
+
+# Table of Contents (right sidebar on post pages)
+toc:
+  enable: true
+  max_depth: 3
+  min_depth: 2
+  list_number: false
+
+# Profile (shown on homepage above post list)
+profile:
+  avatar: /images/logo.svg
+  description: ""
+  links:
+    - name: GitHub
+      url: https://github.com/welodi/
+      icon: github
+    # - name: Email
+    #   url: mailto:your@email.com
+    #   icon: email
+    # - name: Twitter
+    #   url: https://twitter.com/yourname
+    #   icon: twitter
+    # - name: RSS
+    #   url: /atom.xml
+    #   icon: rss
+
+# Post excerpt
+excerpt_link: Read More
+
+# Footer
+copyright: ""
