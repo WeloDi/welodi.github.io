@@ -154,6 +154,7 @@ body {
     calc(var(--grid-size) * 4) calc(var(--grid-size) * 4),
     calc(var(--grid-size) * 4) calc(var(--grid-size) * 4);
   background-attachment: fixed;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -1378,6 +1379,11 @@ figure.highlight .token.deleted {
 
   .main-content {
     padding: 1.5rem 1rem;
+    max-width: 100%;
+  }
+
+  .post-body-wrapper {
+    max-width: 100%;
   }
 
   .header-inner {
@@ -1407,8 +1413,14 @@ figure.highlight .token.deleted {
     left: -1rem;
     right: -1rem;
     bottom: 0;
-    background: var(--color-bg);
+    background: rgba(250, 249, 247, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: -1;
+  }
+
+  [data-theme="dark"] .site-nav::before {
+    background: rgba(31, 27, 23, 0.9);
   }
 
   .site-nav.open {
@@ -1444,6 +1456,15 @@ figure.highlight .token.deleted {
 
   .post-content {
     font-size: 1rem;
+    overflow-x: auto;
+    word-wrap: break-word;
+  }
+
+  .post-content pre,
+  .post-content table,
+  .post-content img {
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   .post-nav {
