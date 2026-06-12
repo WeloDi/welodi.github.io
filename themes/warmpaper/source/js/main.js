@@ -4,15 +4,16 @@
   var nav = document.querySelector('.site-nav');
   if (!toggle || !nav) return;
 
-  toggle.addEventListener('click', function () {
+  toggle.addEventListener('click', function (e) {
     var expanded = toggle.getAttribute('aria-expanded') === 'true';
     toggle.setAttribute('aria-expanded', String(!expanded));
     nav.classList.toggle('open');
+    e.stopPropagation();
   });
 
-  // Close menu when a nav link is clicked
-  nav.addEventListener('click', function (e) {
-    if (e.target.classList.contains('nav-link')) {
+  // Close menu when clicking anywhere outside the nav
+  document.addEventListener('click', function (e) {
+    if (nav.classList.contains('open') && !nav.contains(e.target) && e.target !== toggle) {
       toggle.setAttribute('aria-expanded', 'false');
       nav.classList.remove('open');
     }
