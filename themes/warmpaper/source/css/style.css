@@ -952,6 +952,12 @@ figure.highlight .token.deleted {
   border-radius: 16px;
 }
 
+/* TOC toggle button — hidden on desktop, shown on mobile */
+.toc-toggle,
+.toc-backdrop {
+  display: none;
+}
+
 .toc-wrapper::-webkit-scrollbar {
   width: 6px;
 }
@@ -1291,13 +1297,14 @@ figure.highlight .token.deleted {
 }
 
 /* --- Responsive --- */
-@media (max-width: 1100px) {
+/* Mobile: TOC hidden by default, shown via toggle button */
+@media (max-width: 768px) {
   .toc-sidebar {
     display: none;
     position: static;
   }
 
-  /* When opened via toggle on smaller screens */
+  /* When opened via toggle on mobile */
   .toc-sidebar.open {
     display: block;
     position: fixed;
@@ -1347,9 +1354,7 @@ figure.highlight .token.deleted {
     font-weight: 600;
     cursor: pointer;
   }
-}
 
-@media (max-width: 768px) {
   :root {
     --header-height: 52px;
   }
