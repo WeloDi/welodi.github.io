@@ -1308,23 +1308,35 @@ figure.highlight .token.deleted {
   .toc-sidebar.open {
     display: block;
     position: fixed;
-    left: 1rem;
-    right: 1rem;
-    width: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 3rem);
+    max-width: 320px;
     top: calc(var(--header-height) + 1rem);
-    max-height: 60vh;
+    bottom: 1rem;
     height: auto;
     z-index: 210;
+    border-radius: 16px;
+    overflow-y: auto;
   }
 
   .toc-sidebar.open .toc-wrapper {
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    background: var(--color-accent);
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     border-radius: 16px;
-    padding: 1rem 1.25rem;
-    max-height: 60vh;
+    padding: 1.25rem 1rem;
+    height: 100%;
     overflow-y: auto;
+  }
+
+  .toc-sidebar.open .toc-title,
+  .toc-sidebar.open .toc a { color: #fff; }
+  .toc-sidebar.open .toc-title { color: rgba(255,255,255,0.7); }
+  .toc-sidebar.open .toc a:hover,
+  .toc-sidebar.open .toc a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
   }
 
   /* Backdrop overlay when TOC is open */
@@ -1343,16 +1355,17 @@ figure.highlight .token.deleted {
   .toc-toggle {
     display: block;
     position: fixed;
-    right: 1rem;
-    bottom: 1.25rem;
+    right: 1.5rem;
+    bottom: 1.5rem;
     z-index: 220;
     background: var(--color-accent);
     color: #fff;
-    padding: 0.5rem 0.75rem;
+    padding: 0.65rem 1rem;
     border-radius: 999px;
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 4px 16px rgba(218, 119, 86, 0.4);
     font-weight: 600;
     cursor: pointer;
+    font-size: 0.9rem;
   }
 
   :root {
@@ -1394,9 +1407,7 @@ figure.highlight .token.deleted {
     left: -1rem;
     right: -1rem;
     bottom: 0;
-    background: var(--color-header-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: var(--color-bg);
     z-index: -1;
   }
 
