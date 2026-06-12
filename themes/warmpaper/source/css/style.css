@@ -1348,7 +1348,7 @@ figure.highlight .token.deleted {
   }
 
   .toc-sidebar.open .toc-wrapper .toc a.active {
-    color: #fff;
+    color: var(--color-text);
     font-weight: 600;
     background: rgba(255, 255, 255, 0.22);
   }
@@ -1426,14 +1426,14 @@ figure.highlight .token.deleted {
     left: -1rem;
     right: -1rem;
     bottom: 0;
-    background: rgba(250, 249, 247, 0.75);
+    background: rgba(250, 249, 247, 0.95);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     z-index: -1;
   }
 
   [data-theme="dark"] .site-nav::before {
-    background: rgba(31, 27, 23, 0.75);
+    background: rgba(31, 27, 23, 0.95);
   }
 
   .site-nav.open {
