@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+  <title>Interview | Welodi</title>
+  <meta name="description" content="嵌入式 Linux 驱动开发面试笔记，涵盖基础知识（编译流程、OSI七层模型、IIC&#x2F;SPI&#x2F;UART总线、中断、DMA、IPC）、工业协议（CANopen、EtherCAT）、ROS2、U-Boot 启动流程、CPU 调度与实时补丁、DRM 显示框架、USB 设备枚举、以及一个实际 G-Sensor 驱动问题调试案例。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Interview">
+<meta property="og:url" content="http://example.com/2026/06/12/Interview/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="嵌入式 Linux 驱动开发面试笔记，涵盖基础知识（编译流程、OSI七层模型、IIC&#x2F;SPI&#x2F;UART总线、中断、DMA、IPC）、工业协议（CANopen、EtherCAT）、ROS2、U-Boot 启动流程、CPU 调度与实时补丁、DRM 显示框架、USB 设备枚举、以及一个实际 G-Sensor 驱动问题调试案例。">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/iic.PNG">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/spi.PNG">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/spi2.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/int.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/cpsr.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/can.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/can2.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/can3.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/ethercat1.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/ethercat2.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/ethercat3.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/ethercat4.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/ethercat5.png">
+<meta property="og:image" content="http://example.com/">
+<meta property="og:image" content="http://example.com/">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/boot.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/hx9023s.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/kms.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/usb.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/usb1.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/usb2.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/usb3.png">
+<meta property="og:image" content="http://example.com/2026/06/12/Interview/lte.png">
+<meta property="article:published_time" content="2026-06-12T10:27:58.000Z">
+<meta property="article:modified_time" content="2026-06-12T14:58:47.198Z">
+<meta property="article:author" content="Welodi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2026/06/12/Interview/iic.PNG">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+        <a class="nav-link" href="/">Home</a>
+      
+        <a class="nav-link" href="/archives">Archives</a>
+      
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Interview</h1>
+    <div class="post-meta">
+      <time datetime="2026-06-12T10:27:58.000Z">2026-06-12</time>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h1 id="1-基础知识"><a href="#1-基础知识" class="headerlink" title="1. 基础知识"></a>1. 基础知识</h1><p>预处理: .c –&gt;  .i    #include 头文件内容插入、#define 宏展开、处理条件编译 #ifdef、#ifndef、#endif 等、删除注释  </p>
+<p>编译： .i –&gt; .s    转汇编语言</p>
+<p>汇编：.s –&gt; .o    转机器语言（二进制）</p>
+<p>链接：生成可执行文件。静态链接  动态链接</p>
+<h2 id="OSI七层模型"><a href="#OSI七层模型" class="headerlink" title="OSI七层模型"></a>OSI七层模型</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────┐</span><br><span class="line">│  第<span class="number">7</span>层 · 应用层 (Application)     │ 你在浏览器输入URL │</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  第<span class="number">6</span>层 · 表示层 (Presentation)    │ 数据加密/压缩/编码│</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  第<span class="number">5</span>层 · 会话层 (Session)         │ 建立/维护/终止会话│</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  第<span class="number">4</span>层 · 传输层 (Transport)       │ 端到端可靠传输    │</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  第<span class="number">3</span>层 · 网络层 (Network)         │ IP寻址 + 路由选择 │</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  第<span class="number">2</span>层 · 数据链路层 (Data Link)   │ 帧封装 + MAC寻址  │</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  第<span class="number">1</span>层 · 物理层 (Physical)        │ 比特流在介质上传输 │</span><br><span class="line">└─────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h2 id="UART-232-485"><a href="#UART-232-485" class="headerlink" title="UART&#x2F;232&#x2F;485"></a>UART&#x2F;232&#x2F;485</h2><p>全双工并行 TTL电平  &#x2F;  232电平转换芯片 &#x2F;485差分信号转换芯片</p>
+<h2 id="IIC"><a href="#IIC" class="headerlink" title="IIC"></a>IIC</h2><p><strong>半双工 串行 同步</strong>   上拉电阻作用：iic总线开漏输出，无法输出高电平</p>
+<p>最新内核驱动中通常用regmap进行读写iic&#x2F;spi等寄存器</p>
+<img src="iic.PNG" alt="iic">
+
+<h2 id="IIO"><a href="#IIO" class="headerlink" title="IIO"></a>IIO</h2><p> IIO不是物理总线，也不是虚拟总线，是一个子系统框架。底层硬件五花八门（不同的 SPI 设备、I2C 设备等），IIO 子系统为所有这些设备向上层（用户空间）提供了一个<strong>统一的、虚拟的访问接口，</strong>使用IIO后就会在<code>/sys/bus/iio</code> 下生成标准化的访问接口。</p>
+<h2 id="SPI"><a href="#SPI" class="headerlink" title="SPI"></a>SPI</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/xuhao0258/article/details/118632793">https://blog.csdn.net/xuhao0258/article/details/118632793</a></p>
+</blockquote>
+<p><strong>高速、全双工、同步</strong>的串行通信总线， SCK由master产生，CS&#x2F;SS低电平有效</p>
+<img src="spi.PNG" alt="spi">
+
+<p>SPI总线传输共有4种模式，这4种模式分别由<strong>时钟极性</strong>(<strong>CPOL</strong>，Clock Polarity)和<strong>时钟相位</strong>(<strong>CPHA</strong>，Clock  Phase)来定义，其中CPOL参数规定了SCK时钟信号空闲状态的电平，CPHA规定了数据是在SCK时钟的上升沿被采样还是下降沿被采样：（其中比较常用的模式是模式0和模式3）</p>
+<p><strong>模式0</strong>：CPOL&#x3D; 0，CPHA&#x3D;0。SCK空闲是为低电平，数据在SCK时钟的上升沿被采样，数据在SCK时钟的下降沿切换</p>
+<p>模式1：CPOL&#x3D; 0，CPHA&#x3D;1。SCK空闲是为低电平，数据在SCK时钟的下降沿被采样，数据在SCK时钟的上升沿切换</p>
+<p>模式2：CPOL&#x3D; 1，CPHA&#x3D;0。SCK空闲是为高电平，数据在SCK时钟的下降沿被采样，数据在SCK时钟的上升沿切换</p>
+<p><strong>模式3</strong>：CPOL&#x3D; 1，CPHA&#x3D;1。SCK空闲是为高电平，数据在SCK时钟的上升沿被采样，数据在SCK时钟的下降沿切换</p>
+<img src="spi2.png" alt="spi2">
+
+<h2 id="PWM"><a href="#PWM" class="headerlink" title="PWM"></a>PWM</h2><p>频率、周期、占空比，占空比&#x3D;宽度&#x2F;周期 * 100%</p>
+<h2 id="信号与同步"><a href="#信号与同步" class="headerlink" title="信号与同步 *"></a>信号与同步 *</h2><p>并发来源：</p>
+<ul>
+<li><strong>多核并行</strong>：不同 CPU 同时执行驱动代码。</li>
+<li><strong>进程上下文抢占</strong>：高优先级进程打断低优先级进程。</li>
+<li><strong>中断上下文</strong>：中断处理程序异步执行，可能抢占进程上下文代码。</li>
+<li><strong>阻塞与非阻塞</strong> <strong>I&#x2F;O</strong>：驱动需合理休眠与唤醒。</li>
+</ul>
+<p>因此，驱动必须使用锁或同步机制保护临界区。</p>
+<h3 id="自旋锁（spinlock）"><a href="#自旋锁（spinlock）" class="headerlink" title="自旋锁（spinlock）"></a>自旋锁（spinlock）</h3><p>适用于临界区极短且<strong>不能睡眠</strong>的场合（如中断处理中的资源保护）。</p>
+<p>忙等待，不引发调度，<strong>会占用</strong> <strong>CPU</strong>。</p>
+<p>中断上下文必须使用 <code>spin_lock_irqsave()</code> &#x2F; <code>spin_unlock_irqrestore()</code> 避免死锁。</p>
+<p>API：<code>spinlock_t</code>、<code>spin_lock()</code>、<code>spin_unlock()</code>。</p>
+<h3 id="互斥锁（mutex）"><a href="#互斥锁（mutex）" class="headerlink" title="互斥锁（mutex）"></a>互斥锁（mutex）</h3><p><strong>允许睡眠</strong>，适用于进程上下文中可能较长的临界区。</p>
+<p><strong>不能用于中断或原子上下文</strong>（因为会睡眠）。</p>
+<p>同一时刻只有一个持有者，支持递归锁定（某些实现禁止）。</p>
+<p>API：<code>struct mutex</code>、<code>mutex_lock()</code>、<code>mutex_unlock()</code>。</p>
+<h3 id="原子操作-使用较少"><a href="#原子操作-使用较少" class="headerlink" title="原子操作   使用较少"></a>原子操作   使用较少</h3><p>保证操作不可分割（如加减、位测试等）。</p>
+<p>用于简单计数器或标志位。</p>
+<p>API：<code>atomic_t</code>、<code>atomic_inc()</code>、<code>atomic_dec_and_test()</code> 等。</p>
+<h3 id="信号量（semaphore）-使用很少"><a href="#信号量（semaphore）-使用很少" class="headerlink" title="信号量（semaphore）  使用很少"></a>信号量（semaphore）  使用很少</h3><p>计数信号量，允许指定数量并发访问（如多个读者）。</p>
+<p>可以睡眠，常用于设备共享资源限制（如允许 5 个进程同时打开设备）。</p>
+<p>传统内核接口：<code>struct semaphore</code>、<code>down()</code>、<code>up()</code>。</p>
+<p><strong>注意</strong>：新代码推荐用 <code>mutex</code> 替代二值信号量，用 completion 替代单次同步</p>
+<h3 id="常见死锁"><a href="#常见死锁" class="headerlink" title="常见死锁"></a>常见死锁</h3><p>1  同一线程重复获取同一自旋锁   </p>
+<p>避免方法：明确锁的层级关系，避免嵌套调用</p>
+<p>2  循环，A等B，B等A</p>
+<p>  避免方法：</p>
+<p>  统一锁顺序：所有代码按固定顺序获取锁（如先 lock1，后 lock2）</p>
+<p>  使用单个锁：能用一个锁就不要用两个</p>
+<p>  分级锁：给锁分配等级，低等级不能在高等级持有下获取</p>
+<p>3  中断上下文中获取进程上下文持有的锁</p>
+<p>避免方法：任何被中断和进程共享的锁，进程侧必须用 <code>_irqsave</code> 版本</p>
+<p>4  自旋锁内睡眠</p>
+<p>​       避免方法：自旋锁临界区内绝对不调用可能睡眠的函数</p>
+<p>5  mutex 在中断中使用</p>
+<p>  mutex_lock 可能睡眠，中断上下文不能睡眠</p>
+<p>进程通信：管道、信号、消息队列、共享内存、信号量、socket</p>
+<h2 id="中断"><a href="#中断" class="headerlink" title="中断"></a>中断</h2><p><strong>task_struct</strong></p>
+<p>每个进程&#x2F;线程在内核中都对应一个 <code>task_struct</code> 对象，包含了进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。</p>
+<img src="int.png" alt="int">
+
+<h3 id="中断流程"><a href="#中断流程" class="headerlink" title="中断流程"></a>中断流程</h3><p>精简版：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">硬件外设触发中断</span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">1</span>] 中断控制器（GIC/IOAPIC）拉高CPU中断引脚</span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">2</span>] CPU硬件自动完成：</span><br><span class="line">    - 保存 PC、CPSR寄存器到栈</span><br><span class="line">    - 屏蔽全局中断 (硬件自动关中断)</span><br><span class="line">    - 跳转到中断向量表入口</span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">3</span>] 汇编入口（现场保存）：</span><br><span class="line">    push &#123;r0-r12, lr&#125;        <span class="comment">// 保存所有通用寄存器到内核栈</span></span><br><span class="line">    mrs r1, spsr             <span class="comment">// 保存被中断时的处理器状态</span></span><br><span class="line">    push &#123;r1&#125;                <span class="comment">// SPSR入栈</span></span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">4</span>] 切换栈：切换到专用中断栈（如配置过）</span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">5</span>] 调用 C 入口 do_IRQ()</span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">6</span>] 驱动处理函数中操作中断寄存器：</span><br><span class="line">    readl(dev-&gt;status_reg)   <span class="comment">// 读状态寄存器，确认中断源</span></span><br><span class="line">    writel(IRQ_CLEAR, dev-&gt;clear_reg)  <span class="comment">// 写1清中断标志</span></span><br><span class="line">    <span class="comment">// 对于电平触发中断，还需操作中断控制器：</span></span><br><span class="line">    writel(BIT(irq), gic_clear_reg)    <span class="comment">// 向GIC写EOI结束中断</span></span><br><span class="line">    ↓</span><br><span class="line">[<span class="number">7</span>] 恢复现场（汇编）：</span><br><span class="line">    pop &#123;r1&#125;                 <span class="comment">// 恢复SPSR</span></span><br><span class="line">    msr spsr, r1</span><br><span class="line">    pop &#123;r0-r12, lr&#125;         <span class="comment">// 恢复通用寄存器</span></span><br><span class="line">    movs pc, lr              <span class="comment">// 中断返回，同时恢复PC和CPSR</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>CPSR: (Current Program Status Register) 当前程序状态寄存器</li>
+</ul>
+<img src="cpsr.png" alt="cpsr">
+
+<ul>
+<li>SPSR: (Saved Program Status Register)  保存的程序状态寄存器</li>
+</ul>
+<p>当发生异常（包括中断）时，硬件自动将 CPSR 复制保存到 SPSR</p>
+<ul>
+<li>LR (Link Register) 是 ARM 架构中的<strong>链接寄存器</strong>，对应物理寄存器 <code>R14</code></li>
+</ul>
+<p> 将PC保存到LR，</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│              完整中断处理流程（WiFi → GIC → CPU → 上半部 → Tasklet 下半部）            │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">  硬件层                    中断控制器层                CPU 层                软件层</span><br><span class="line">─────────────────────────────────────────────────────────────────────────────────────────</span><br><span class="line"></span><br><span class="line">  WiFi 芯片</span><br><span class="line">     │</span><br><span class="line">     │ <span class="number">1.</span> MSI 消息</span><br><span class="line">     ↓</span><br><span class="line">  PCIe 控制器 ──<span class="number">2.</span> SPI/LPI──→ GIC (Distributor)</span><br><span class="line">                                      │</span><br><span class="line">                                      │ <span class="number">3.</span> 优先级、路由</span><br><span class="line">                                      ↓</span><br><span class="line">                              GIC (CPU Interface)</span><br><span class="line">                                      │</span><br><span class="line">                                      │ <span class="number">4.</span> nIRQ 信号</span><br><span class="line">                                      ↓</span><br><span class="line">                            ┌─────────────────────┐</span><br><span class="line">                            │   CPU 核            │  ← 这里明确标出 CPU！</span><br><span class="line">                            │  - 检测 nIRQ        │</span><br><span class="line">                            │  - 保存 PC/CPSR     │</span><br><span class="line">                            │  - 切换到 IRQ 模式   │</span><br><span class="line">                            │  - 跳转向量表 <span class="number">0x18</span>   │</span><br><span class="line">                            └──────────┬──────────┘</span><br><span class="line">                                         │</span><br><span class="line">                                         │ <span class="number">5.</span> 跳转</span><br><span class="line">                                         ↓</span><br><span class="line">                            ┌───────────────────────┐</span><br><span class="line">                            │   向量表 (内存)         │</span><br><span class="line">                            │   <span class="number">0x18</span>: b irq_handler │</span><br><span class="line">                            └──────────┬────────────┘</span><br><span class="line">                                         │</span><br><span class="line">                                         │ <span class="number">6.</span> 跳转</span><br><span class="line">                                         ↓</span><br><span class="line">                            ┌─────────────────────┐</span><br><span class="line">                            │ 通用中断入口          │</span><br><span class="line">                            │ asm_do_IRQ()        │</span><br><span class="line">                            │ - 保存更多寄存器      │</span><br><span class="line">                            │ - 调用 do_IRQ()      |</span><br><span class="line">                            └──────────┬──────────┘</span><br><span class="line">                                         │</span><br><span class="line">                                         │ <span class="number">7.</span> 读 GICC_IAR</span><br><span class="line">                                         ↓</span><br><span class="line">                            ┌─────────────────────┐</span><br><span class="line">                            │ do_IRQ(irq)         │</span><br><span class="line">                            │ - irq = <span class="number">123</span>         │</span><br><span class="line">                            │ - 查 irq_desc[<span class="number">123</span>]  │</span><br><span class="line">                            └──────────┬──────────┘</span><br><span class="line">                                       │</span><br><span class="line">                    ┌──────────────────┼──────────────────────┐</span><br><span class="line">                    │                  │                      │</span><br><span class="line">                    ↓                  ↓                      ↓</span><br><span class="line">         ┌─────────────────-┐  ┌─────────────────┐  ┌─────────────────┐</span><br><span class="line">         │ irq_desc[<span class="number">123</span>]    │  │ irq_desc[<span class="number">45</span>]    │  │ irq_desc[...]   │</span><br><span class="line">         │ .action = &#123;      │  │ .action = &#123;...&#125; │  │                 │</span><br><span class="line">         │   handler =      │  │                 │  │                 │</span><br><span class="line">         │   wifi_isr       │  │                 │  │                 │</span><br><span class="line">         │ &#125;                │  │                 │  │                 │</span><br><span class="line">         └────────┬─────────┘  └─────────────────┘  └─────────────────┘</span><br><span class="line">                    │</span><br><span class="line">                    │ <span class="number">8.</span> 调用上半部</span><br><span class="line">                    ↓</span><br><span class="line">         ┌─────────────────────────────────────────┐</span><br><span class="line">         │ 【上半部】wifi_isr() - 中断上下文           │</span><br><span class="line">         │ - 读 WiFi 芯片寄存器，确认中断源             │</span><br><span class="line">         │ - 清设备中断                              │</span><br><span class="line">         │ - 从 FIFO 拷贝数据到缓冲区                 │</span><br><span class="line">         │ - tasklet_schedule(&amp;wifi_tasklet)       │</span><br><span class="line">         │   (把 tasklet 挂到 CPU 的 tasklet 链表)   │</span><br><span class="line">         └────────────────────┬────────────────────┘</span><br><span class="line">                                  │</span><br><span class="line">                                  │ <span class="number">9.</span> 写 GICC_EOIR</span><br><span class="line">                                  ↓</span><br><span class="line">         ┌─────────────────────────────────────────┐</span><br><span class="line">         │ 中断返回前检查软中断                       │</span><br><span class="line">         │ <span class="keyword">if</span> (pending softirq)                    │</span><br><span class="line">         │     do_softirq()                        │</span><br><span class="line">         └────────────────────┬────────────────────┘</span><br><span class="line">                              │</span><br><span class="line">                              │ <span class="number">10.</span> 执行 tasklet</span><br><span class="line">                              ↓</span><br><span class="line">         ┌─────────────────────────────────────────┐</span><br><span class="line">         │ 【下半部】wifi_tasklet() - 软中断上下文     │</span><br><span class="line">         │ - 解析网络数据包                           │</span><br><span class="line">         │ - 递交给 TCP/IP 协议栈                    │</span><br><span class="line">         │ - 唤醒等待进程（如 socket read）           │</span><br><span class="line">         │ (可以做得更慢，但依然不能睡眠)               │</span><br><span class="line">         └─────────────────────────────────────────┘</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                         SoC 芯片内部                                         │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────────┐     │</span><br><span class="line">│  │                    CPU 核心                                        │     │</span><br><span class="line">│  │  ┌───────────┐  ┌───────────┐  ┌───────────┐               │     │</span><br><span class="line">│  │  │ L1 Cache    │  │ L2 Cache    │  │ L3 Cache    │               │     │</span><br><span class="line">│  │  │ (SRAM)      │  │ (SRAM)      │  │ (SRAM)      │               │     │</span><br><span class="line">│  │  └───────────┘  └───────────┘  └───────────┘               │     │</span><br><span class="line">│  └─────────────────────────────────────────────────────────┘     │</span><br><span class="line">│                                                                            │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────────┐     │</span><br><span class="line">│  │              OCM (On-Chip Memory) / IRAM                          │     │</span><br><span class="line">│  │                 也是 SRAM 工艺                                      │     │</span><br><span class="line">│  │           大小：<span class="number">256</span>KB - <span class="number">2</span>MB（取决于芯片）                             │    │</span><br><span class="line">│  │           作用：运行 BootROM、SPL、关键代码                           │     │</span><br><span class="line">│  └─────────────────────────────────────────────────────────┘    │</span><br><span class="line">│                                                                            │</span><br><span class="line">│  ┌─────────────────────────────────────────────────────────┐     │</span><br><span class="line">│  │                DDR 控制器（PHY）                                    │     │</span><br><span class="line">│  │           负责与外部 DDR 颗粒通信                                    │     │</span><br><span class="line">│  └─────────────────────────────────────────────────────────┘     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓ 物理走线（PCB 上的铜线）</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                      板载 DDR 内存颗粒                                        │</span><br><span class="line">│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                  │</span><br><span class="line">│  │ LPDDR4/<span class="number">5</span>      │  │ LPDDR4/<span class="number">5</span>       │  │ LPDDR4/<span class="number">5</span>      │                  │</span><br><span class="line">│  │ <span class="number">2</span>GB 颗粒       │  │ <span class="number">2</span>GB 颗粒       │  │ <span class="number">2</span>GB 颗粒       │                  │</span><br><span class="line">│  └─────────────┘  └─────────────┘  └─────────────┘                  │</span><br><span class="line">│                   总容量：<span class="number">8</span>GB/<span class="number">16</span>GB/<span class="number">32</span>GB                                      │</span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h2 id="DMA环形缓冲区"><a href="#DMA环形缓冲区" class="headerlink" title="DMA环形缓冲区 *"></a>DMA环形缓冲区 *</h2><p>硬件DMA控制器   –通常外设chip会集成</p>
+<p>写指针由硬件维护，读指针由软件维护（部分DMA控制器在硬件层面支持环形缓冲区，不需要软件维护指针）</p>
+<p><strong>典型数据流</strong>：</p>
+<ol>
+<li>DMA从USART_DR寄存器持续搬运数据到硬件缓冲区</li>
+<li>当DMA半满或全满时触发中断，或串口空闲（IDLE）时触发中断</li>
+<li>中断服务程序将数据从硬件缓冲区<strong>拷贝</strong>到软件环形缓冲区</li>
+<li>应用程序从软件环形缓冲区读取数据进行处理</li>
+</ol>
+<p>linux驱动实现步骤</p>
+<h2 id="IPC"><a href="#IPC" class="headerlink" title="IPC"></a>IPC</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/lyd0813/article/details/126825378">https://blog.csdn.net/lyd0813/article/details/126825378</a></p>
+<p><a target="_blank" rel="noopener" href="https://developer.aliyun.com/article/1411137">https://developer.aliyun.com/article/1411137</a></p>
+</blockquote>
+<p>常用的核间通信方式有两种，其都基于mailbox:</p>
+<ul>
+<li>基于RPMSG的核间通信解决方案，适合小块数据。</li>
+<li>基于Share Memory核间通信解决方案，适合大块数据。</li>
+</ul>
+<ol>
+<li><h3 id="RPMSG"><a href="#RPMSG" class="headerlink" title="RPMSG"></a>RPMSG</h3></li>
+</ol>
+<p>流程：</p>
+<p>① 发送方将小数据<strong>拷贝</strong>到共享内存的环形缓冲区（VRING）。 ② 通过Mailbox发送VRING的ID或token，并<strong>触发接收方的中断</strong>通知接收方。 ③ 接收方从VRING中<strong>拷贝</strong>数据到自己的缓冲区。</p>
+<p>特点：</p>
+<p>- 两次数据拷贝，开销较大。 - 协议栈完善，有标准接口。 - 最大消息通常限制在512字节</p>
+<p>典型场景：</p>
+<p>控制命令、传感器状态、小消息通知。</p>
+<h4 id="1-1-VRING"><a href="#1-1-VRING" class="headerlink" title="1.1 VRING"></a>1.1 VRING</h4><p>由<strong>描述符表</strong> + <strong>可用环</strong> + <strong>已用环</strong> 组成，服务于一个<strong>单向</strong>数据流。可用环只能<strong>Core A</strong>写数据，已用环只能<strong>Core B</strong>写通知，已用环是为了降低mailbox中断的次数，减小系统开销。</p>
+<p>一个VRING实现半双工，两个VRING可实现全双工。</p>
+<p>通常<strong>一个主核与所有从核通信，从核之间不直接通信。</strong></p>
+<ol>
+<li><h3 id="Share-Memory"><a href="#Share-Memory" class="headerlink" title="Share Memory"></a>Share Memory</h3></li>
+</ol>
+<p>流程：</p>
+<p>① 发送方将大数据写入共享内存的指定位置。 ② 通过Mailbox<strong>只传递该数据的内存指针（地址&#x2F;长度）</strong>。 ③ 接收方收到指针后，<strong>直接</strong>从共享内存读取数据。</p>
+<p>特点：</p>
+<p><strong>- 零拷贝</strong>，效率极高。 - 无消息大小限制。 - 需要自行管理内存同步和生命周期</p>
+<p>典型场景：</p>
+<p>图像、视频流、音频帧、大文件块。</p>
+<p>NVIDIA为Jetson提供了<strong>IVC（Inter VM Communication）</strong>框架，核心原理：</p>
+<p>IVC基于<strong>共享内存通道 + HSP门铃中断</strong>机制</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    物理共享内存区域                           │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │</span><br><span class="line">│  │ IVC Channel │    │ IVC Channel │    │   Data      │      │</span><br><span class="line">│  │   (控制)     │    │   (数据)     │    │   Buffer    │      │</span><br><span class="line">│  └─────────────┘    └─────────────┘    └─────────────┘      │</span><br><span class="line">├─────────────────────────────────────────────────────────────┤</span><br><span class="line">│   CCPLEX (Linux A核)           AON (实时R核)                 │</span><br><span class="line">│   写入数据 ───────────────────────────────────────────────▶  │</span><br><span class="line">│   触发HSP门铃 ─────────────────────────────────────────────▶ │</span><br><span class="line">│                         ◀─────────────────────────────── 处理│</span><br><span class="line">│                         ◀─────────────────────────────── 响应│</span><br><span class="line">└─────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>HSP（硬件同步原语）</strong>提供doorbell中断机制，源处理器发送消息后通过门铃信号通知目标处理器，实现低延迟的核间通信</p>
+<h1 id="2-协议类"><a href="#2-协议类" class="headerlink" title="2. 协议类"></a>2. 协议类</h1><p>对于拥有30-40个以上自由度的全尺寸人形机器人，EtherCAT主干 + CANopen分支的混合架构是目前最主流的设计</p>
+<ol>
+<li><strong>中央控制器</strong>作为主站。</li>
+<li><strong>核心运动关节</strong>（如髋、膝、肩）通过<strong>EtherCAT</strong>网络以<strong>线型拓扑</strong>串联，确保高精度同步。</li>
+<li><strong>次要关节和传感器</strong>（如手腕、手指、底盘）则组成<strong>CANopen</strong>网络，以<strong>总线型拓扑</strong>接入，实现低成本、高可靠的扩展</li>
+<li>中央控制器内部通过网关功能，实现两个网络间的数据互通与协同</li>
+</ol>
+<h2 id="2-1-CANopen"><a href="#2-1-CANopen" class="headerlink" title="2.1 CANopen"></a>2.1 CANopen</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qlexcel/article/details/156433218">https://blog.csdn.net/qlexcel/article/details/156433218</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_31710263/article/details/97015748">https://blog.csdn.net/qq_31710263/article/details/97015748</a></p>
+</blockquote>
+<p>CAN 全称为Controller Area Network，即控制器局域网。CAN 是一种多主方式的串行通讯总线，特点：</p>
+<p>​    A、较低的成本与极高的总线利用率；</p>
+<p>　B、 数据传输距离可长达10Km，传输速率可高达1Mbit&#x2F;s；</p>
+<p>　C、可靠的错误处理和检错机制，发送的 信息 遭到破坏后可自动重发；</p>
+<p>　D、节点在错误严重的情况下具有自动退出总线的功能；</p>
+<p>　E、报文不包含源地址或目标地址仅用标志符来指示功能信息和优先级信息；</p>
+<p>CAN总线网络主要挂在CAN_H和CAN_L，各个节点通过这两条线实现信号的串行差分传输，为了避免信号的反射和干扰，还需要在CAN_H和CAN_L之间接上120欧姆的终端<a target="_blank" rel="noopener" href="http://www.hqchip.com/app/dianzudianrongdiangan">电阻。</a><strong>为什么是120Ω，因为电缆的特性阻抗为120Ω，为了模拟无限远的传输线。</strong></p>
+<img src="can.png" alt="can">
+
+<h3 id="帧ID-COB-ID"><a href="#帧ID-COB-ID" class="headerlink" title="帧ID&#x2F;COB-ID"></a>帧ID&#x2F;COB-ID</h3><p>CANopen通信中有1个主节点，其他全都是从节点</p>
+<p>CANopen只使用了标准帧，因此数据帧ID只有11位。在CANopen中数据帧ID称为<strong>COB-ID</strong></p>
+<p>COB-ID值越小，报文优先级越高。</p>
+<p>COB-ID分为两部分：</p>
+<p>​    高4位是功能码：定义CANopen报文的<strong>服务类型</strong>，如NMT、SYNC、PDO、SDO等，它决定了报文的优先级。</p>
+<p>​    低7位是节点ID（从机地址）。节点ID范围是1~127（0通常被保留用于广播，最多127个设备）</p>
+<img src="can2.png" alt="can2">
+
+<h3 id="CANopen报文分类"><a href="#CANopen报文分类" class="headerlink" title="CANopen报文分类"></a>CANopen报文分类</h3><ol>
+<li>NMT：网络管理报文，作用是管理网络，切换节点的状态。一般由主站发送NMT网络管理报文。</li>
+<li><strong>SDO</strong>：服务数据对象报文，作用是设置设备参数，或者是一些关键数据的传输。一般由主站发起SDO报文，从站应答SDO报文。从站也可以发起SDO，主站响应，比如关键数据的传输。</li>
+<li><strong>PDO</strong>：过程数据对象报文，作用是传输一些设备的过程数据，比如传输温度，速度等等。主站和从站都会发送。</li>
+<li>EMCY：紧急报文，作用是传输设备的故障信息。主站和从站都会发送。</li>
+<li>SYNC：同步报文，作用是同步数据，用来同步从站的TPDO数据。一般由主站发送。比如从站的TPDO传输类型是在同步模式下，当从站收到设定次数的SYNC报文后，从站会发送TPDO。这个在后续的文章中详细阐述。</li>
+<li>NODE GUARDING：节点保护报文，作用是主站请求从站的状态，主站询问，从站应答。这种模式逐渐已被淘汰，因为太占CAN总线网络带宽。</li>
+<li>HeartBeat：心跳报文，作用是设备主动发送心跳，表示自己在线。主站和从站都可以发送。</li>
+</ol>
+<img src="can3.png" alt="can3">
+
+<h2 id="2-2-EtherCat"><a href="#2-2-EtherCat" class="headerlink" title="2.2 EtherCat *"></a>2.2 EtherCat *</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/pwl999/article/details/109397700">https://blog.csdn.net/pwl999/article/details/109397700</a></p>
+</blockquote>
+<p>EtherCAT作为一种工业以太网总线，充分利用了以太网的全双工特性 (物理层全双工，逻辑上串行通信)。使用主从通信模式，主站发送报文给从站，从站从中读取数据或将数据插入至从站。</p>
+<p>主站可使用标准网卡实现</p>
+<p>从站选用特定的EtherCAT从站控制器ESC(EtherCAT Slave Controller)或者FPGA实现，</p>
+<p>主要完成通信和控制应用两部分功能，EtherCAT物理层选用标准以太网物理层器件。</p>
+<h3 id="2-2-1-EtherCAT网络协议栈"><a href="#2-2-1-EtherCAT网络协议栈" class="headerlink" title="2.2.1 EtherCAT网络协议栈"></a>2.2.1 EtherCAT网络协议栈</h3><p>EtherCAT数据帧格式：</p>
+<img src="ethercat1.png" alt="ethercat1">
+
+<p>EtherCAT数据帧结构定义：</p>
+<img src="ethercat2.png" alt="ethercat2">
+
+<p>EtherCAT子报文结构定义：</p>
+<img src="ethercat3.png" alt="ethercat3">
+
+<p>WKC字段：Working Counter，如果成功寻址了EtherCAT设备，并且成功执行了读操作，写操作或读&#x2F;写操作，则工作计数器将递增。通过将工作计数器的预期值与所有设备通过后的实际值进行比较，主站可以检查EtherCAT数据报是否已成功处理。</p>
+<h3 id="2-2-2-EtherCAT设备寻址方式"><a href="#2-2-2-EtherCAT设备寻址方式" class="headerlink" title="2.2.2 EtherCAT设备寻址方式"></a>2.2.2 EtherCAT设备寻址方式</h3><img src="ethercat4.png" alt="ethercat4">
+
+<p>在EtherCAT的每个子报文中，有32位空间用于对EtherCAT设备进行寻址。寻址方式有四种，分别为：</p>
+<img src="ethercat5.png" alt="ethercat5">
+
+<h4 id="2-2-2-1-位置寻址-Position-Address-Auto-Increment-Address）"><a href="#2-2-2-1-位置寻址-Position-Address-Auto-Increment-Address）" class="headerlink" title="2.2.2.1 位置寻址 (Position Address &#x2F; Auto Increment Address）"></a>2.2.2.1 位置寻址 (Position Address &#x2F; Auto Increment Address）</h4><p>在报文头的32bit地址中，前16bit用于存放地址值，Offset用于存放ESC逻辑寄存器或者内存地址。报文每经过一个从站设备，其Position中的地址值加1。当一个从站接收到EtherCAT报文后，如果报文中的地址值为0，则该报文就是这个从站要要接收的报文。</p>
+<p>位置寻址只应在启动EtherCAT系统时用于扫描现场总线，以后只能偶尔使用以检测新连接的从站。</p>
+<h4 id="2-2-2-2-节点寻址"><a href="#2-2-2-2-节点寻址" class="headerlink" title="2.2.2.2 节点寻址"></a>2.2.2.2 节点寻址</h4><p>报文头的32bit地址中，前16bit的Address用于存放站点地址值，Offset用于存放ESC逻辑寄存器或者内存地址，在每个从站中站点地址保存在寄存器 (0x0010)  中。（其实就是直接找目标从机的地址）</p>
+<p>EtherCAT从设备可以有两个配置的站点地址：</p>
+<p>1&gt; <strong>配置站点地址</strong>（Configured Station Address）：</p>
+<p>由主站分配，<strong>存在主站内存中，</strong>只有主站可以分配，从站不能改，启动期间分配，与物理位置相关（通常按顺序分配 0, 1, 2…）</p>
+<p>2&gt; <strong>配置站别名</strong>（Configured Station Alias）：</p>
+<p>存储在从站的 <strong>SII EEPROM</strong> 中，<strong>从站自己可以修改</strong>（通过应用程序），预先设定，<strong>与物理位置无关</strong>，需主站”启用”后生效</p>
+<h4 id="2-2-2-3-逻辑寻址"><a href="#2-2-2-3-逻辑寻址" class="headerlink" title="2.2.2.3 逻辑寻址"></a>2.2.2.3 <strong>逻辑寻址</strong></h4><p>首先需要了解<strong>FMMU</strong> (Fieldbus Memory Management Units)：</p>
+<p>FMMU称为总线内存管理单元，它存在与从站芯片ESC中，负责<strong>对从站物理地址与主站逻辑地址进行翻译并建立映射</strong>关系。主站在总线启动过程中对FMMU进行配置，内容包括：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">• 逻辑地址的起始地址</span><br><span class="line">• 数据长度（按跨字节数计算）</span><br><span class="line">• 逻辑地址的起始位</span><br><span class="line">• 逻辑地址的终止位</span><br><span class="line">• 从站物理地址的起始地址</span><br><span class="line">• 从站物理地址的起始位</span><br><span class="line">• 操作类型（只读、只写、读写）</span><br><span class="line">• 使能</span><br></pre></td></tr></table></figure>
+
+<p>一个从站可以有多个 FMMU，分别配置为读和写，对应不同的逻辑地址段。</p>
+<p>CMD 只决定报文整体允许的操作（如 <code>LRW</code> 允许读写），具体哪个从站读、哪个写由 FMMU 的”方向”字段独立决定。</p>
+<p>主站会为网络中的所有从站分配实际需要的数据大小，然后将这些零散的数据区域”拼接”在这4GB逻辑空间中的某几个连续段上。(发送报文时，32位地址空间全部用来放虚拟地址)</p>
+<h4 id="2-2-2-4-Broadcast寻址"><a href="#2-2-2-4-Broadcast寻址" class="headerlink" title="2.2.2.4 Broadcast寻址"></a>2.2.2.4 Broadcast寻址</h4><p>用于所有从站的初始化和检查所有从站的状态</p>
+<h4 id="2-2-2-5-实际流程"><a href="#2-2-2-5-实际流程" class="headerlink" title="2.2.2.5 实际流程"></a>2.2.2.5 实际流程</h4><ol>
+<li>启动阶段（位置寻址） 主站不知道网络上有哪些从站，先用物理位置（第1个、第2个…）给每个从站临时分配一个节点地址（0, 1, 2…），建立基础通信。</li>
+<li>配置阶段（节点寻址） 主站用这个临时节点地址访问每个从站，读取它的 EEPROM，获得它的<strong>站别名</strong>（如果预先烧录了的话）。 同时，主站也可以给从站分配一个固定的<strong>配置站点地址</strong>。</li>
+<li>运行阶段（节点寻址或逻辑寻址） 之后主站就可以<strong>用”站别名”来直接寻址这个从站</strong>，无论它在网络中处于第几个位置。 报文中的”节点地址”字段如果等于这个从站的”站别名”，该从站就会响应。</li>
+</ol>
+<h3 id="2-3分布式时钟-Distribute-Clock"><a href="#2-3分布式时钟-Distribute-Clock" class="headerlink" title="2.3分布式时钟(Distribute Clock)"></a>2.3分布式时钟(Distribute Clock)</h3><h1 id="ROS2"><a href="#ROS2" class="headerlink" title="ROS2 *"></a>ROS2 *</h1><h2 id="1-节点-Node"><a href="#1-节点-Node" class="headerlink" title="1. 节点 Node"></a>1. 节点 Node</h2><p><strong>定义</strong>：节点是 ROS 2 图中最小的计算单元，本质上是一个可执行程序</p>
+<p>（对应到linux驱动，每个外设驱动，在ROS 2里就是一个节点）      一个节点既可以是发布者，也可以是订阅者。</p>
+<p>当一个节点崩溃（段错误），其他节点不受影响</p>
+<h2 id="2-话题-Topic"><a href="#2-话题-Topic" class="headerlink" title="2. 话题 Topic"></a>2. 话题 Topic</h2><p>话题是两个节点之间的数据沟通的一种重要方式，也可为系统的不同组成部分之间（数据沟通）</p>
+<p>topic交流可采用方式是一对一，一对多，多对一．</p>
+<p><img src="/" alt="img"></p>
+<h2 id="3-服务"><a href="#3-服务" class="headerlink" title="3. 服务"></a>3. 服务</h2><p>同一个服务（名称相同）有且只能由一个节点来进行提供</p>
+<p>同一个服务可以被多个客户端调用</p>
+<p><img src="/" alt="img"></p>
+<h2 id="4-DDS"><a href="#4-DDS" class="headerlink" title="4. DDS"></a>4. DDS</h2><p><strong>DDS (Data Distribution Service，数据分发服务)</strong> 是一个由 <strong>OMG (对象管理组织)</strong> 制定的<strong>工业级、去中心化的中间件标准</strong>。它的核心模型是”<strong>以数据为中心</strong>“的发布&#x2F;订阅模式。是ROS2通信的心脏</p>
+<h1 id="Uboot"><a href="#Uboot" class="headerlink" title="Uboot"></a>Uboot</h1><blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_21438461/article/details/145126331">理解 BootROM：从底层启动到安全部署的指南</a></p>
+</blockquote>
+<p>NVIDIA Jetson (Orin&#x2F;Thor)平台提供了完整的 BSP，包含 U-Boot，以下是大概工作流程：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">1. 环境搭建</span><br><span class="line">   □ 下载并解压 L4T BSP</span><br><span class="line">   □ 获取匹配版本的 U-Boot 源码</span><br><span class="line">   □ 安装交叉编译工具链</span><br><span class="line">   □ 准备正确的 DTC 工具</span><br><span class="line"></span><br><span class="line">2. 硬件适配（根据底板原理图）</span><br><span class="line">   □ 修改 Pinmux 配置表并生成 .cfg 文件</span><br><span class="line">   □ 修改 U-Boot 设备树（添加/禁用外设节点）</span><br><span class="line">   □ 确认电源/时钟配置</span><br><span class="line"></span><br><span class="line">3. 编译与部署</span><br><span class="line">   □ 选择正确的 defconfig</span><br><span class="line">   □ 编译生成 u-boot.bin</span><br><span class="line">   □ 替换 L4T 目录下的 U-Boot</span><br><span class="line">   □ 进入 Recovery 模式</span><br><span class="line">   □ 执行 flash.sh 烧录</span><br><span class="line"></span><br><span class="line">4. 调试与验证</span><br><span class="line">   □ 串口连接确认启动日志</span><br><span class="line">   □ 进入命令行测试外设</span><br><span class="line">   □ 配置环境变量（bootcmd、bootargs）</span><br><span class="line">   □ 验证能正常启动 Linux 内核</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-全系统启动链概览"><a href="#1-全系统启动链概览" class="headerlink" title="1. 全系统启动链概览"></a>1. 全系统启动链概览</h2><ol>
+<li>BootROM</li>
+</ol>
+<p>​    代码位置：固化在芯片内部</p>
+<p>​    主要功能：最基本的硬件初始化；识别启动模式；（可选）完成安全验证；加载下一阶段</p>
+<p>​    特点：不可随意修改、体积小、逻辑精简</p>
+<ol>
+<li>SPL&#x2F;Preloader（第二阶段引导）</li>
+</ol>
+<p>​    代码位置：外部存储（eMMC、SD、SPI Flash 等）</p>
+<p>​    主要功能：初始化更多外设（尤其是 DRAM）、加载主引导程序或更高级别引导程序</p>
+<p>​    特点：功能相对 BootROM 更灵活，可对缺陷做升级或补丁</p>
+<ol>
+<li>主引导程序（U-Boot、Barebox 等）</li>
+</ol>
+<p>​    代码位置：外部存储</p>
+<p>​    主要功能：完整的系统硬件初始化（网络、存储、显示等），加载操作系统内核</p>
+<p>​    特点：体积更大，可与硬件工程师、软件开发人员深度定制</p>
+<ol>
+<li>操作系统内核（Linux、RTOS 等）</li>
+</ol>
+<p>​    代码位置：外部存储或网络（在部分场景）</p>
+<p>​    主要功能：真正承载应用执行的平台，提供文件系统、进程管理、网络协议栈等</p>
+<p>​    特点：更新与维护频率最高，体量最大</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 1. 芯片上电，CPU 复位向量指向 BootROM 地址（芯片设计时固定）</span><br><span class="line">│    - BootROM 读取 BOOT_MODE 引脚                                 </span><br><span class="line">│    - 根据引脚值选择启动设备（eMMC/SD/USB）                        </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 2. BootROM 从存储设备的固定偏移读取 SPL 头部                                    </span><br><span class="line">│    - 读取前 4KB 到 SRAM（）                                          </span><br><span class="line">│    - 解析头部，获取 SPL 实际大小                                  </span><br><span class="line">│    - 继续读取完整的 SPL 到 SRAM                                   </span><br><span class="line">│    - 验证签名（如果启用了安全启动）                               </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 3. BootROM 跳转到 SPL 入口（SRAM 中的 _start）                   </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 4. SPL 执行（仍在 SRAM 中）                                     </span><br><span class="line">│    - 设置栈指针                                                  </span><br><span class="line">│    - 初始化 BSS 段                                               </span><br><span class="line">│    - 调用 board_init_f()                                         </span><br><span class="line">│        ├── 初始化必要的时钟                                      </span><br><span class="line">│        ├── 初始化串口（输出 <span class="string">&quot;U-Boot SPL&quot;</span> 信息）                   </span><br><span class="line">│        └── 初始化 DDR 控制器  ← 关键步骤                          </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 5. DDR 初始化完成后                                              </span><br><span class="line">│    - SPL 初始化存储设备驱动（eMMC/SD）                            </span><br><span class="line">│    - 从存储设备的 U-Boot 分区读取完整 U-Boot 到 DDR                </span><br><span class="line">│    - 读取地址：通常是 CONFIG_SYS_TEXT_BASE (如 0x82000000)        </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 6. SPL 跳转到 DDR 中的 U-Boot                                    </span><br><span class="line">│    - 清理环境                                                    </span><br><span class="line">│    - 修改 PC 指针到 U-Boot 入口                                   </span><br><span class="line">│    - U-Boot 开始执行（现在运行在 DDR 中）                         </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                              ↓</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│ 7. U-boot执行相关的初始化操作</span><br><span class="line">|    - jump to kernel                                                   </span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-BootRom"><a href="#2-BootRom" class="headerlink" title="2. BootRom"></a>2. BootRom</h2><p>BootROM 指的是<strong>固化在芯片内部且一般不可修改的启动代码</strong>。它通常存储在不可擦写或仅可一次性编程的物理介质上，如 Mask ROM 或 eFuse&#x2F; OTP （One-Time Programmable）区域。当系统上电或复位时，CPU 的程序计数器（PC）被硬件指向 BootROM 所在的地址，开始执行其中的指令。</p>
+<p>下面以一个简要表格来说明 BootROM 在嵌入式系统中与其他引导阶段的对比：</p>
+<img src="boot.png" alt="boot">
+
+<p>安全启动：在安全环境中生成一对公私钥，公钥烧录进 eFuse&#x2F;OTP，私钥由厂商安全保管。每次量产或升级固件时，用私钥对镜像进行签名，BootROM 上电后用公钥校验</p>
+<h2 id="3-SPL-Secondary-Program-Loader"><a href="#3-SPL-Secondary-Program-Loader" class="headerlink" title="3. SPL (Secondary Program Loader)"></a>3. SPL (Secondary Program Loader)</h2><p>SPL是 U-Boot 的精简版前置加载器，解决了一个核心矛盾：芯片内部 SRAM 太小，装不下完整的 U-Boot，但又需要初始化 DDR 才能运行完整 U-Boot。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">SPL 代码组成：</span><br><span class="line">├── 最小化的架构初始化</span><br><span class="line">│   ├── 异常向量表</span><br><span class="line">│   ├── CPU 初始化（缓存、MMU 关闭状态）</span><br><span class="line">│   └── 栈指针设置</span><br><span class="line">├── 时钟初始化（部分）</span><br><span class="line">│   └── 只初始化必要的 PLL（如 DDR 需要的时钟）</span><br><span class="line">├── DDR 内存控制器初始化  ← 核心功能</span><br><span class="line">│   ├── DDR 时序参数配置</span><br><span class="line">│   ├── ZQ 校准</span><br><span class="line">│   └── 内存测试（可选）</span><br><span class="line">├── 存储设备驱动（极简版）</span><br><span class="line">│   ├── eMMC/SD 卡驱动（只读，只用于加载 U-Boot）</span><br><span class="line">│   └── SPI Flash 驱动（可选）</span><br><span class="line">├── 加载功能</span><br><span class="line">│   └── 从固定偏移读取 U-Boot 到 DDR</span><br><span class="line">└── 跳转</span><br><span class="line">    └── 跳转到 DDR 中的 U-Boot 入口</span><br></pre></td></tr></table></figure>
+
+<h1 id="CPU调度"><a href="#CPU调度" class="headerlink" title="CPU调度"></a>CPU调度</h1><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/2301_77485708/article/details/156229867">https://blog.csdn.net/2301_77485708/article/details/156229867</a></p>
+<h2 id="完全公平调度器-CFS"><a href="#完全公平调度器-CFS" class="headerlink" title="完全公平调度器 (CFS)"></a>完全公平调度器 (CFS)</h2><p>核心设计思想是”完全公平”，每个进程获得的CPU时间与自身优先级成正比，优先级越高的进程，获得的CPU时间比例越大；在优先级相同的情况下，所有进程获得的CPU时间尽可能均等。</p>
+<p><strong>虚拟运行时间</strong>（vruntime）：</p>
+<p>CFS为每个进程维护一个vruntime字段，其值通过进程的实际运行时间与优先级权重的比值计算得出，核心公式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vruntime+=实际运行时间×<span class="number">1024</span>/进程权重</span><br></pre></td></tr></table></figure>
+
+<h2 id="PREEMPT-RT实时补丁"><a href="#PREEMPT-RT实时补丁" class="headerlink" title="PREEMPT_RT实时补丁"></a>PREEMPT_RT实时补丁</h2><p>核心目标是将内核中”不可抢占”的代码区域缩减到最小。</p>
+<p>改变一：中断线程化</p>
+<p>改变二：可抢占的”睡眠”自旋锁  spinlock可睡眠</p>
+<p>改变三：优先级继承协议</p>
+<pre><code>当任务H因等待任务L持有的锁而被阻塞时，内核会**临时将任务L的优先级提升到与任务H相同**。
+
+凭借高优先级，任务L能迅速抢占正在运行的M，快速执行完临界区并释放锁。
+
+锁释放后，任务L的优先级恢复原状，而任务H获得锁继续执行。这彻底解决了无限期阻塞的问题
+</code></pre>
+<p>改变四：RCU的可抢占化与线程化</p>
+<h1 id="Driver"><a href="#Driver" class="headerlink" title="Driver"></a>Driver</h1><h2 id="wifi"><a href="#wifi" class="headerlink" title="wifi"></a>wifi</h2><p><a target="_blank" rel="noopener" href="https://prd.fs.huaqin.com/docx/doxhqsaIHJvlmSNkWrmUBFMV6Uh">WIFI &#x2F; BT</a></p>
+<h2 id="hx9023s"><a href="#hx9023s" class="headerlink" title="hx9023s"></a>hx9023s</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">hx9023s_probe(_</span><br><span class="line">    devm_regmap_init_i2c    初始化regmap</span><br><span class="line">    hx9023s_property_get    获取设备树信息，包含channel等</span><br><span class="line">    创建并初始化iio_dev设备</span><br><span class="line">    regmap_multi_reg_write  初始化设备</span><br><span class="line">    hx9023s_ch_cfg          配置通道</span><br><span class="line">    devm_request_threaded_irq  申请中断，使用线程化</span><br><span class="line">    </span><br><span class="line">    devm_iio_trigger_alloc     分配触发器，用来触发采集数据</span><br><span class="line">    data-&gt;trig-&gt;ops = &amp;hx9023s_trigger_ops;  设置触发回调</span><br><span class="line">    iio_trigger_set_drvdata(data-&gt;trig, indio_dev); 绑定iio设备到触发器</span><br><span class="line">    devm_iio_trigger_register(dev, data-&gt;trig); 注册触发器到系统</span><br><span class="line">    <span class="comment">//设置</span></span><br><span class="line">    devm_iio_triggered_buffer_setup(dev, indio_dev,</span><br><span class="line">                          iio_pollfunc_store_time,  <span class="comment">//时间戳捕获</span></span><br><span class="line">                          hx9023s_trigger_handler,  <span class="comment">//实际数据采集 被上半部中的iio_trigger_poll(data-&gt;trig);触发时调用</span></span><br><span class="line">                          &amp;hx9023s_buffer_setup_ops); <span class="comment">//buffer setup 回调 </span></span><br><span class="line">                              --&gt; <span class="type">static</span> <span class="type">const</span> <span class="keyword">struct</span> iio_buffer_setup_ops hx9023s_buffer_setup_ops = &#123;</span><br><span class="line">                                        .preenable = hx9023s_buffer_preenable, <span class="comment">//使能buffer</span></span><br><span class="line">                                        .postdisable = hx9023s_buffer_postdisable, <span class="comment">//禁用buffer</span></span><br><span class="line">                                    &#125;;</span><br><span class="line">    devm_iio_device_register(dev, indio_dev);  注册iio设备</span><br></pre></td></tr></table></figure>
+
+<img src="hx9023s.png" alt="hx9023s">
+
+<h2 id="lt9611"><a href="#lt9611" class="headerlink" title="lt9611"></a>lt9611</h2><p>LT9611 驱动的工作：接收 SoC 发来的 MIPI DSI 数据 → 转换为 HDMI TMDS 信号 → 输出给显示器。</p>
+<p>热插拔检测让系统知道显示器连接了，然后 DRM 选择合适分辨率并调用 <code>atomic_enable</code> 完成整个链路配置</p>
+<p>probe</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">lt9611_probe()</span><br><span class="line">├── <span class="number">1.</span> 分配 lt9611 结构体</span><br><span class="line">├── <span class="number">2.</span> 初始化 regmap (I2C 通信)</span><br><span class="line">├── <span class="number">3.</span> 解析设备树 (获取 DSI 节点)</span><br><span class="line">├── <span class="number">4.</span> 申请 GPIO (reset、enable)</span><br><span class="line">├── <span class="number">5.</span> 使能 regulator (电源)</span><br><span class="line">├── <span class="number">6.</span> 复位芯片</span><br><span class="line">├── <span class="number">7.</span> 读取芯片版本</span><br><span class="line">├── <span class="number">8.</span> 注册 HPD IRQ 中断</span><br><span class="line">├── <span class="number">9.</span> 添加 DRM bridge</span><br><span class="line">├── <span class="number">10.</span> 挂载 DSI 设备</span><br><span class="line">└── <span class="number">11.</span> 使能 HPD 中断</span><br></pre></td></tr></table></figure>
+
+<p>热插拔检测</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">用户插入 HDMI 线</span><br><span class="line">    ↓</span><br><span class="line">LT9611 芯片检测到 HPD 信号变化</span><br><span class="line">    ↓</span><br><span class="line">触发 irq_thread_handler()</span><br><span class="line">    ↓</span><br><span class="line">读取寄存器 <span class="number">0x820f</span> 判断中断类型</span><br><span class="line">    ↓</span><br><span class="line">bit6=<span class="number">1</span> → <span class="string">&quot;hdmi cable connected&quot;</span>  ← 插入事件</span><br><span class="line">bit7=<span class="number">1</span> → <span class="string">&quot;hdmi cable disconnected&quot;</span> ← 拔出事件</span><br><span class="line">    ↓</span><br><span class="line">清除中断标志</span><br><span class="line">    ↓</span><br><span class="line">drm_kms_helper_hotplug_event()  ← 通知 DRM 框架</span><br><span class="line">    ↓</span><br><span class="line">DRM 框架开始探测...</span><br></pre></td></tr></table></figure>
+
+<p>DRM 框架探测（内核自动）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">drm_kms_helper_hotplug_event()</span><br><span class="line">    ↓</span><br><span class="line">drm_fb_helper_hotplug_event()</span><br><span class="line">    ↓</span><br><span class="line">drm_client_modeset_probe()  ← 遍历所有 connector</span><br><span class="line">    ↓</span><br><span class="line">connector-&gt;funcs-&gt;fill_modes()</span><br><span class="line">    ↓</span><br><span class="line">┌─────────────────────────────────────────────┐</span><br><span class="line">│  驱动回调 ①: lt9611_bridge_detect()         │</span><br><span class="line">│  读取寄存器 <span class="number">0x825e</span>，判断 HDMI 是否连接       │</span><br><span class="line">│  返回 connector_status_connected            │</span><br><span class="line">├─────────────────────────────────────────────┤</span><br><span class="line">│  驱动回调 ②: lt9611_bridge_get_edid()        │</span><br><span class="line">│  通过 DDC 总线读取显示器 EDID               │</span><br><span class="line">│  返回分辨率列表 (如 <span class="number">1920</span>x1080@<span class="number">60</span>Hz)         │</span><br><span class="line">├─────────────────────────────────────────────┤</span><br><span class="line">│  驱动回调 ③: lt9611_bridge_mode_valid()     │</span><br><span class="line">│  验证模式是否支持 (最大 <span class="number">3840</span>x2160@<span class="number">30</span>Hz)      │</span><br><span class="line">└─────────────────────────────────────────────┘</span><br><span class="line">    ↓</span><br><span class="line">选择最佳显示模式</span><br><span class="line">    ↓</span><br><span class="line">分配 CRTC、设置模式</span><br></pre></td></tr></table></figure>
+
+<p>真正开始显示（atomic_enable）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">DRM 框架调用 lt9611_bridge_atomic_enable() [line <span class="number">685</span><span class="number">-731</span>]</span><br><span class="line">    ↓</span><br><span class="line">┌──────────────────────────────────────────────────────────────┐</span><br><span class="line">│  <span class="number">1.</span> 获取显示模式                                              │</span><br><span class="line">│     mode = crtc_state-&gt;adjusted_mode                        │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">2.</span> 配置 MIPI DSI 输入 (lt9611_mipi_input_digital)            │</span><br><span class="line">│     - 设置 DSI lane 数量                                      │</span><br><span class="line">│     - 配置像素格式                                            │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">3.</span> 配置 PLL (lt9611_pll_setup)                               │</span><br><span class="line">│     - 根据分辨率计算 PLL 参数                                │</span><br><span class="line">│     - 写入 PLL 寄存器                                         │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">4.</span> 配置 MIPI 视频时序 (lt9611_mipi_video_setup)              │</span><br><span class="line">│     - 设置 Hsync/Vsync timing                                │</span><br><span class="line">│     - 配置 video mode (burst/pulse/progressive)              │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">5.</span> 配置 PCR (Pixel Clock Recovery)                           │</span><br><span class="line">│     - 写入 <span class="number">0x8300</span><span class="number">-0x834f</span> 寄存器                               │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">6.</span> 打开电源 (lt9611_power_on)                                │</span><br><span class="line">│     - 拉高 enable GPIO                                        │</span><br><span class="line">│     - 使能 regulator                                          │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">7.</span> 配置 MIPI 模拟前端 (lt9611_mipi_input_analog)              │</span><br><span class="line">│     - 写入 <span class="number">0x8110</span><span class="number">-0x812f</span> 寄存器                               │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">8.</span> 配置 HDMI InfoFrame (lt9611_hdmi_set_infoframes)         │</span><br><span class="line">│     - AVI InfoFrame (颜色空间、扫描模式)                     │</span><br><span class="line">│     - Vendor InfoFrame (HDMI 标识)                           │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│  <span class="number">9.</span> 配置 HDMI TX 数字部分 (lt9611_hdmi_tx_digital)             │</span><br><span class="line">│     - 写入 <span class="number">0x82d6</span> 寄存器                                       │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│ <span class="number">10.</span> 配置 HDMI TX PHY (lt9611_hdmi_tx_phy)                    │</span><br><span class="line">│     - 写入 <span class="number">0x8130</span><span class="number">-0x8144</span> 寄存器                               │</span><br><span class="line">│     - 设置 TMDS 预加重、驱动强度                              │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│ <span class="number">11.</span> 等待视频稳定                                              │</span><br><span class="line">│     msleep(<span class="number">500</span>)                                              │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│ <span class="number">12.</span> 视频检查 (lt9611_video_check)                             │</span><br><span class="line">│     - 读取 <span class="number">0x825e</span> 确认视频已锁定                              │</span><br><span class="line">├──────────────────────────────────────────────────────────────┤</span><br><span class="line">│ <span class="number">13.</span> 使能 HDMI 输出                                            │</span><br><span class="line">│     写入 <span class="number">0x8130</span> = <span class="number">0xea</span>                                       │</span><br><span class="line">└──────────────────────────────────────────────────────────────┘</span><br><span class="line">    ↓</span><br><span class="line">图像数据开始从 SoC → LT9611 → 显示器</span><br></pre></td></tr></table></figure>
+
+<p>DRM Bridge 回调</p>
+<table>
+<thead>
+<tr>
+<th>回调</th>
+<th>触发时机</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>.attach</td>
+<td>bridge 连接时</td>
+<td>挂载下一个 bridge</td>
+</tr>
+<tr>
+<td>.mode_valid</td>
+<td>模式验证</td>
+<td>检查分辨率 (最大 3840x2160)</td>
+</tr>
+<tr>
+<td>.detect</td>
+<td>检测连接状态</td>
+<td>读取 0x825e 判断 HDMI 是否连接</td>
+</tr>
+<tr>
+<td>.get_edid</td>
+<td>获取 EDID</td>
+<td>通过 DDC 总线读取显示器 EDID</td>
+</tr>
+<tr>
+<td>.hpd_enable</td>
+<td>使能 HPD</td>
+<td>启用热插拔中断</td>
+</tr>
+<tr>
+<td>.atomic_pre_enable</td>
+<td>原子使能前</td>
+<td>从睡眠恢复时重新配置寄存器</td>
+</tr>
+<tr>
+<td>.atomic_enable</td>
+<td>原子使能</td>
+<td>配置 MIPI 输入、PLL、HDMI 输出、video check</td>
+</tr>
+<tr>
+<td>.atomic_disable</td>
+<td>原子禁用</td>
+<td>关闭 HDMI 输出、断电</td>
+</tr>
+<tr>
+<td>.atomic_post_disable</td>
+<td>原子禁用后</td>
+<td>进入睡眠模式</td>
+</tr>
+<tr>
+<td>.atomic_get_input_bus_fmts</td>
+<td>获取输入格式</td>
+<td>返回 MEDIA_BUS_FMT_RGB888_1X24</td>
+</tr>
+</tbody></table>
+<p>IRQ 中断处理 (<code>lt9611_irq_thread_handler</code>)</p>
+<table>
+<thead>
+<tr>
+<th>中断标志</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x80 (bit7)</td>
+<td>HDMI 线断开 → 触发 hotplug 事件</td>
+</tr>
+<tr>
+<td>0x40 (bit6)</td>
+<td>HDMI 线连接 → 触发 hotplug 事件</td>
+</tr>
+<tr>
+<td>0x01 (bit0)</td>
+<td>视频输入变化 → 记录日志、清除中断标志</td>
+</tr>
+</tbody></table>
+<p>HDMI Audio Codec 回调</p>
+<table>
+<thead>
+<tr>
+<th>回调</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>.hw_params</td>
+<td>设置音频采样率 (48k&#x2F;96k)</td>
+</tr>
+<tr>
+<td>.audio_startup</td>
+<td>启动音频通路</td>
+</tr>
+<tr>
+<td>.audio_shutdown</td>
+<td>关闭音频通路</td>
+</tr>
+<tr>
+<td>.get_dai_id</td>
+<td>获取 DAI ID (sound port)</td>
+</tr>
+</tbody></table>
+<p>典型调用链</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">插上 HDMI 线</span><br><span class="line">      ↓</span><br><span class="line">LT9611 拉低 HPD GPIO</span><br><span class="line">      ↓</span><br><span class="line">触发 irq_thread_handler</span><br><span class="line">      ↓</span><br><span class="line">drm_kms_helper_hotplug_event() → 触发drm的kms热插拔事件，然后通知drm重新探测</span><br><span class="line">      ↓</span><br><span class="line">drm_mode_configurator.c → 读取 EDID → 更新显示模式</span><br></pre></td></tr></table></figure>
+
+<h1 id="drm框架"><a href="#drm框架" class="headerlink" title="drm框架"></a>drm框架</h1><p><a target="_blank" rel="noopener" href="https://prd.fs.huaqin.com/docx/doxhq6kRaBSxG3XPgqOOw1JHYvh">DRM</a></p>
+<p>DRM从模块上划分，可以简单分为3部分：</p>
+<p><strong>Libdrm</strong>   用户空间库</p>
+<p><strong>KMS   （Kernel Mode Setting） *</strong></p>
+<ul>
+<li>更新画面：显示buffer的切换，多图层的合成方式，以及每个图层的显示位置。</li>
+<li>设置显示参数：包括分辨率、刷新率、电源状态（休眠唤醒）等。</li>
+</ul>
+<p><strong>GEM</strong></p>
+<p>提供了一种抽象的显存管理方式<strong>（主要负责显示buffer的分配和释放）</strong>，使用户空间应用程序可以更方便地管理显存，而不需要了解底层硬件的细节</p>
+<h2 id="KMS"><a href="#KMS" class="headerlink" title="KMS"></a>KMS</h2><img src="kms.png" alt="kms">
+
+<p><strong>DRM Framebuffer</strong></p>
+<p>唯一一个与硬件无关的基本元素——帧缓存，用于存储屏幕上的每个像素点的颜色信息。</p>
+<p>只用于描述显存信息（如 format、pitch、size 等），不负责显存的分配释放。</p>
+<p><strong>CRTC</strong></p>
+<p>电子束控制器，用于控制显卡输出信号，它会扫描Framebuffer上的内容，叠加上 Planes 的内容，传给 Encoder。</p>
+<p>其承担的主要作用为：</p>
+<p><strong>配置适合显示器的显示模式、分辨率、刷新率等参数，并输出相应的的时序。</strong></p>
+<p><strong>扫描framebuffer送到一个或多个显示器</strong></p>
+<p><strong>更新framebuffer</strong></p>
+<p>在DRM里有多个显存，可以通过操作CRTC来控制要显示的那个显存。</p>
+<p><strong>Planes</strong>   </p>
+<p><strong>其实就是图层</strong></p>
+<p>硬件图层，负责获取显存，再输出到CRTC里，可以看作是一个显示器的图层，每个 crtc 至少要有一个 plane。</p>
+<p>通常会有多个 plane，每个 plane 可以分别设置自己的属性，从而实现多个图像内容的叠加。</p>
+<p><strong>Encoder</strong></p>
+<p>编码器，用于<strong>将 CRTC 输出的图像信号转换成一定格式（比如 DVID、VGA、YPbPr、CVBS、Mipi、eDP）的数字信号</strong>。每个 CRTC 可以有一个或多个 Encoder，它和 CRTC 之间的交互就是我们所说的 ModeSetting，其中包含了前面提供的色彩模式、还有时序（Timing）等。</p>
+<p><strong>Connector</strong></p>
+<p>物理连接器 (例如 HDMI, DisplayPort) 他会连接一个物理显示输出设备 (monitor, panel) 。</p>
+<p>与当前物理连接的输出设备相关的信息（如连接状态，EDID数据，DPMS状态或支持的视频模式）也存储在 Connector 内。</p>
+<p><strong>VBLANK</strong></p>
+<p>软件和硬件的同步机制，RGB时序中的垂直消影区，<strong>软件通常使用硬件VSYNC来实现</strong></p>
+<p><strong>property</strong></p>
+<p>原子操作的基础，任何你想设置的参数，都可以做成property，供用户空间使用，是DRM驱动中最灵活、最方便的Mode setting机制</p>
+<h1 id="USB"><a href="#USB" class="headerlink" title="USB"></a>USB</h1><h2 id="usb设备连接过程"><a href="#usb设备连接过程" class="headerlink" title="usb设备连接过程"></a>usb设备连接过程</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/weiaipan1314/article/details/113530649">https://blog.csdn.net/weiaipan1314/article/details/113530649</a></p>
+</blockquote>
+<img src="usb.png" alt="usb">
+
+<p>前期插入时配置：</p>
+<ol>
+<li>USB设备插入或上电</li>
+</ol>
+<p>2.Hub检测电压变化，并报告主机</p>
+<p>3.主机会发送一个 Get_Port_Status请求给hub以了解是插入还是拔出事件</p>
+<p>4.主机检测所插入的设备是全速还是低速       –<em>根据是D+还是D-被拉高来判断到底是什么设备（全速&#x2F;低速）插入端口</em></p>
+<p>5.主机通过hub复位usb设备  (使D+和D-全为低电平 )</p>
+<ol>
+<li>主机进一步检测全速设备是否是支持高速模式</li>
+</ol>
+<p>7.通过Hub建立主机和设备之间的信息通道</p>
+<p>8.主机获取默认管道(地址0，端点0)的最大数据包长度</p>
+<p>9.主机请求hub再次复位设备     –目的是使设备进入一个确定的状态。</p>
+<p>10.主机给设备分配一个新地址   –之后就启用新地址与主机通信</p>
+<p>11.<strong>主机获取并解析设备描述符信息并解析</strong></p>
+<p>​    <em>设备描述符内信息包括端点0的最大包长度、设备所支持的配置个数、设备类型、VID、 PID、字符串索引等信息</em></p>
+<p>12.主机获取字符串描述符   –<em>如果有字符串描述符，主机会获取语言ID描述符和字符串描述符</em></p>
+<p>13.<strong>主机获取标准配置描述符并解析</strong>   </p>
+<p><em>标准配置描述符内信息包括配置描述符集合长度、接口数、设备属性、设备所</em>需电流</p>
+<p>14.<strong>主机获取配置描述符集合并解析</strong></p>
+<p><em>配置描述符集合包括标准配置描述符、接口描述符、端点描述符，如果是HID设备还会包括HID描述符</em></p>
+<p>15.主机为设备挂载驱动并选择一个配置  –<em>至此，设备处于配置状态</em></p>
+<p>描述符集描述了从机的所有功能细节：</p>
+<img src="usb1.png" alt="usb1">
+
+<img src="usb2.png" alt="usb2">
+
+<p>USB2.0 接口</p>
+<p>USB3.0 引脚</p>
+<img src="usb3.png" alt="usb3">
+
+<p>后5根是USB3.0的高速数据传输线，因为USB3.0传输的是全双工差分信号，所以需要两对数据线和一根信号地线。</p>
+<p>USB驱动总体可分为三部分：USB总线驱动、USB主机控制器驱动、USB设备驱动。</p>
+<h1 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h1><p>perf</p>
+<p>Ftrace</p>
+<p>Gdb</p>
+<p>安全启动</p>
+<p>固件加密</p>
+<h1 id="一个案例"><a href="#一个案例" class="headerlink" title="一个案例"></a>一个案例</h1><p><strong>根本原因：</strong></p>
+<ol>
+<li>该问题定位在driver 端代码问题， 驱动中有bench_date 检查时间戳， 长时间静止之后时间戳乱掉，导致那一块代码进入到异常状态， 最终G sensor 数据被丢弃， 系统没有接收到G sensor的数据，</li>
+</ol>
+<p>修正 EC 时间戳是为了<strong>将 32 位溢出值还原为 64 位连续时间</strong>，而 suspend 超过 35.8 分钟后触发的是<strong>溢出判断边界条件</strong>，导致错误补偿，最终破坏了 <code>batch_state</code> 的时间连续性。</p>
+<p><strong>分析进展：</strong></p>
+<ol>
+<li>从当前的测试状况来看， 自动旋转按钮，Gsensor 功能， ufsc 配置状况看起来都是对的， 系统也是出于tablet mode 状态下， 但是还是无法旋转，</li>
+<li>基本重启都能恢复， 有些机台放置一段时间也能恢复，从这个方面来看，Gsensor 本身没有问题， 应该是软件设置存在问题</li>
+</ol>
+<p>3.从log看系统层当前已有的log也是打开了Gsensor的旋转并且没有值错误去阻碍了旋转功能，并且对没有打印的逻辑部分也去做了一些排查，例如是否测试过程中有应用强制申请了方向锁定，传感器角度是否没有达到旋转阈值等等，最终都被否决了，另外一些值由于debug的log默认是关闭的，已有log暂时没有定位到问题的rootcause</p>
+<ol>
+<li>从log 看可能是系统没有拿到sensor数据， EC tool 的实时数据是正常</li>
+</ol>
+<p>试验#1：刷新到最新的image 版本，TTL 15次, 依旧没有复现此问题</p>
+<p>试验#2： 用fail 的机器做冷重启压测， TTL 4台机器3000圈 </p>
+<p>试验#3： 模拟工厂环境复现：</p>
+<p>a.  用U 盘安装recovery image 再到OOBE_done ，TTL 60x 未复现</p>
+<p>试验#4： 正常工厂流程 APRO 机器15台， 没有问题</p>
+<p><strong>试验#5： 三指安装image 模拟工厂流程进行压测_4台机器各10次没有复现</strong></p>
+<p><strong>试验#6： 长时间suspend（使用工厂userdeubg image ）,  不联网停留在OOBE 解向导界面，复现到此问题， F&#x2F;R 1&#x2F;10</strong></p>
+<img src="lte.png" alt="lte">
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">内核启动</span><br><span class="line">  |</span><br><span class="line">  |---&gt; 识别USB Modem，创建设备节点: `cdc-wdm0`, `wwan0`</span><br><span class="line">  |</span><br><span class="line">  |---&gt; ModemManager 探测 `cdc-wdm0`，创建 D-Bus 对象 `Modem/<span class="number">0</span>`</span><br><span class="line">  |        |</span><br><span class="line">  |        |---&gt; Shill 发现 `Modem/<span class="number">0</span>`，创建内部 Cellular 设备</span><br><span class="line">  |        |</span><br><span class="line">  |        |---&gt; Hermes 发现 `Modem/<span class="number">0</span>`，为eSIM操作抑制该Modem</span><br><span class="line">  |                 |</span><br><span class="line">  |                 |---&gt; ModemManager 移除 `Modem/<span class="number">0</span>`</span><br><span class="line">  |                 |       |---&gt; Shill 的 Cellular 设备进入不稳定状态</span><br><span class="line">  |                 |</span><br><span class="line">  |                 |---&gt; Hermes 完成操作，解除抑制</span><br><span class="line">  |</span><br><span class="line">  |---&gt; ModemManager 重新探测，创建 `Modem/<span class="number">1</span>`</span><br><span class="line">  |        |</span><br><span class="line">  |        |---&gt; Shill 发现 `Modem/<span class="number">1</span>`，Cellular 设备恢复正常</span><br><span class="line">  |        |</span><br><span class="line">  |        |---&gt; (如有需要) Modemfwd 检查并更新固件</span><br><span class="line">  |</span><br><span class="line">  |---&gt; LTE注册完成，可通过Shill发起数据连接</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="toc-text">1. 基础知识</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#OSI%E4%B8%83%E5%B1%82%E6%A8%A1%E5%9E%8B"><span class="toc-text">OSI七层模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UART-232-485"><span class="toc-text">UART&#x2F;232&#x2F;485</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#IIC"><span class="toc-text">IIC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#IIO"><span class="toc-text">IIO</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SPI"><span class="toc-text">SPI</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PWM"><span class="toc-text">PWM</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%A1%E5%8F%B7%E4%B8%8E%E5%90%8C%E6%AD%A5"><span class="toc-text">信号与同步 *</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E6%97%8B%E9%94%81%EF%BC%88spinlock%EF%BC%89"><span class="toc-text">自旋锁（spinlock）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%92%E6%96%A5%E9%94%81%EF%BC%88mutex%EF%BC%89"><span class="toc-text">互斥锁（mutex）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C-%E4%BD%BF%E7%94%A8%E8%BE%83%E5%B0%91"><span class="toc-text">原子操作   使用较少</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F%EF%BC%88semaphore%EF%BC%89-%E4%BD%BF%E7%94%A8%E5%BE%88%E5%B0%91"><span class="toc-text">信号量（semaphore）  使用很少</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E6%AD%BB%E9%94%81"><span class="toc-text">常见死锁</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%AD%E6%96%AD"><span class="toc-text">中断</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%AD%E6%96%AD%E6%B5%81%E7%A8%8B"><span class="toc-text">中断流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DMA%E7%8E%AF%E5%BD%A2%E7%BC%93%E5%86%B2%E5%8C%BA"><span class="toc-text">DMA环形缓冲区 *</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#IPC"><span class="toc-text">IPC</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#RPMSG"><span class="toc-text">RPMSG</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Share-Memory"><span class="toc-text">Share Memory</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%8D%8F%E8%AE%AE%E7%B1%BB"><span class="toc-text">2. 协议类</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-CANopen"><span class="toc-text">2.1 CANopen</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%A7ID-COB-ID"><span class="toc-text">帧ID&#x2F;COB-ID</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CANopen%E6%8A%A5%E6%96%87%E5%88%86%E7%B1%BB"><span class="toc-text">CANopen报文分类</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-EtherCat"><span class="toc-text">2.2 EtherCat *</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-1-EtherCAT%E7%BD%91%E7%BB%9C%E5%8D%8F%E8%AE%AE%E6%A0%88"><span class="toc-text">2.2.1 EtherCAT网络协议栈</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-2-EtherCAT%E8%AE%BE%E5%A4%87%E5%AF%BB%E5%9D%80%E6%96%B9%E5%BC%8F"><span class="toc-text">2.2.2 EtherCAT设备寻址方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3%E5%88%86%E5%B8%83%E5%BC%8F%E6%97%B6%E9%92%9F-Distribute-Clock"><span class="toc-text">2.3分布式时钟(Distribute Clock)</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ROS2"><span class="toc-text">ROS2 *</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%8A%82%E7%82%B9-Node"><span class="toc-text">1. 节点 Node</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E8%AF%9D%E9%A2%98-Topic"><span class="toc-text">2. 话题 Topic</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E6%9C%8D%E5%8A%A1"><span class="toc-text">3. 服务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-DDS"><span class="toc-text">4. DDS</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Uboot"><span class="toc-text">Uboot</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E5%85%A8%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%93%BE%E6%A6%82%E8%A7%88"><span class="toc-text">1. 全系统启动链概览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-BootRom"><span class="toc-text">2. BootRom</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-SPL-Secondary-Program-Loader"><span class="toc-text">3. SPL (Secondary Program Loader)</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CPU%E8%B0%83%E5%BA%A6"><span class="toc-text">CPU调度</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E5%85%A8%E5%85%AC%E5%B9%B3%E8%B0%83%E5%BA%A6%E5%99%A8-CFS"><span class="toc-text">完全公平调度器 (CFS)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PREEMPT-RT%E5%AE%9E%E6%97%B6%E8%A1%A5%E4%B8%81"><span class="toc-text">PREEMPT_RT实时补丁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Driver"><span class="toc-text">Driver</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#wifi"><span class="toc-text">wifi</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#hx9023s"><span class="toc-text">hx9023s</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#lt9611"><span class="toc-text">lt9611</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#drm%E6%A1%86%E6%9E%B6"><span class="toc-text">drm框架</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#KMS"><span class="toc-text">KMS</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#USB"><span class="toc-text">USB</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#usb%E8%AE%BE%E5%A4%87%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B"><span class="toc-text">usb设备连接过程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B0%83%E8%AF%95"><span class="toc-text">调试</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E6%A1%88%E4%BE%8B"><span class="toc-text">一个案例</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+    <nav class="post-nav">
+      
+      
+        <a class="next" href="/2026/06/11/suspend-resume/">suspend-resume &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+  </div>
+</footer>
+
+  </div>
+  
+<script src="/js/main.js"></script>
+
+</body>
+</html>

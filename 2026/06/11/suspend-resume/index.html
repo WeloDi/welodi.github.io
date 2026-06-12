@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
   <title>suspend-resume | Welodi</title>
-  <meta name="description" content="参考 https:&#x2F;&#x2F;www.cnblogs.com&#x2F;LoyenWang&#x2F;p&#x2F;11372679.htmlhttps:&#x2F;&#x2F;blog.csdn.net&#x2F;weixin_41028159&#x2F;article&#x2F;details&#x2F;131012793#:~:text&#x3D;调用https:&#x2F;&#x2F;blog.csdn.net&#x2F;qq_48458789&#x2F;article&#x2F;details&#x2F;136333955  总览图    Suspe">
+  <meta name="description" content="Linux 内核休眠唤醒机制详解，包括 freeze 流程、suspend 流程、resume 流程的完整分析。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="suspend-resume">
 <meta property="og:url" content="http://example.com/2026/06/11/suspend-resume/index.html">
 <meta property="og:site_name" content="Welodi">
-<meta property="og:description" content="参考 https:&#x2F;&#x2F;www.cnblogs.com&#x2F;LoyenWang&#x2F;p&#x2F;11372679.htmlhttps:&#x2F;&#x2F;blog.csdn.net&#x2F;weixin_41028159&#x2F;article&#x2F;details&#x2F;131012793#:~:text&#x3D;调用https:&#x2F;&#x2F;blog.csdn.net&#x2F;qq_48458789&#x2F;article&#x2F;details&#x2F;136333955  总览图    Suspe">
+<meta property="og:description" content="Linux 内核休眠唤醒机制详解，包括 freeze 流程、suspend 流程、resume 流程的完整分析。">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
 <meta property="article:published_time" content="2026-06-11T06:19:55.000Z">
-<meta property="article:modified_time" content="2026-06-12T09:57:10.466Z">
+<meta property="article:modified_time" content="2026-06-12T14:58:48.456Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
@@ -116,11 +116,21 @@
     </div>
 
     
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Suspend%E6%B5%81%E7%A8%8B"><span class="toc-text">Suspend流程</span></a></li></ol>
+  </div>
+</aside>
+
+      
   </div>
 
   <footer class="post-footer">
     
     <nav class="post-nav">
+      
+        <a class="prev" href="/2026/06/12/Interview/">&laquo; Interview</a>
       
       
     </nav>
