@@ -15,7 +15,8 @@
     <% if (post.excerpt) { %>
       <%- post.excerpt %>
     <% } else { %>
-      <p><%- strip_html(post.content).substring(0, 200) %>...</p>
+      <% var excerpt = strip_html(post.content.replace(/<\/(a|p|blockquote|h[1-6]|div|br)>/g, '$& ')).replace(/\s+/g, ' ').trim().substring(0, 200); %>
+      <p><%- excerpt %>...</p>
     <% } %>
   </div>
   <a class="read-more" href="<%- url_for(post.path) %>"><%= theme.excerpt_link || 'Read More' %> &rarr;</a>

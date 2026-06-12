@@ -450,6 +450,8 @@ img {
   color: var(--color-text-secondary);
   line-height: 1.7;
   margin-bottom: 0.75rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .post-card-excerpt p {
