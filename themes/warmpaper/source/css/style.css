@@ -1291,14 +1291,16 @@ figure.highlight .token.deleted {
 }
 
 /* --- Responsive --- */
-@media (max-width: 1400px) {
+@media (max-width: 1100px) {
   .toc-sidebar {
     display: none;
+    position: static;
   }
 
   /* When opened via toggle on smaller screens */
   .toc-sidebar.open {
     display: block;
+    position: fixed;
     left: 1rem;
     right: 1rem;
     width: auto;
