@@ -15,7 +15,39 @@
     <% if (post.excerpt) { %>
       <%- post.excerpt %>
     <% } else { %>
-      <% var excerpt = strip_html(post.content.replace(/<\/(a|p|blockquote|h[1-6]|div|br)>/g, '$& ')).replace(/\s+/g, ' ').trim().substring(0, 200); %>
+      <%
+        // Extract meaningful text for excerpt from rendered HTML:
+        var content = post.content;
+        // 1. Remove highlight code blocks (Hexo wraps in <figure class="highlight">)
+        content = content.replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '');
+        // 2. Remove tables, images, blockquotes, inline code
+        content = content.replace(/<table[\s\S]*?<\/table>/gi, '');
+        content = content.replace(/<img[^>]*>/gi, '');
+        content = content.replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '');
+        content = content.replace(/<code[^>]*>.*?<\/code>/gi, '');
+        // 3. Remove heading tags but keep their text content
+        content = content.replace(/<\/?h[1-6][^>]*>/gi, ' ');
+        // 4. Strip remaining HTML tags
+        var text = strip_html(content).trim();
+        // 5. Replace repeated newlines with period+space for readability
+        text = text.replace(/\n\s*\n/g, '. ').replace(/\n/g, ' ');
+        // 6. Collapse multiple spaces
+        text = text.replace(/[ \t]+/g, ' ').trim();
+        // 7. Take first 200 chars, break at sentence boundary
+        if (text.length > 200) {
+          var excerpt = text.substring(0, 200);
+          var cut = Math.max(
+            excerpt.lastIndexOf('。'),
+            excerpt.lastIndexOf('！'),
+            excerpt.lastIndexOf('？'),
+            excerpt.lastIndexOf('. '),
+            excerpt.lastIndexOf(' ')
+          );
+          if (cut > 100) excerpt = excerpt.substring(0, cut + 1);
+        } else {
+          var excerpt = text;
+        }
+      %>
       <p><%- excerpt %>...</p>
     <% } %>
   </div>

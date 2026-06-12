@@ -12,7 +12,7 @@ menu:
 toc:
   enable: true
   max_depth: 3
-  min_depth: 2
+  min_depth: 1
   list_number: false
 
 # Profile (shown on homepage above post list)

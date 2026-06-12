@@ -2,6 +2,7 @@
 title: suspend-resume
 date: 2026-06-11 14:19:55
 tags: 
+excerpt: Linux 内核休眠唤醒机制详解，包括 freeze 流程、suspend 流程、resume 流程的完整分析。
 ---
 
 > 参考
