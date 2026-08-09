@@ -36,7 +36,119 @@
       } catch (e) {}
     })();
   </script>
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body>
   <div class="site-wrapper">
@@ -103,7 +215,7 @@
 </thead>
 <tbody><tr>
 <td><code>s_power</code></td>
-<td>上电&#x2F;下电时序控制</td>
+<td>上电/下电时序控制</td>
 </tr>
 <tr>
 <td><code>s_stream</code></td>
@@ -115,7 +227,7 @@
 </tr>
 </tbody></table>
 <h4 id="硬件控制"><a href="#硬件控制" class="headerlink" title="硬件控制"></a>硬件控制</h4><p>驱动通过 I2C 读写 Sensor 的内部寄存器，完成初始化、设置分辨率、曝光、增益等操作。通常会提供 <code>v4l2_ctrl_handler</code> 来管理这些用户可调的控制项。</p>
-<h3 id="4-SoC-端-Camera-接口驱动确认与配置"><a href="#4-SoC-端-Camera-接口驱动确认与配置" class="headerlink" title="4. SoC 端 Camera 接口驱动确认与配置"></a>4. SoC 端 Camera 接口驱动确认与配置</h3><p>大多数情况下，CSI&#x2F;ISP 驱动已由 SoC 厂商提供，但需要确保它被正确编译进内核，并与 Sensor 驱动协同工作。</p>
+<h3 id="4-SoC-端-Camera-接口驱动确认与配置"><a href="#4-SoC-端-Camera-接口驱动确认与配置" class="headerlink" title="4. SoC 端 Camera 接口驱动确认与配置"></a>4. SoC 端 Camera 接口驱动确认与配置</h3><p>大多数情况下，CSI/ISP 驱动已由 SoC 厂商提供，但需要确保它被正确编译进内核，并与 Sensor 驱动协同工作。</p>
 <ul>
 <li><strong>ISP 配置</strong>：如果 SoC 内部有 ISP（图像信号处理器），需要对 ISP 驱动进行配置，使其能正确处理 Sensor 输出的 Raw Bayer 数据格式（如 <code>SRGGB10</code>），并转换为 YUV 或 RGB 格式输出。</li>
 <li><strong>Bridge 驱动</strong>：在一些复杂的 SoC 上（如 NXP i.MX8MP），可能还需要在 CSI 驱动和 ISP 驱动之间添加一个”桥”驱动（Bridge Driver），来协调整个数据通路。</li>
@@ -131,7 +243,7 @@
 <ul>
 <li><strong>善用调试工具</strong>：<code>dmesg</code>、<code>media-ctl</code>、<code>v4l2-ctl</code> 和 <code>printk</code> 是调试过程中最得力的助手。</li>
 </ul>
-<p>内核错误码速查表<br>错误码宏	内核返回值	含义	常见场景<br>EIO	-5	输入&#x2F;输出错误	与硬件通信失败（如 I2C 无应答），这是你代码中最可能的返回值<br>EINVAL	-22	无效参数 (Invalid Argument)	传递给函数的参数不合法，比如指针为 NULL 或数值越界<br>ENOMEM	-12	内存不足 (Out of Memory)	调用 kmalloc 等内存分配函数失败<br>EAGAIN	-11	资源暂时不可用 (Try Again)	非阻塞操作无法立即完成，稍后重试可能成功，如设备忙<br>EBUSY	-16	设备或资源忙 (Device or Resource Busy)	尝试访问一个已经被独占使用的硬件资源<br>ENODEV	-19	无此设备 (No Such Device)	尝试操作一个不存在的设备<br>EFAULT	-14	地址错误 (Bad Address)	传递的用户空间指针无效<br>EPERM	-1	操作不允许 (Operation Not Permitted)	权限不足，例如需要 root 权限<br>ETIMEDOUT	-110	连接超时 (Connection Timed Out)	I2C 读写在超时时间内未完成</p>
+<p>内核错误码速查表<br>错误码宏	内核返回值	含义	常见场景<br>EIO	-5	输入/输出错误	与硬件通信失败（如 I2C 无应答），这是你代码中最可能的返回值<br>EINVAL	-22	无效参数 (Invalid Argument)	传递给函数的参数不合法，比如指针为 NULL 或数值越界<br>ENOMEM	-12	内存不足 (Out of Memory)	调用 kmalloc 等内存分配函数失败<br>EAGAIN	-11	资源暂时不可用 (Try Again)	非阻塞操作无法立即完成，稍后重试可能成功，如设备忙<br>EBUSY	-16	设备或资源忙 (Device or Resource Busy)	尝试访问一个已经被独占使用的硬件资源<br>ENODEV	-19	无此设备 (No Such Device)	尝试操作一个不存在的设备<br>EFAULT	-14	地址错误 (Bad Address)	传递的用户空间指针无效<br>EPERM	-1	操作不允许 (Operation Not Permitted)	权限不足，例如需要 root 权限<br>ETIMEDOUT	-110	连接超时 (Connection Timed Out)	I2C 读写在超时时间内未完成</p>
 
     </div>
 

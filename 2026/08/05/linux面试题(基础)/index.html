@@ -38,7 +38,119 @@
       } catch (e) {}
     })();
   </script>
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body>
   <div class="site-wrapper">
@@ -86,7 +198,7 @@
   <div class="post-body-wrapper">
     <div class="post-content">
       <h2 id="一、C-语言基础"><a href="#一、C-语言基础" class="headerlink" title="一、C 语言基础"></a>一、C 语言基础</h2><h3 id="1-volatile-关键字详解"><a href="#1-volatile-关键字详解" class="headerlink" title="1. volatile 关键字详解"></a>1. volatile 关键字详解</h3><p><strong>答：</strong><br>volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 场景1：硬件寄存器（MMIO）</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">uint32_t</span> *reg = (<span class="keyword">volatile</span> <span class="type">uint32_t</span> *)ioremap(<span class="number">0xfec80000</span>, <span class="number">4</span>);</span><br><span class="line">*reg = <span class="number">0x01</span>;  <span class="comment">// 强制写入硬件</span></span><br><span class="line">val = *reg;   <span class="comment">// 强制从硬件读取</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 场景2：中断中修改的全局变量</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">int</span> irq_flag = <span class="number">0</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">interrupt_handler</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    irq_flag = <span class="number">1</span>;  <span class="comment">// 中断中修改</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">while</span> (!irq_flag);  <span class="comment">// 主循环必须每次都重新读取</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 场景3：多线程共享变量</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">int</span> running = <span class="number">1</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">worker_thread</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="keyword">while</span> (running) &#123; <span class="comment">/* 工作 */</span> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 场景1：硬件寄存器（MMIO）</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">uint32_t</span> *reg = (<span class="keyword">volatile</span> <span class="type">uint32_t</span> *)ioremap(<span class="number">0xfec80000</span>, <span class="number">4</span>);</span><br><span class="line">*reg = <span class="number">0x01</span>;  <span class="comment">// 强制写入硬件</span></span><br><span class="line">val = *reg;   <span class="comment">// 强制从硬件读取</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 场景2：中断中修改的全局变量</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">int</span> irq_flag = <span class="number">0</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">interrupt_handler</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    irq_flag = <span class="number">1</span>;  <span class="comment">// 中断中修改</span></span><br><span class="line">}</span><br><span class="line"><span class="keyword">while</span> (!irq_flag);  <span class="comment">// 主循环必须每次都重新读取</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 场景3：多线程共享变量</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">int</span> running = <span class="number">1</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">worker_thread</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    <span class="keyword">while</span> (running) { <span class="comment">/* 工作 */</span> }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p><strong>典型反例（不加 volatile 的后果）：</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 假设想让 LED 闪烁</span></span><br><span class="line">*led_reg = <span class="number">0x01</span>;</span><br><span class="line">*led_reg = <span class="number">0x00</span>;</span><br><span class="line">*led_reg = <span class="number">0x01</span>;</span><br><span class="line"><span class="comment">// 编译器优化后可能只执行最后一次赋值！</span></span><br></pre></td></tr></table></figure>
@@ -106,11 +218,11 @@
 <td><strong>栈（Stack）</strong></td>
 <td>编译器自动分配释放，LIFO，速度快</td>
 <td>高→低</td>
-<td>局部变量、<code>const</code> 局部变量、函数参数&#x2F;返回值</td>
+<td>局部变量、<code>const</code> 局部变量、函数参数/返回值</td>
 </tr>
 <tr>
 <td><strong>堆（Heap）</strong></td>
-<td>程序员 <code>malloc</code>&#x2F;<code>free</code> 管理，速度较慢但自由</td>
+<td>程序员 <code>malloc</code>/<code>free</code> 管理，速度较慢但自由</td>
 <td>低→高</td>
 <td>动态分配的内存，需手动释放否则内存泄漏</td>
 </tr>
@@ -118,7 +230,7 @@
 <td><strong>全局区（静态区）</strong></td>
 <td>编译时确定，程序运行期间存在，可读写</td>
 <td>—</td>
-<td><code>.data</code>段：已初始化全局&#x2F;静态变量；<code>.bss</code>段：未初始化（或初始化为0）的全局&#x2F;静态变量，不占可执行文件空间</td>
+<td><code>.data</code>段：已初始化全局/静态变量；<code>.bss</code>段：未初始化（或初始化为0）的全局/静态变量，不占可执行文件空间</td>
 </tr>
 <tr>
 <td><strong>常量区</strong></td>
@@ -203,7 +315,7 @@
 </tr>
 <tr>
 <td><strong>信号量（semaphore）</strong></td>
-<td>同步&#x2F;互斥访问共享资源</td>
+<td>同步/互斥访问共享资源</td>
 <td>进程间同步</td>
 </tr>
 <tr>
@@ -224,31 +336,31 @@
 </tbody></table>
 <p><strong>内核中的线程：</strong></p>
 <ul>
-<li><code>kthread_create()</code> &#x2F; <code>kthread_run()</code>：创建内核线程</li>
-<li>内核线程没有独立的地址空间（mm &#x3D; NULL），共享内核地址空间</li>
+<li><code>kthread_create()</code> / <code>kthread_run()</code>：创建内核线程</li>
+<li>内核线程没有独立的地址空间（mm = NULL），共享内核地址空间</li>
 <li>内核线程不可切换到用户态</li>
 </ul>
 <h3 id="4-链表操作"><a href="#4-链表操作" class="headerlink" title="4. 链表操作"></a>4. 链表操作</h3><p><strong>答：</strong> 内核中大量使用双向链表（<code>list_head</code>），而非自定义链表结构：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 内核链表结构</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">next</span>, *<span class="title">prev</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 嵌入结构体的方式使用（与内核风格一致）</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sensor_info</span> &#123;</span></span><br><span class="line">    <span class="type">int</span> id;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">list</span>;</span>  <span class="comment">// 链表节点嵌入到结构中</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化链表头</span></span><br><span class="line">LIST_HEAD(sensor_list);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 添加节点</span></span><br><span class="line">list_add_tail(&amp;info-&gt;<span class="built_in">list</span>, &amp;sensor_list);  <span class="comment">// 尾插</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sensor_info</span> *<span class="title">pos</span>;</span></span><br><span class="line">list_for_each_entry(pos, &amp;sensor_list, <span class="built_in">list</span>) &#123;</span><br><span class="line">    pr_info(<span class="string">&quot;sensor id: %d\n&quot;</span>, pos-&gt;id);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 内核链表结构</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> {</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">next</span>, *<span class="title">prev</span>;</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">// 嵌入结构体的方式使用（与内核风格一致）</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sensor_info</span> {</span></span><br><span class="line">    <span class="type">int</span> id;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">list</span>;</span>  <span class="comment">// 链表节点嵌入到结构中</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化链表头</span></span><br><span class="line">LIST_HEAD(sensor_list);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 添加节点</span></span><br><span class="line">list_add_tail(&amp;info-&gt;<span class="built_in">list</span>, &amp;sensor_list);  <span class="comment">// 尾插</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sensor_info</span> *<span class="title">pos</span>;</span></span><br><span class="line">list_for_each_entry(pos, &amp;sensor_list, <span class="built_in">list</span>) {</span><br><span class="line">    pr_info(<span class="string">"sensor id: %d\n"</span>, pos-&gt;id);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p><strong>设计优点：</strong> <code>list_head</code> 内嵌而非外挂，通过 <code>container_of</code> 宏从链表节点反推出结构体首地址，避免了为每种数据类型写一套链表操作。</p>
-<h3 id="5-常用-C-语言问题"><a href="#5-常用-C-语言问题" class="headerlink" title="5. 常用 C 语言问题"></a>5. 常用 C 语言问题</h3><h4 id="5-1-static-关键字的作用"><a href="#5-1-static-关键字的作用" class="headerlink" title="5.1 static 关键字的作用"></a>5.1 static 关键字的作用</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 修饰局部变量：生命周期变为整个程序运行期，但作用域不变</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">count_calls</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="type">static</span> <span class="type">int</span> n = <span class="number">0</span>;  <span class="comment">// 只初始化一次，函数返回后值保留</span></span><br><span class="line">    n++;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;called %d times\n&quot;</span>, n);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 修饰全局变量/函数：作用域限定在当前文件（其他文件 extern 不到）</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> internal_var;       <span class="comment">// 仅本文件可见</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">helper_func</span><span class="params">(<span class="type">void</span>)</span>; <span class="comment">// 仅本文件可见</span></span><br></pre></td></tr></table></figure>
+<h3 id="5-常用-C-语言问题"><a href="#5-常用-C-语言问题" class="headerlink" title="5. 常用 C 语言问题"></a>5. 常用 C 语言问题</h3><h4 id="5-1-static-关键字的作用"><a href="#5-1-static-关键字的作用" class="headerlink" title="5.1 static 关键字的作用"></a>5.1 static 关键字的作用</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 修饰局部变量：生命周期变为整个程序运行期，但作用域不变</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">count_calls</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    <span class="type">static</span> <span class="type">int</span> n = <span class="number">0</span>;  <span class="comment">// 只初始化一次，函数返回后值保留</span></span><br><span class="line">    n++;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"called %d times\n"</span>, n);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 修饰全局变量/函数：作用域限定在当前文件（其他文件 extern 不到）</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> internal_var;       <span class="comment">// 仅本文件可见</span></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">helper_func</span><span class="params">(<span class="type">void</span>)</span>; <span class="comment">// 仅本文件可见</span></span><br></pre></td></tr></table></figure>
 
 <h4 id="5-2-const-修饰指针"><a href="#5-2-const-修饰指针" class="headerlink" title="5.2 const 修饰指针"></a>5.2 const 修饰指针</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">int</span> *p;       <span class="comment">// 指向的内容只读：*p 不可改，p 可改（常量指针 → 常量的指针）</span></span><br><span class="line"><span class="type">int</span> *<span class="type">const</span> p;       <span class="comment">// 指针本身只读：p 不可改，*p 可改（指针常量 → 指针是常量）</span></span><br><span class="line"><span class="type">const</span> <span class="type">int</span> *<span class="type">const</span> p; <span class="comment">// 两者都只读：*p 和 p 都不可改</span></span><br></pre></td></tr></table></figure>
 
 <p>记忆口诀：<code>const</code> 在 <code>*</code> 左边 → 内容只读；<code>const</code> 在 <code>*</code> 右边 → 指针只读。</p>
-<h4 id="5-4-字节对齐"><a href="#5-4-字节对齐" class="headerlink" title="5.4 字节对齐"></a>5.4 字节对齐</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 结构体默认对齐：按最大成员对齐，可能有填充（padding）</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">foo</span> &#123;</span></span><br><span class="line">    <span class="type">char</span>  a;   <span class="comment">// 1 byte</span></span><br><span class="line">               <span class="comment">// 3 bytes padding</span></span><br><span class="line">    <span class="type">int</span>   b;   <span class="comment">// 4 bytes</span></span><br><span class="line">    <span class="type">short</span> c;   <span class="comment">// 2 bytes</span></span><br><span class="line">               <span class="comment">// 2 bytes padding → 共 12 bytes</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// packed：取消对齐，紧凑排列（节省空间，但访问效率降低，某些 CPU 可能异常）</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">foo_packed</span> &#123;</span></span><br><span class="line">    <span class="type">char</span>  a;</span><br><span class="line">    <span class="type">int</span>   b;</span><br><span class="line">    <span class="type">short</span> c;</span><br><span class="line">&#125; __attribute__((packed));  <span class="comment">// 共 7 bytes</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// aligned(x)：强制按 x 字节对齐</span></span><br><span class="line"><span class="type">char</span> buf[<span class="number">64</span>] __attribute__((aligned(<span class="number">16</span>)));  <span class="comment">// buf 地址 16 字节对齐</span></span><br></pre></td></tr></table></figure>
+<h4 id="5-4-字节对齐"><a href="#5-4-字节对齐" class="headerlink" title="5.4 字节对齐"></a>5.4 字节对齐</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 结构体默认对齐：按最大成员对齐，可能有填充（padding）</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">foo</span> {</span></span><br><span class="line">    <span class="type">char</span>  a;   <span class="comment">// 1 byte</span></span><br><span class="line">               <span class="comment">// 3 bytes padding</span></span><br><span class="line">    <span class="type">int</span>   b;   <span class="comment">// 4 bytes</span></span><br><span class="line">    <span class="type">short</span> c;   <span class="comment">// 2 bytes</span></span><br><span class="line">               <span class="comment">// 2 bytes padding → 共 12 bytes</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">// packed：取消对齐，紧凑排列（节省空间，但访问效率降低，某些 CPU 可能异常）</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">foo_packed</span> {</span></span><br><span class="line">    <span class="type">char</span>  a;</span><br><span class="line">    <span class="type">int</span>   b;</span><br><span class="line">    <span class="type">short</span> c;</span><br><span class="line">} __attribute__((packed));  <span class="comment">// 共 7 bytes</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// aligned(x)：强制按 x 字节对齐</span></span><br><span class="line"><span class="type">char</span> buf[<span class="number">64</span>] __attribute__((aligned(<span class="number">16</span>)));  <span class="comment">// buf 地址 16 字节对齐</span></span><br></pre></td></tr></table></figure>
 
 <p><strong>追问：</strong> 为什么需要对齐？未对齐访问在 ARM 上会怎样？</p>
 <p>为什么需要对齐：</p>
 <ol>
-<li><strong>CPU 硬件要求</strong>：许多 CPU 的 load&#x2F;store 指令要求地址对齐，否则直接抛硬件异常</li>
+<li><strong>CPU 硬件要求</strong>：许多 CPU 的 load/store 指令要求地址对齐，否则直接抛硬件异常</li>
 <li><strong>性能</strong>：即使 CPU 支持非对齐访问，也需要多次总线操作来拼接数据，比对齐访问慢 2~3 倍</li>
 <li><strong>原子性破坏</strong>：跨 cache line（如 4 字节变量横跨两个 64 字节 cache line）时，单次读写变成两次总线操作，无法保证原子性</li>
 </ol>
-<h4 id="5-5-大端小端"><a href="#5-5-大端小端" class="headerlink" title="5.5 大端小端"></a>5.5 大端小端</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 小端（Little Endian）：低字节在低地址（x86、ARM 默认小端）</span></span><br><span class="line"><span class="comment">// 大端（Big Endian）：    高字节在低地址（网络字节序、部分 DSP）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 判断方法</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">is_little_endian</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="type">int</span> x = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> *(<span class="type">char</span> *)&amp;x;  <span class="comment">// 小端返回 1，大端返回 0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="5-5-大端小端"><a href="#5-5-大端小端" class="headerlink" title="5.5 大端小端"></a>5.5 大端小端</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 小端（Little Endian）：低字节在低地址（x86、ARM 默认小端）</span></span><br><span class="line"><span class="comment">// 大端（Big Endian）：    高字节在低地址（网络字节序、部分 DSP）</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 判断方法</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">is_little_endian</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    <span class="type">int</span> x = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> *(<span class="type">char</span> *)&amp;x;  <span class="comment">// 小端返回 1，大端返回 0</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
-<p>内核中常用 <code>__cpu_to_le32()</code> &#x2F; <code>le32_to_cpu()</code> 系列宏做字节序转换。</p>
+<p>内核中常用 <code>__cpu_to_le32()</code> / <code>le32_to_cpu()</code> 系列宏做字节序转换。</p>
 <h3 id="6-并发与锁"><a href="#6-并发与锁" class="headerlink" title="6. 并发与锁"></a>6. 并发与锁</h3><h4 id="6-1-什么是死锁？如何避免？"><a href="#6-1-什么是死锁？如何避免？" class="headerlink" title="6.1 什么是死锁？如何避免？"></a>6.1 什么是死锁？如何避免？</h4><p><strong>答：</strong> 两个或多个线程互相等待对方持有的锁，导致全部阻塞。</p>
 <p>死锁四个必要条件（缺一不可）：</p>
 <ol>
@@ -257,7 +369,7 @@
 <li><strong>不可剥夺</strong>：已持有的锁不能被强制释放</li>
 <li><strong>循环等待</strong>：形成 A 等 B、B 等 C、C 等 A 的环路</li>
 </ol>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 死锁示例</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">thread_a</span><span class="params">(<span class="type">void</span>)</span> &#123;                <span class="type">void</span> <span class="title function_">thread_b</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    mutex_lock(&amp;lock1);                 mutex_lock(&amp;lock2);</span><br><span class="line">    mutex_lock(&amp;lock2);  <span class="comment">// 等 lock2    mutex_lock(&amp;lock1);  // 等 lock1</span></span><br><span class="line">    ...                                 ...</span><br><span class="line">    mutex_unlock(&amp;lock2);               mutex_unlock(&amp;lock1);</span><br><span class="line">    mutex_unlock(&amp;lock1);               mutex_unlock(&amp;lock2);</span><br><span class="line">&#125;                                    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 死锁示例</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">thread_a</span><span class="params">(<span class="type">void</span>)</span> {                <span class="type">void</span> <span class="title function_">thread_b</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    mutex_lock(&amp;lock1);                 mutex_lock(&amp;lock2);</span><br><span class="line">    mutex_lock(&amp;lock2);  <span class="comment">// 等 lock2    mutex_lock(&amp;lock1);  // 等 lock1</span></span><br><span class="line">    ...                                 ...</span><br><span class="line">    mutex_unlock(&amp;lock2);               mutex_unlock(&amp;lock1);</span><br><span class="line">    mutex_unlock(&amp;lock1);               mutex_unlock(&amp;lock2);</span><br><span class="line">}                                    }</span><br></pre></td></tr></table></figure>
 
 <p><strong>避免方法：</strong></p>
 <ul>
@@ -295,15 +407,15 @@
 <li>内核态：可以访问所有硬件资源，执行特权指令</li>
 <li>切换方式：系统调用（<code>open/read/ioctl</code>）、异常（缺页异常）、外设中断</li>
 </ul>
-<p><strong>追问：</strong> <code>copy_from_user</code> &#x2F; <code>copy_to_user</code> 的作用？为什么需要这两个函数？</p>
+<p><strong>追问：</strong> <code>copy_from_user</code> / <code>copy_to_user</code> 的作用？为什么需要这两个函数？</p>
 <h3 id="8-系统调用流程"><a href="#8-系统调用流程" class="headerlink" title="8. 系统调用流程"></a>8. 系统调用流程</h3><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">用户态应用程序</span><br><span class="line">    ↓ 调用 <span class="keyword">open</span>/<span class="keyword">read</span>/<span class="keyword">write</span>/<span class="keyword">ioctl</span> 等库函数</span><br><span class="line">    ↓ glibc 封装（如 <span class="keyword">syscall</span>() 或 svc <span class="comment">#0 指令）</span></span><br><span class="line">    ↓ CPU 触发异常/软中断，切换到内核态</span><br><span class="line">    ↓ 内核根据系统调用号（sys_call_table）查找对应处理函数</span><br><span class="line">    ↓ 执行内核函数（如 sys_open / vfs_open）</span><br><span class="line">    ↓ 返回结果，切换回用户态</span><br></pre></td></tr></table></figure>
 
 <p>以 ARM64 为例：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用户态调用 open()</span></span><br><span class="line">fd = open(<span class="string">&quot;/dev/video0&quot;</span>, O_RDWR);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 内核中：</span></span><br><span class="line"><span class="comment">// 1. SVC #0 触发异常，进入异常向量表 el0_sync</span></span><br><span class="line"><span class="comment">// 2. el0_svc -&gt; el0_svc_handler -&gt; invoke_syscall</span></span><br><span class="line"><span class="comment">// 3. sys_call_table[__NR_openat] 找到 sys_openat</span></span><br><span class="line"><span class="comment">// 4. sys_openat -&gt; do_sys_open -&gt; do_filp_open -&gt; path_openat</span></span><br><span class="line"><span class="comment">// 5. 最终调用文件系统/驱动层的 open 回调</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用户态调用 open()</span></span><br><span class="line">fd = open(<span class="string">"/dev/video0"</span>, O_RDWR);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 内核中：</span></span><br><span class="line"><span class="comment">// 1. SVC #0 触发异常，进入异常向量表 el0_sync</span></span><br><span class="line"><span class="comment">// 2. el0_svc -&gt; el0_svc_handler -&gt; invoke_syscall</span></span><br><span class="line"><span class="comment">// 3. sys_call_table[__NR_openat] 找到 sys_openat</span></span><br><span class="line"><span class="comment">// 4. sys_openat -&gt; do_sys_open -&gt; do_filp_open -&gt; path_openat</span></span><br><span class="line"><span class="comment">// 5. 最终调用文件系统/驱动层的 open 回调</span></span><br></pre></td></tr></table></figure>
 
 
 <h3 id="9-字符设备驱动框架"><a href="#9-字符设备驱动框架" class="headerlink" title="9. 字符设备驱动框架"></a>9. 字符设备驱动框架</h3><p><strong>答：</strong> 字符设备是 Linux 驱动中最基础的设备类型，核心四步：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 分配主次设备号</span></span><br><span class="line">alloc_chrdev_region(&amp;dev, <span class="number">0</span>, <span class="number">1</span>, <span class="string">&quot;mydev&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 初始化并注册字符设备</span></span><br><span class="line">cdev_init(&amp;my_cdev, &amp;fops);</span><br><span class="line">cdev_add(&amp;my_cdev, dev, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 创建设备节点（自动生成 /dev/xxx）</span></span><br><span class="line">class_create(THIS_MODULE, <span class="string">&quot;myclass&quot;</span>);</span><br><span class="line">device_create(cls, <span class="literal">NULL</span>, dev, <span class="literal">NULL</span>, <span class="string">&quot;mydev&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4. 实现 file_operations 结构体</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">fops</span> =</span> &#123;</span><br><span class="line">    .owner   = THIS_MODULE,  <span class="comment">// 防止模块卸载时 fops 仍在用</span></span><br><span class="line">    .open    = my_open,</span><br><span class="line">    .read    = my_read,</span><br><span class="line">    .write   = my_write,</span><br><span class="line">    .release = my_release,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 分配主次设备号</span></span><br><span class="line">alloc_chrdev_region(&amp;dev, <span class="number">0</span>, <span class="number">1</span>, <span class="string">"mydev"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 初始化并注册字符设备</span></span><br><span class="line">cdev_init(&amp;my_cdev, &amp;fops);</span><br><span class="line">cdev_add(&amp;my_cdev, dev, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 创建设备节点（自动生成 /dev/xxx）</span></span><br><span class="line">class_create(THIS_MODULE, <span class="string">"myclass"</span>);</span><br><span class="line">device_create(cls, <span class="literal">NULL</span>, dev, <span class="literal">NULL</span>, <span class="string">"mydev"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4. 实现 file_operations 结构体</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">fops</span> =</span> {</span><br><span class="line">    .owner   = THIS_MODULE,  <span class="comment">// 防止模块卸载时 fops 仍在用</span></span><br><span class="line">    .open    = my_open,</span><br><span class="line">    .read    = my_read,</span><br><span class="line">    .write   = my_write,</span><br><span class="line">    .release = my_release,</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <p><strong>追问：</strong> <code>.owner = THIS_MODULE</code> 的作用？（模块引用计数保护，防止在使用设备时模块被 <code>rmmod</code>）</p>
 <h3 id="11-内核同步机制"><a href="#11-内核同步机制" class="headerlink" title="11. 内核同步机制"></a>11. 内核同步机制</h3><table>
@@ -414,15 +526,15 @@
 <td>中断上下文</td>
 <td>❌ 不可睡眠</td>
 <td>同类型可在多核并行执行</td>
-<td>网络 RX&#x2F;TX、块设备层、高吞吐场景</td>
+<td>网络 RX/TX、块设备层、高吞吐场景</td>
 </tr>
 <tr>
 <td><strong>tasklet</strong></td>
-<td>基于 softirq（<code>TASKLET_SOFTIRQ</code> &#x2F; <code>HI_SOFTIRQ</code>）</td>
+<td>基于 softirq（<code>TASKLET_SOFTIRQ</code> / <code>HI_SOFTIRQ</code>）</td>
 <td>中断上下文</td>
 <td>❌ 不可睡眠</td>
 <td>同类型串行，不会并行</td>
-<td>小批量数据传递、GPIO 触发、简单 I2C&#x2F;SPI 操作</td>
+<td>小批量数据传递、GPIO 触发、简单 I2C/SPI 操作</td>
 </tr>
 <tr>
 <td><strong>工作队列 workqueue</strong></td>
@@ -485,7 +597,7 @@
 <td><code>GFP_KERNEL</code></td>
 <td>✅ 是</td>
 <td>进程上下文（系统调用、工作队列）</td>
-<td>可能睡眠等待内存回收，<strong>禁止</strong>在中断&#x2F;自旋锁内使用</td>
+<td>可能睡眠等待内存回收，<strong>禁止</strong>在中断/自旋锁内使用</td>
 </tr>
 <tr>
 <td><code>GFP_ATOMIC</code></td>
@@ -497,7 +609,7 @@
 <h2 id="四、面试准备建议"><a href="#四、面试准备建议" class="headerlink" title="四、面试准备建议"></a>四、面试准备建议</h2><h3 id="技术准备"><a href="#技术准备" class="headerlink" title="技术准备"></a>技术准备</h3><ol>
 <li><strong>深挖项目经验</strong>：选 2-3 个最有代表性的项目，把每个细节（为什么这么做、遇到了什么坑、怎么解决的）准备清楚</li>
 <li><strong>手写代码</strong>：能手写基本驱动框架（字符设备、I2C 驱动、设备树节点）</li>
-<li><strong>原理图阅读</strong>：能看懂基本原理图，指出 I2C&#x2F;GPIO&#x2F;MIPI 的连接关系</li>
+<li><strong>原理图阅读</strong>：能看懂基本原理图，指出 I2C/GPIO/MIPI 的连接关系</li>
 <li><strong>内核源码阅读</strong>：能说出你改过的某个内核函数的实现路径</li>
 </ol>
 <h3 id="针对目标公司"><a href="#针对目标公司" class="headerlink" title="针对目标公司"></a>针对目标公司</h3><table>
@@ -517,7 +629,7 @@
 </tr>
 <tr>
 <td><strong>高通</strong></td>
-<td>高通专属框架（QMI&#x2F;CAMSS&#x2F;RPM）、UEFI 启动、TrustZone、Debug 工具</td>
+<td>高通专属框架（QMI/CAMSS/RPM）、UEFI 启动、TrustZone、Debug 工具</td>
 </tr>
 </tbody></table>
 <h3 id="反问环节（加分项）"><a href="#反问环节（加分项）" class="headerlink" title="反问环节（加分项）"></a>反问环节（加分项）</h3><ul>

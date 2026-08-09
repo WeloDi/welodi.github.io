@@ -29,21 +29,21 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
 
-  /* Syntax highlighting colors — "warm ink on paper" */
-  --color-syntax-keyword: #A0522D;
-  --color-syntax-string: #4E7A3E;
-  --color-syntax-comment: #9B9490;
-  --color-syntax-number: #2E7D6F;
-  --color-syntax-function: #7B4B2A;
-  --color-syntax-type: #7F5061;
-  --color-syntax-operator: #6B6560;
-  --color-syntax-attribute: #B5651D;
-  --color-syntax-meta: #9C6B6B;
-  --color-syntax-regexp: #C06040;
-  --color-syntax-addition-text: #3C763D;
-  --color-syntax-addition-bg: #DFF0D8;
-  --color-syntax-deletion-text: #A94442;
-  --color-syntax-deletion-bg: #F2DEDE;
+  /* Syntax highlighting colors — GitHub-inspired light theme */
+  --color-syntax-keyword: #CF222E;
+  --color-syntax-string: #1A7F37;
+  --color-syntax-comment: #656D76;
+  --color-syntax-number: #0550AE;
+  --color-syntax-function: #8250DF;
+  --color-syntax-type: #BF4F06;
+  --color-syntax-operator: #24292F;
+  --color-syntax-attribute: #9A400D;
+  --color-syntax-meta: #8250DF;
+  --color-syntax-regexp: #CF222E;
+  --color-syntax-addition-text: #1A7F37;
+  --color-syntax-addition-bg: #DAFBE1;
+  --color-syntax-deletion-text: #CF222E;
+  --color-syntax-deletion-bg: #FFEBE9;
 
   --color-header-bg: rgba(250, 249, 247, 0.85);
 }
@@ -67,20 +67,20 @@
     --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
     --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.25);
 
-    --color-syntax-keyword: #D49060;
-    --color-syntax-string: #8FB87A;
-    --color-syntax-comment: #756E66;
-    --color-syntax-number: #6FB8A8;
-    --color-syntax-function: #C88860;
-    --color-syntax-type: #C99BAE;
-    --color-syntax-operator: #A8A099;
-    --color-syntax-attribute: #E2A062;
-    --color-syntax-meta: #C9999B;
-    --color-syntax-regexp: #E08060;
-    --color-syntax-addition-text: #8FCC85;
-    --color-syntax-addition-bg: rgba(95, 145, 70, 0.18);
-    --color-syntax-deletion-text: #E08585;
-    --color-syntax-deletion-bg: rgba(160, 65, 65, 0.18);
+    --color-syntax-keyword: #FF7B72;
+    --color-syntax-string: #7EE787;
+    --color-syntax-comment: #8B949E;
+    --color-syntax-number: #79C0FF;
+    --color-syntax-function: #D2A8FF;
+    --color-syntax-type: #FFA657;
+    --color-syntax-operator: #C9D1D9;
+    --color-syntax-attribute: #FFA657;
+    --color-syntax-meta: #D2A8FF;
+    --color-syntax-regexp: #FF7B72;
+    --color-syntax-addition-text: #7EE787;
+    --color-syntax-addition-bg: rgba(63, 185, 80, 0.18);
+    --color-syntax-deletion-text: #FF7B72;
+    --color-syntax-deletion-bg: rgba(248, 81, 73, 0.18);
 
     --color-header-bg: rgba(31, 27, 23, 0.85);
   }
@@ -104,20 +104,20 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.25);
 
-  --color-syntax-keyword: #D49060;
-  --color-syntax-string: #8FB87A;
-  --color-syntax-comment: #756E66;
-  --color-syntax-number: #6FB8A8;
-  --color-syntax-function: #C88860;
-  --color-syntax-type: #C99BAE;
-  --color-syntax-operator: #A8A099;
-  --color-syntax-attribute: #E2A062;
-  --color-syntax-meta: #C9999B;
-  --color-syntax-regexp: #E08060;
-  --color-syntax-addition-text: #8FCC85;
-  --color-syntax-addition-bg: rgba(95, 145, 70, 0.18);
-  --color-syntax-deletion-text: #E08585;
-  --color-syntax-deletion-bg: rgba(160, 65, 65, 0.18);
+  --color-syntax-keyword: #FF7B72;
+  --color-syntax-string: #7EE787;
+  --color-syntax-comment: #8B949E;
+  --color-syntax-number: #79C0FF;
+  --color-syntax-function: #D2A8FF;
+  --color-syntax-type: #FFA657;
+  --color-syntax-operator: #C9D1D9;
+  --color-syntax-attribute: #FFA657;
+  --color-syntax-meta: #D2A8FF;
+  --color-syntax-regexp: #FF7B72;
+  --color-syntax-addition-text: #7EE787;
+  --color-syntax-addition-bg: rgba(63, 185, 80, 0.18);
+  --color-syntax-deletion-text: #FF7B72;
+  --color-syntax-deletion-bg: rgba(248, 81, 73, 0.18);
 
   --color-header-bg: rgba(31, 27, 23, 0.85);
 }

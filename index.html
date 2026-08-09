@@ -27,7 +27,119 @@
       } catch (e) {}
     })();
   </script>
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body>
   <div class="site-wrapper">
@@ -125,7 +237,7 @@
   <div class="post-card-excerpt">
     
       
-      <p>一、设备树（Device Tree） 1. 设备树概述 设备树（Device Tree）是一种描述硬件拓扑的数据结构，将板级硬件信息从内核源码中分离。以 （源）→ （二进制）的形式，在启动时由 Bootloader 传给内核。 核心概念：. 为什么 ARM 需要设备树？ ARM 生态中硬件变化频繁（同一 SoC 不同板子外设不同），不像 x86 有 ACPI&#x2F;BIOS 统一枚举。...</p>
+      <p>一、设备树（Device Tree） 1. 设备树概述 设备树（Device Tree）是一种描述硬件拓扑的数据结构，将板级硬件信息从内核源码中分离。以 （源）→ （二进制）的形式，在启动时由 Bootloader 传给内核。 核心概念：. 为什么 ARM 需要设备树？ ARM 生态中硬件变化频繁（同一 SoC 不同板子外设不同），不像 x86 有 ACPI/BIOS 统一枚举。...</p>
     
   </div>
   <a class="read-more" href="/2026/08/06/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%BF%9B%E9%98%B6)/">Read More &rarr;</a>
@@ -158,7 +270,7 @@
   <div class="post-card-excerpt">
     
       
-      <p>一、C 语言基础 1. volatile 关键字详解 答：volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中. 典型反例（不加 volatile 的后果）：. 2. 内存分区 . 3. 进程与线程的核心区别与通信方式 进程间通信（IPC）方式：. 内核中的线程：. &#x2F; ：创建内核线程 ...</p>
+      <p>一、C 语言基础 1. volatile 关键字详解 答：volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中. 典型反例（不加 volatile 的后果）：. 2. 内存分区 . 3. 进程与线程的核心区别与通信方式 进程间通信（IPC）方式：. 内核中的线程：. / ：创建内核线程 内核线程没有独立的地址空间（mm = ...</p>
     
   </div>
   <a class="read-more" href="/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/">Read More &rarr;</a>
