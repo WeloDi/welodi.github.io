@@ -657,8 +657,8 @@ img {
 
 /* --- Hexo Highlight Code Blocks — Kimbie Dark --- */
 figure.highlight {
-  background: #221a0f;
-  border: 1px solid #3a2e20;
+  background: #2e2518;
+  border: 1px solid #4a3b2a;
   border-radius: var(--radius);
   margin: 1.5em 0;
   overflow: hidden;
@@ -689,14 +689,14 @@ figure.highlight .gutter {
   width: 2.5em;
   vertical-align: top;
   user-select: none;
-  background: #1c150c;
+  background: #262013;
 }
 
 figure.highlight .gutter pre {
   padding: 1em 0.75em;
   text-align: right;
-  color: #6e5b4d;
-  border-right: 1px solid #3a2e20;
+  color: #7d6a59;
+  border-right: 1px solid #4a3b2a;
 }
 
 figure.highlight .code pre {
