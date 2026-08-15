@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/08/08/imx219-driver/pll.png">
 <meta property="article:published_time" content="2026-08-08T12:32:18.000Z">
-<meta property="article:modified_time" content="2026-08-15T04:20:53.714Z">
+<meta property="article:modified_time" content="2026-08-15T13:33:40.156Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="camera">
 <meta name="twitter:card" content="summary">
@@ -348,19 +348,14 @@ mjx-container[display="true"] + br {
 </ul>
 <blockquote>
 <p><strong>核心公式</strong>：</p>
-<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">p<span class="attr">ixel_rate</span> <span class="operator">=</span> INCK <span class="symbol">/</span> PreDiv1 × VT_MPY <span class="symbol">/</span> VTPXCK_DIV  <span class="operator">=</span> <span class="number">182.4</span>MHz </span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="attr">link_freq</span>  <span class="operator">=</span> INCK <span class="symbol">/</span> PreDiv2 × OP_MPY <span class="symbol">/</span> OPPXCK_DIV</span><br><span class="line"><span class="number">456</span>M <span class="operator">=</span> <span class="number">24</span> <span class="symbol">/</span> <span class="number">3</span> <span class="operator">*</span> <span class="number">456</span> <span class="symbol">/</span> <span class="number">8</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pixel_rate = INCK / PreDiv1 × VT_MPY / VTPXCK_DIV  = <span class="number">182.4</span>MHz </span><br><span class="line"></span><br><span class="line">link_freq  = INCK / PreDiv2 × OP_MPY / OPPXCK_DIV</span><br><span class="line"><span class="number">456</span>M = <span class="number">24</span> / <span class="number">3</span> * <span class="number">456</span> / <span class="number">8</span></span><br></pre></td></tr></table></figure>
 </blockquote>
-<h3 id="3-4-常见误解"><a href="#3-4-常见误解" class="headerlink" title="3.4 常见误解"></a>3.4 常见误解</h3><blockquote>
-<p><strong>link_freq = pixel_rate × 2</strong></p>
-<p>只对了一半，还漏了 <code>bpp</code>。正确关系是<strong>带宽约束</strong>：<code>link_freq × 2 × lanes ≥ pixel_rate × bpp</code>，链路满载（取等号）时 <code>link_freq = pixel_rate × bpp / (2 × lanes)</code>。<br>IMX219 3280×2464 模式（2-lane raw10）恰好满载：<code>456 / 182.4 = 10/(2×2) = 2.5</code>，所以应是 <strong>×2.5</strong> 而非 ×2；换成 4-lane 或 raw8，比例随之改变。链路有余量时则为不等式（<code>≥</code>）。</p>
-</blockquote>
-<hr>
-<h2 id="四、DTS-Overlay-关键配置"><a href="#四、DTS-Overlay-关键配置" class="headerlink" title="四、DTS Overlay 关键配置"></a>四、DTS Overlay 关键配置</h2><h3 id="4-1-数据通路拓扑"><a href="#4-1-数据通路拓扑" class="headerlink" title="4.1 数据通路拓扑"></a>4.1 数据通路拓扑</h3><figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">IMX219</span> (<span class="type">I2C</span> addr <span class="number">0x10</span>, sony,imx219)</span><br><span class="line">  <span class="keyword">port</span> → data-lanes = &lt;1 2&gt;</span><br><span class="line">    ↓ endpoint: imx219_out0</span><br><span class="line">csi2_dphy0 (<span class="type">D</span>-<span class="type">PHY</span>)</span><br><span class="line">  <span class="keyword">port</span>@0 → mipidphy0_in_ucam1 (reg=2)</span><br><span class="line">  <span class="keyword">port</span>@1 → csidphy0_out</span><br><span class="line">    ↓</span><br><span class="line">mipi2_csi2 (<span class="type">CSI</span>-2 controller)</span><br><span class="line">  <span class="keyword">port</span>@0 → mipi2_csi2_input</span><br><span class="line">  <span class="keyword">port</span>@1 → mipi2_csi2_output</span><br><span class="line">    ↓</span><br><span class="line">rkcif_mipi_lvds2 (capture interface)</span><br><span class="line">  → cif_mipi2_in0</span><br><span class="line">    ↓</span><br><span class="line">rkcif_mipi_lvds2_sditf</span><br><span class="line">  → mipi_lvds2_sditf</span><br><span class="line">    ↓</span><br><span class="line">rkisp0_vir0 (<span class="type">ISP</span> virtual channel 0)</span><br><span class="line">  → isp0_vir0 (最终的 <span class="type">ISP</span> 处理节点)</span><br></pre></td></tr></table></figure>
+<h2 id="四、DTS-Overlay-关键配置"><a href="#四、DTS-Overlay-关键配置" class="headerlink" title="四、DTS Overlay 关键配置"></a>四、DTS Overlay 关键配置</h2><h3 id="4-1-数据通路拓扑"><a href="#4-1-数据通路拓扑" class="headerlink" title="4.1 数据通路拓扑"></a>4.1 数据通路拓扑</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">IMX219 (I2C addr <span class="number">0x10</span>, sony,imx219)</span><br><span class="line">  port → data-lanes = &lt;<span class="number">1</span> <span class="number">2</span>&gt;</span><br><span class="line">    ↓ endpoint: imx219_out0</span><br><span class="line">csi2_dphy0 (D-PHY)</span><br><span class="line">  port@<span class="number">0</span> → mipidphy0_in_ucam1 (reg=<span class="number">2</span>)</span><br><span class="line">  port@<span class="number">1</span> → csidphy0_out</span><br><span class="line">    ↓</span><br><span class="line">mipi2_csi2 (CSI<span class="number">-2</span> controller)</span><br><span class="line">  port@<span class="number">0</span> → mipi2_csi2_input</span><br><span class="line">  port@<span class="number">1</span> → mipi2_csi2_output</span><br><span class="line">    ↓</span><br><span class="line">rkcif_mipi_lvds2 (capture interface)</span><br><span class="line">  → cif_mipi2_in0</span><br><span class="line">    ↓</span><br><span class="line">rkcif_mipi_lvds2_sditf</span><br><span class="line">  → mipi_lvds2_sditf</span><br><span class="line">    ↓</span><br><span class="line">rkisp0_vir0 (ISP virtual channel <span class="number">0</span>)</span><br><span class="line">  → isp0_vir0 (最终的 ISP 处理节点)</span><br></pre></td></tr></table></figure>
 
 <h3 id="4-2-关键属性"><a href="#4-2-关键属性" class="headerlink" title="4.2 关键属性"></a>4.2 关键属性</h3><figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">compatible</span> <span class="operator">=</span> <span class="string">"sony,imx219"</span><span class="punctuation">;</span>               <span class="comment">// 与 imx219-dt.c 的 of_match_table 匹配</span></span><br><span class="line"><span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">0x10</span>&gt;</span><span class="punctuation">;</span>                             <span class="comment">// I2C 从设备地址</span></span><br><span class="line"><span class="attr">clocks</span> <span class="operator">=</span> <span class="params">&lt;<span class="variable">&amp;clk_cam_24m</span>&gt;</span><span class="punctuation">;</span>                  <span class="comment">// 外部 24MHz 固定时钟</span></span><br><span class="line"><span class="attr">rockchip,camera-module-name</span> <span class="operator">=</span> <span class="string">"RADXA-CAMERA-8M"</span><span class="punctuation">;</span>  <span class="comment">// ISP 用此名称加载 iqfile</span></span><br><span class="line"><span class="attr">data-lanes</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">1</span> <span class="number">2</span>&gt;</span><span class="punctuation">;</span>                       <span class="comment">// IMX219 仅支持 2-lane MIPI</span></span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="五、Camera-传感器驱动调试常见问题"><a href="#五、Camera-传感器驱动调试常见问题" class="headerlink" title="五、Camera 传感器驱动调试常见问题"></a>五、Camera 传感器驱动调试常见问题</h2><h3 id="5-1-probe-失败"><a href="#5-1-probe-失败" class="headerlink" title="5.1 probe 失败"></a>5.1 probe 失败</h3><p><strong>现象：</strong> <code>dmesg</code> 中看到 <code>chip id mismatch</code> 或 i2c 通信错误。</p>
+<h2 id="五、驱动调试常见问题"><a href="#五、驱动调试常见问题" class="headerlink" title="五、驱动调试常见问题"></a>五、驱动调试常见问题</h2><h3 id="5-1-probe-失败"><a href="#5-1-probe-失败" class="headerlink" title="5.1 probe 失败"></a>5.1 probe 失败</h3><p><strong>现象：</strong> <code>dmesg</code> 中看到 <code>chip id mismatch</code> 或 i2c 通信错误。</p>
 <p><strong>排查步骤：</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">1. i2c detect 确认设备存在:</span><br><span class="line">   i2cdetect -y &lt;bus_num&gt;</span><br><span class="line">   应看到 0x10 处有设备 (UU 表示被驱动占用)</span><br><span class="line"></span><br><span class="line">2. 检查供电:</span><br><span class="line">   <span class="built_in">cat</span> /sys/kernel/debug/regulator/regulator_summary | grep -i cam</span><br><span class="line"></span><br><span class="line">3. 检查 XVCLK:</span><br><span class="line">   <span class="built_in">cat</span> /sys/kernel/debug/clk/clk_summary | grep cam</span><br><span class="line"></span><br><span class="line">4. 最简测试 - 直接读 CHIP_ID:</span><br><span class="line">   i2ctransfer -y &lt;bus&gt; w2@0x10 0x00 0x00 r1</span><br><span class="line">   i2ctransfer -y &lt;bus&gt; w2@0x10 0x00 0x01 r1</span><br><span class="line">   应该返回 0x02 0x19</span><br></pre></td></tr></table></figure>
 
@@ -384,21 +379,7 @@ mjx-container[display="true"] + br {
 <li>寄存器表缺少画质相关配置（Sony 未公开寄存器没写）</li>
 <li>D-PHY 没有正确初始化 LP-11</li>
 </ul>
-<h3 id="5-3-画面颜色异常"><a href="#5-3-画面颜色异常" class="headerlink" title="5.3 画面颜色异常"></a>5.3 画面颜色异常</h3><p><strong>现象：</strong> 有图像但颜色明显不对，例如画面中心偏绿、四周偏红。</p>
-<p><strong>根因分析：</strong></p>
-<p>这是 <strong>ISP tuning 问题，不是 BSP 驱动问题</strong>。BSP 驱动只需保证 raw Bayer 数据输出正确即可。</p>
-<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">检查是否为驱动问题的方法:</span><br><span class="line">v4l2-ctl -d /dev/v4l-subdevX -c <span class="attribute">test_pattern</span>=2</span><br><span class="line">↓</span><br><span class="line">如果彩条颜色正确 → 驱动没问题，是 ISP 端</span><br><span class="line">如果彩条颜色也错 → 驱动的 Bayer 格式码或翻转映射有问题</span><br></pre></td></tr></table></figure>
-
-<p><strong>ISP 端排查：</strong></p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">1. 确认驱动是否正确注册了 media bus code:</span><br><span class="line">   grep <span class="string">"fmt"</span> /sys/class/video4linux/v4l-subdev*/format</span><br><span class="line"></span><br><span class="line">2. 确认 iqfile 是否存在且匹配:</span><br><span class="line">   <span class="built_in">ls</span> /etc/iqfiles/</span><br><span class="line">   <span class="built_in">cat</span> /etc/iqfiles/*.json | grep module|grep 8M  <span class="comment"># 找匹配的 module name</span></span><br><span class="line"></span><br><span class="line">3. 确认 DTS 中 rockchip,camera-module-name 与 iqfiles 中的名一致</span><br><span class="line"></span><br><span class="line">4. 如果驱动缺少 RKMODULE_GET_MODULE_INFO ioctl:</span><br><span class="line">   → ISP 库无法自动加载 iqfile → 使用默认 tuning → 颜色异常</span><br><span class="line">   → 需要在驱动中补上 Rockchip 私有 ioctl</span><br></pre></td></tr></table></figure>
-
-<p><strong>BSP 驱动端保证：</strong></p>
-<ul>
-<li>Bayer 排列码（<code>MEDIA_BUS_FMT_SRGGB10_1X10</code> 等）与传感器物理排列一致</li>
-<li>hflip/vflip 联动 Bayer 顺序修正正确</li>
-<li>像素深度（10bit）与输出格式一致</li>
-</ul>
-<h3 id="5-4-帧丢失-DMA-overflow"><a href="#5-4-帧丢失-DMA-overflow" class="headerlink" title="5.4 帧丢失 / DMA overflow"></a>5.4 帧丢失 / DMA overflow</h3><p><strong>现象：</strong> <code>dmesg</code> 中看到 <code>rdk_dma</code> 或 <code>rkcif</code> overflow 错误。</p>
+<h3 id="5-3-帧丢失-DMA-overflow"><a href="#5-3-帧丢失-DMA-overflow" class="headerlink" title="5.3 帧丢失 / DMA overflow"></a>5.3 帧丢失 / DMA overflow</h3><p><strong>现象：</strong> <code>dmesg</code> 中看到 <code>rdk_dma</code> 或 <code>rkcif</code> overflow 错误。</p>
 <p><strong>排查步骤：</strong></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1. 检查 MIPI 频率:</span><br><span class="line">   <span class="built_in">cat</span> /sys/class/video4linux/v4l-subdev*/ctrls | grep link_freq</span><br><span class="line"></span><br><span class="line">2. 确认 D-PHY 分频:</span><br><span class="line">   media-ctl 查看 link_freq 是否正确传给 D-PHY driver</span><br><span class="line"></span><br><span class="line">3. 检查 system memory bandwidth:</span><br><span class="line">   <span class="built_in">cat</span> /sys/kernel/debug/clk/clk_summary | grep -E <span class="string">"ddr|npu|isp"</span></span><br></pre></td></tr></table></figure>
 
@@ -409,108 +390,203 @@ mjx-container[display="true"] + br {
 <li>CSI-2 virtual channel ID 冲突</li>
 <li>RK3588 需要关注：rkcif 的 MMU 未启用 (<code>&amp;rkcif_mmu { status = "okay"; }</code>)</li>
 </ul>
-<h3 id="5-5-帧率不对"><a href="#5-5-帧率不对" class="headerlink" title="5.5 帧率不对"></a>5.5 帧率不对</h3><p><strong>现象：</strong> 拉流帧率只有标称的 1/2 或更低。</p>
-<p><strong>排查：</strong></p>
-<figure class="highlight nestedtext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">实际帧率 = pixel_clk / (HTS × VTS)</span></span><br><span class="line"><span class="attribute"></span></span><br><span class="line"><span class="attribute">其中</span><span class="punctuation">:</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">HTS (水平总像素) = LINE_LENGTH registers (0x0162/0x0163)</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">VTS (垂直总行数) = FRM_LENGTH registers (0x0160/0x0161)</span></span><br><span class="line"></span><br><span class="line"><span class="attribute">查寄存器</span><span class="punctuation">:</span></span><br><span class="line"><span class="attribute">echo "reg 0x0160 0x0161 0x0162 0x0163" → 手动计算</span></span><br><span class="line"><span class="attribute"></span></span><br><span class="line"><span class="attribute">常见原因</span><span class="punctuation">:</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">VTS 设置过大（PLL 配置没放大到目标频率）</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">2-lane 模式下 bandwidth 不够 → 降低帧率</span></span><br><span class="line">  MIPI bandwidth = link_freq × 2 × lanes</span><br><span class="line">  456MHz × 2 × 2 = 1824 Mbps ≈ 228 MB/s</span><br><span class="line">  3280×2464×10bit×21fps ≈ 212 MB/s → OK</span><br><span class="line">  如果需要 30fps → 3280×2464×10×30 ≈ 303 MB/s → 2-lane 不够</span><br></pre></td></tr></table></figure>
-
-<h3 id="5-6-I2C-通信不稳定-偶发性失败"><a href="#5-6-I2C-通信不稳定-偶发性失败" class="headerlink" title="5.6 I2C 通信不稳定 / 偶发性失败"></a>5.6 I2C 通信不稳定 / 偶发性失败</h3><p><strong>现象：</strong> streaming 过程中偶尔 I2C 错误。</p>
-<p><strong>排查：</strong></p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> 检查 I2C 总线速率:</span><br><span class="line">   通常 100kHz 或 400kHz，不要超 datasheet 限制</span><br><span class="line"></span><br><span class="line"><span class="bullet">2.</span> 用示波器检查波形质量:</span><br><span class="line"><span class="bullet">   -</span> 上升/下降沿是否干净</span><br><span class="line"><span class="bullet">   -</span> ACK 是否正常</span><br><span class="line"></span><br><span class="line"><span class="bullet">3.</span> 检查是否与其他 I2C 设备共总线:</span><br><span class="line">   imx219 通常在 i2c3，检查 DTS 是否有其他设备在同一个 bus</span><br><span class="line"></span><br><span class="line"><span class="bullet">4.</span> 寄存器写入方式:</span><br><span class="line">   IMX219 使用 16bit 寄存器地址，不能直接用 smbus API</span><br><span class="line">   必须用 i2c<span class="emphasis">_transfer 拆成 2+1 字节消息</span></span><br></pre></td></tr></table></figure>
-
-<h3 id="5-7-系统唤醒后-sensor-不工作"><a href="#5-7-系统唤醒后-sensor-不工作" class="headerlink" title="5.7 系统唤醒后 sensor 不工作"></a>5.7 系统唤醒后 sensor 不工作</h3><p><strong>现象：</strong> suspend/resume 后 sensor 无法恢复 streaming。</p>
+<h3 id="5-4-系统唤醒后-sensor-不工作"><a href="#5-4-系统唤醒后-sensor-不工作" class="headerlink" title="5.4 系统唤醒后 sensor 不工作"></a>5.4 系统唤醒后 sensor 不工作</h3><p><strong>现象：</strong> suspend/resume 后 sensor 无法恢复 streaming。</p>
 <p><strong>排查：</strong></p>
 <figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> 确认驱动正确实现了 suspend/resume:</span><br><span class="line">   → imx219-dt.c 实现了 SET<span class="emphasis">_SYSTEM_</span>SLEEP<span class="emphasis">_PM_</span>OPS</span><br><span class="line">   → suspend 时停止 streaming、resume 时恢复</span><br><span class="line"></span><br><span class="line"><span class="bullet">2.</span> 恢复失败的可能原因:</span><br><span class="line"><span class="bullet">   -</span> 硬件复位 XCLR 在唤醒后被拉低 → 需要 regulator-fixed 配置 always-on</span><br><span class="line"><span class="bullet">   -</span> XVCLK 在唤醒后没有自动恢复 → 检查 clock driver</span><br><span class="line"><span class="bullet">   -</span> 传感器寄存器在掉电后丢失 → 需要重新写整张寄存器表</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="六、调试工具速查"><a href="#六、调试工具速查" class="headerlink" title="六、调试工具速查"></a>六、调试工具速查</h2><table>
-<thead>
-<tr>
-<th>工具</th>
-<th>用途</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>media-ctl -p</code></td>
-<td>打印 media pipeline 拓扑</td>
-<td>确认所有 entity 和 link 状态</td>
-</tr>
-<tr>
-<td><code>v4l2-ctl -d /dev/v4l-subdevX --all</code></td>
-<td>查看 subdev 所有 controls 和 format</td>
-<td>验证 sensor 配置</td>
-</tr>
-<tr>
-<td><code>v4l2-ctl --list-formats-out</code></td>
-<td>查看 ISP 输出支持的格式</td>
-<td>确认 debayer 后格式</td>
-</tr>
-<tr>
-<td><code>i2cdetect -y &lt;bus&gt;</code></td>
-<td>I2C 总线扫描</td>
-<td>验证 sensor 是否在线</td>
-</tr>
-<tr>
-<td><code>i2ctransfer</code></td>
-<td>原始 I2C 读写</td>
-<td>调试寄存器级问题</td>
-</tr>
-<tr>
-<td><code>v4l2-compliance</code></td>
-<td>V4L2 兼容性测试</td>
-<td>检查驱动是否符合 V4L2 规范</td>
-</tr>
-<tr>
-<td><code>dmesg | grep -iE "imx219|rkisp|rkcif|mipi"</code></td>
-<td>内核日志过滤</td>
-<td>快速定位问题模块</td>
-</tr>
-<tr>
-<td><code>cat /sys/kernel/debug/gpio</code></td>
-<td>查看 GPIO 状态</td>
-<td>确认 XCLR / PWDN pin 电平</td>
-</tr>
-</tbody></table>
+<h2 id="六、面试问题"><a href="#六、面试问题" class="headerlink" title="六、面试问题"></a>六、面试问题</h2><h3 id="6-1-v4l2核心对象"><a href="#6-1-v4l2核心对象" class="headerlink" title="6.1 v4l2核心对象"></a>6.1 v4l2核心对象</h3><blockquote>
+<p><strong>问</strong>：<code>v4l2_subdev</code>、<code>media_pad</code>、<code>v4l2_ctrl_handler</code> 各承担什么职责？</p>
+</blockquote>
+<ul>
+<li><code>v4l2_subdev</code>：传感器在 V4L2/Media 框架中的节点，挂三组 ops——core（事件订阅）、video（streaming 启停/帧间隔）、pad（格式/尺寸协商），见 1392-1405 行注释。</li>
+<li><code>media_pad</code>：entity 上的对外接口点（本驱动 1 个 source pad），媒体图通过它连到 CSI host。</li>
+<li><code>v4l2_ctrl_handler</code>：管理曝光/增益/flip 等 control；<strong>其 lock 与驱动业务锁共用同一把</strong>（<code>ctrl_hdlr-&gt;lock = &amp;imx219-&gt;lock</code>，1095 行），这是控件回调与 pad 回调互斥的根基。</li>
+</ul>
+<blockquote>
+<p><strong>问</strong>：<code>v4l2_async_register_subdev_sensor()</code> 与 <code>v4l2_async_register_subdev()</code> 有什么区别？</p>
+</blockquote>
+<p>前者 = 后者 + sensor 专属增强：自动创建 async notifier 并解析 fwnode 上的 flash/lens 依赖，再注册 subdev；后者只注册 subdev 本身，不处理 flash/lens 依赖。sensor 驱动用前者是惯例。</p>
+<blockquote>
+<p><strong>问</strong>：CSI 接收端（host）比 sensor 先 probe 会发生什么？</p>
+</blockquote>
+<p>不会报错——异步注册按 <strong>fwnode 匹配</strong>，probe 顺序无关：host notifier 先注册时，已注册的 subdev 会被它匹配绑定；sensor 先注册则挂起等 host notifier。顺序无关正是 async framework 的设计目的。</p>
+<h3 id="6-2-I2C-读写"><a href="#6-2-I2C-读写" class="headerlink" title="6.2 I2C 读写"></a>6.2 I2C 读写</h3><blockquote>
+<p><strong>问</strong>：IMX219 寄存器格式是什么？</p>
+</blockquote>
+<p>16-bit 地址 + 8-bit 数据</p>
+<blockquote>
+<p><strong>问</strong>：为什么不能用 <code>i2c_smbus_write_byte_data</code>？</p>
+</blockquote>
+<p>i2c_smbus_write_byte_data只支持 <strong>8-bit 寄存器地址</strong>（SMBus 的 command byte 只有 1 字节），16-bit 地址装不下。这就是 imx219_write() 注释里专门提醒的原因。</p>
+<h3 id="6-3-时钟与帧率"><a href="#6-3-时钟与帧率" class="headerlink" title="6.3 时钟与帧率"></a>6.3 时钟与帧率</h3><blockquote>
+<p><strong>问</strong>：帧率与 HTS、VTS 的关系？</p>
+</blockquote>
+<p>fps = pixel_rate / (HTS × VTS)</p>
+<p>HTS = 行像素总数，VTS = 帧行数总数，两者乘积即一帧总像素，帧率 = 每秒像素 ÷ 每帧像素。</p>
+<blockquote>
+<p><strong>问</strong>：pixel_rate 与 3280×2464@21fps 的对应关系？</p>
+</blockquote>
+<p><code>182.4M / (3448 × 2500) ≈ 21.2 fps</code>，与 <code>max_fps={10000,212000}</code> 吻合。</p>
+<blockquote>
+<p><strong>问</strong>：2-lane 带宽够不够？</p>
+</blockquote>
+<p>2-lane 总带宽 = 456MHz × 2(DDR) × 2 = 1824 Mbps。Raw10 打包（4 字节装 3 像素，效率 30/32）后每像素占 10.67 bit，实际承载约 <strong>171 Mpix/s</strong>。全分辨率 21fps 有效像素率 3280×2464×21 ≈ 170 Mpix/s 已接近上限——全分辨率上不了更高帧率，带宽是物理瓶颈。</p>
 <hr>
-<h2 id="七、驱动修改记录"><a href="#七、驱动修改记录" class="headerlink" title="七、驱动修改记录"></a>七、驱动修改记录</h2><table>
+<h3 id="6-4-TRY-与-ACTIVE"><a href="#6-4-TRY-与-ACTIVE" class="headerlink" title="6.4 TRY 与 ACTIVE"></a>6.4 TRY 与 ACTIVE</h3><blockquote>
+<p><strong>问</strong>：<code>V4L2_SUBDEV_FORMAT_TRY</code> 和 <code>ACTIVE</code> 的本质区别？</p>
+</blockquote>
+<p>TRY 是<strong>协商草稿</strong>（只写 per-fh 的 <code>sd_state</code>，不动硬件）；ACTIVE 是<strong>生效配置</strong>（更新 <code>imx219-&gt;fmt</code> / <code>imx219-&gt;mode</code>，直接影响后续 streaming）。</p>
+<blockquote>
+<p><strong>问</strong>：<code>set_pad_format</code> 里两个分支分别做了什么？</p>
+</blockquote>
+<ul>
+<li>TRY：<code>v4l2_subdev_get_try_format</code> 写入草稿后返回；</li>
+<li>ACTIVE：写 <code>fmt</code> + <code>mode</code>，然后 <code>__v4l2_ctrl_modify_range</code> 联动 vblank、exposure、hblank。</li>
+</ul>
+<blockquote>
+<p><strong>问</strong>：为什么 ACTIVE 要联动修改 VBLANK/EXPOSURE/HBLANK 的 range？</p>
+</blockquote>
+<p>每个模式的 HTS/VTS 不同 → 帧率、曝光上限、消隐范围都变。若 range 不跟着模式走：曝光可能超出新 VTS（物理非法），vblank 上限超出 <code>0xffff - height</code>。</p>
+<h3 id="6-5-曝光"><a href="#6-5-曝光" class="headerlink" title="6.5 曝光"></a>6.5 曝光</h3><blockquote>
+<p><strong>问</strong>：曝光上限为什么是 <code>height + vblank - 4</code>？</p>
+</blockquote>
+<p><code>height + vblank = VTS</code>，所以上限即 <code>VTS - 4</code>。</p>
+<p>Sony 规定曝光结束行必须落在帧内安全区，留 4 行 margin 防止曝光窗口跨帧（sensor 内部像素读出/复位时序与曝光重叠出错，表现为亮度不均、黑线）</p>
+<blockquote>
+<p><strong>问</strong>：曝光大于 VTS 会怎样？</p>
+</blockquote>
+<p>曝光窗口跨到下一帧，sensor 行为未定义/输出异常帧，必须由驱动用 range 从源头禁止（框架会 clamp，不会真写进去）。</p>
+<blockquote>
+<p><strong>问</strong>：<code>set_pad_format</code> 里 <code>exposure_max = vts_def - 4</code> 与 <code>set_ctrl</code> 里 <code>height + vblank - 4</code> 何时结果不一致？</p>
+</blockquote>
+<p>两者<strong>只在 <code>vblank == vts_def - height</code>（默认 vblank）时相等</strong>。用户把 vblank 调大后，<code>set_ctrl</code> 的 VBLANK 分支用当前值重算才是对的：vblank 变化后 VTS 变了，曝光上限必须跟着变。</p>
+<blockquote>
+<p><strong>问</strong>：vblank 被调大后 exposure 当前值超新上限会出问题吗？</p>
+</blockquote>
+<p>不会出问题——<code>__v4l2_ctrl_modify_range</code> 内部会重新 <code>set_ctrl</code> 应用 exposure 并 <strong>clamp 到新上限</strong>；vblank 被调小时 exposure 会被自动压到 <code>VTS-4</code> 以内。安全由框架的 clamp 保证</p>
+<hr>
+<h3 id="6-6-Bayer-排列推导"><a href="#6-6-Bayer-排列推导" class="headerlink" title="6.6 Bayer 排列推导"></a>6.6 Bayer 排列推导</h3><blockquote>
+<p><strong>问</strong>：streaming 中途切 flip 不锁会怎样？</p>
+</blockquote>
+<ol>
+<li>flip 改变 sensor 实际读出顺序 → 实际输出 Bayer 排列立刻变，而 ISP 按协商好的 code 处理，最终导致 <strong>花屏/颜色错乱</strong>；</li>
+<li>flip 生效在帧边界，正在传的帧可能半帧错乱。因此 streaming 期间禁止改 flip，停流后才能改。</li>
+</ol>
+<h3 id="6-7-suspend-resume-与-runtime-PM-层次"><a href="#6-7-suspend-resume-与-runtime-PM-层次" class="headerlink" title="6.7 suspend/resume 与 runtime PM 层次"></a>6.7 suspend/resume 与 runtime PM 层次</h3><blockquote>
+<p><strong>问</strong>：suspend→resume 的完整时序是什么？何时关时钟、何时重写寄存器表？</p>
+</blockquote>
+<figure class="highlight nix"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="params">suspend:</span> stop_streaming</span><br><span class="line">           <span class="attr">MODE_SELECT</span><span class="operator">=</span><span class="number">0</span> (standby)        ← 先停流，时钟还在</span><br><span class="line">           解锁 flip</span><br><span class="line">           pm_runtime_put → 引用归零</span><br><span class="line">             → <span class="params">power_off:</span> clk_disable_unprepare   ← 最后关时钟</span><br><span class="line"></span><br><span class="line"><span class="params">resume:</span>  start_streaming</span><br><span class="line">           pm_runtime_resume_and_get → 引用 <span class="number">0</span>→<span class="number">1</span></span><br><span class="line">             → <span class="params">power_on:</span> clk_prepare_enable       ← 先开时钟</span><br><span class="line">           写整张模式寄存器表</span><br><span class="line">           __v4l2_ctrl_handler_setup 重放 control</span><br><span class="line">           <span class="attr">MODE_SELECT</span><span class="operator">=</span><span class="number">1</span> 出图</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>问</strong>：为什么 resume 后必须重写整张寄存器表？</p>
+</blockquote>
+<p>关时钟 = sensor 掉电，内部寄存器<strong>全部丢失/复位为默认</strong>。不重写整表，时序参数（PLL/HTS/VTS/crop）全是默认值 → 输出分辨率、帧率、MIPI 配置全错，甚至不出图。所以 resume 必须”先开电、再整表重写、最后出流”。</p>
+<h3 id="6-8-协商语义（枚举随-flip-漂移）"><a href="#6-8-协商语义（枚举随-flip-漂移）" class="headerlink" title="6.8 协商语义（枚举随 flip 漂移）"></a>6.8 协商语义（枚举随 flip 漂移）</h3><blockquote>
+<p><strong>问</strong>：hflip=1 时拿 SRGGB10 去枚举 frame size 会怎样？</p>
+</blockquote>
+<p><code>get_format_code(SRGGB)</code> = GRBG（bit0 置位）≠ 请求的 SRGGB → **<code>-EINVAL</code>**。因为 <code>enum_mbus_code</code> 只返回一个 code 且随 flip 状态变化，<code>enum_frame_size</code> 对 code 不匹配直接报错。</p>
+<blockquote>
+<p><strong>问</strong>：用户空间正确流程是什么？</p>
+</blockquote>
+<p>先 <code>ENUM_MBUS_CODE</code> 拿到<strong>当前 flip 状态对应</strong>的 code（如 GRBG），再用这个 code 去 <code>ENUM_FRAME_SIZE</code> 枚举 4 种分辨率；改 flip 后需重新枚举（<code>media-ctl</code> 默认枚举顺序即先 code 后 size，天然满足）。</p>
+<hr>
+<h3 id="6-9-V4L2-控件嵌套调用是否死锁？"><a href="#6-9-V4L2-控件嵌套调用是否死锁？" class="headerlink" title="6.9 V4L2 控件嵌套调用是否死锁？"></a>6.9 V4L2 控件嵌套调用是否死锁？</h3><blockquote>
+<p><strong>问</strong>：<code>set_pad_format</code> 持锁调 <code>__v4l2_ctrl_s_ctrl(vblank)</code>，VBLANK 的 s_ctrl 里又调 <code>__v4l2_ctrl_modify_range(exposure)</code>。这条嵌套链会不会死锁？</p>
+</blockquote>
+<p><strong>不会死锁</strong>。先看锁链：</p>
+<figure class="highlight scss"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">set_pad_format</span><br><span class="line">  <span class="built_in">mutex_lock</span>(&amp;imx219-&gt;lock)                        <span class="comment">// 唯一一次拿锁</span></span><br><span class="line">    <span class="built_in">__v4l2_ctrl_s_ctrl</span>(vblank, ...)</span><br><span class="line">      → VBLANK 分支 s_ctrl 执行</span><br><span class="line">        <span class="built_in">__v4l2_ctrl_modify_range</span>(exposure, ...)</span><br><span class="line">          → 内部 set_ctrl → EXPOSURE 分支 s_ctrl 再次执行</span><br></pre></td></tr></table></figure>
+
+<p>原因：</p>
+<ol>
+<li><strong><code>__</code> 前缀版本 = “调用者已持锁”变体</strong>：内部不再 <code>mutex_lock</code>，只做 <code>lockdep_assert_held</code> 断言。整条链锁只 acquire 一次，后面全是持锁重入。</li>
+<li>**为什么必须 <code>__</code>**：普通 mutex 不可重入。误用非 <code>__</code> 的 <code>v4l2_ctrl_s_ctrl()</code> 会再 <code>v4l2_ctrl_lock</code> 二次加锁 → <strong>自死锁</strong>，lockdep 必报。</li>
+<li><strong>为什么是同一把锁</strong>：<code>ctrl_hdlr-&gt;lock = &amp;imx219-&gt;lock</code>，用户态 S_CTRL 与 <code>set_pad_format</code> 拿的是同一把。</li>
+<li><strong>加分细节</strong>：<code>__v4l2_ctrl_modify_range</code> 内部会重放 <code>set_ctrl</code> 应用 exposure（含超限 clamp），EXPOSURE 的 s_ctrl 会在 VBLANK 的 s_ctrl 里被再进一次——刻意的重入，安全前提是全程不二次拿锁。</li>
+</ol>
+<h3 id="6-10-MIPI-链路带宽计算"><a href="#6-10-MIPI-链路带宽计算" class="headerlink" title="6.10 MIPI 链路带宽计算"></a>6.10 MIPI 链路带宽计算</h3><blockquote>
+<p><strong>问</strong>：2-lane / link_freq 456MHz（DDR）/ Raw10 输出，名义像素率和真实承载能力各是多少？</p>
+</blockquote>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">每 lane:  <span class="number"> 456 </span>MHz × 2(DDR) =<span class="number"> 912 </span>Mbps</span><br><span class="line">2 lane 总带宽:           <span class="number"> 912 </span>×<span class="number"> 2 </span>=<span class="number"> 1824 </span>Mbps</span><br><span class="line">名义像素率(10bpp 裸传):  <span class="number"> 1824 </span>/<span class="number"> 10 </span>= 182.4 Mpix/s   ← 驱动上报的 pixel_rate</span><br><span class="line">打包后每像素线上占位:     32/3 ≈ 10.67 bit</span><br><span class="line">链路真实承载:            <span class="number"> 1824 </span>/ 10.67 ≈<span class="number"> 171 </span>Mpix/s  (= 182.4 × 30/32)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Raw10 打包是 <strong>4 字节装 3 像素（32 bit 装 30 bit）</strong>，效率 30/32=0.9375，每像素平均 10.67 bit。</li>
+<li><strong>pixel_rate=182.4M 是名义值</strong>，比打包后真实能力虚高 6.25%，带宽校验必须用打包后算。</li>
+</ul>
+<blockquote>
+<p><strong>问</strong>：全分辨率 3280×2464@21fps 是否带宽受限？</p>
+</blockquote>
+<p>全分辨率 21fps 有效像素率 3280×2464×21 ≈ 170 Mpix/s，已逼近 171M 的真实上限——<strong>2-lane 已把链路用满</strong>，这是上不去更高帧率的物理原因。</p>
+<h3 id="6-11-添加一个新模式需要修改哪些地方？"><a href="#6-11-添加一个新模式需要修改哪些地方？" class="headerlink" title="6.11 添加一个新模式需要修改哪些地方？"></a>6.11 添加一个新模式需要修改哪些地方？</h3><blockquote>
+<p><strong>问</strong>：新增一个分辨率和link_freq，需要改哪些代码？</p>
+</blockquote>
+<ol>
+<li><strong>PLL 寄存器表</strong>：VT/OP 分频（0x0301/0303-0307/0309/030B/030D）+ HTS(0x0162/63) + VTS(0x0160/61) + crop 窗口(0x0164-016B) + 输出尺寸(0x016C-016F) + 测试图案 crop，算出的 pixel_rate/link_freq 必须与上报值自洽。</li>
+<li><strong><code>supported_modes</code> 加一项</strong>：<code>{width, height, crop, max_fps, vts_def, reg_list}</code>。</li>
+<li><strong><code>imx219_mode</code> 加 <code>link_freq_index</code> 字段</strong>——当前没有。多档 link_freq 时每个 mode 必须声明用哪档。</li>
+<li><strong><code>link_freq_menu</code> 加档</strong>：升序排列，<code>v4l2_ctrl_new_int_menu</code> 的 default index 对齐默认模式的档位。</li>
+<li><strong><code>set_pad_format</code> 联动更新 link_freq ctrl</strong>：ACTIVE 分支没碰 link_freq，加第二档后用户空间会看到旧档 → 下游 ISP 按错带宽配置。</li>
+<li><strong>pixel_rate 不能钉死 182.4M</strong>（当前是单值）：放宽 range + ACTIVE 里 <code>__v4l2_ctrl_s_ctrl(pixel_rate)</code>，或改菜单；须满足 <code>pixel_rate = link_freq × 2 × 2 / 10</code>。</li>
+<li><strong>带宽校验</strong>：<code>fps = pixel_rate/(HTS×VTS)</code> 反推时序，验 <code>pixel_rate × 10.67 ≤ 2 × 912 Mbps</code>（用 6.10 的打包开销）。</li>
+<li><strong>物理陷阱</strong>：4608×2592 超出 IMX219 原生阵列（NATIVE 3280×2464），物理不存在，<code>get_selection</code> 的 NATIVE_SIZE/BOUNDS 也会挡。真要做只能换 sensor——先指出这一点，比闷头写表加分。</li>
+<li>**hblank 写死 <code>IMX219_PPL_DEFAULT - width</code>**：若新模式 HTS ≠ 3448，这个假设就崩了，需泛化。</li>
+<li><strong>无需改动</strong>：<code>enum_frame_size</code>/<code>frame_interval</code> 遍历 <code>supported_modes</code>/<code>mode-&gt;max_fps</code> 自动覆盖；<code>start_streaming</code> 写 reg_list + <code>__v4l2_ctrl_handler_setup</code> 重写 control 流程也不用改（前提是 range 别设错）。</li>
+</ol>
+<h2 id="七、真实案例"><a href="#七、真实案例" class="headerlink" title="七、真实案例"></a>七、真实案例</h2><h3 id="7-1-上层全绿、MIPI-链路未启动"><a href="#7-1-上层全绿、MIPI-链路未启动" class="headerlink" title="7.1 上层全绿、MIPI 链路未启动"></a>7.1 上层全绿、MIPI 链路未启动</h3><p><strong>现象</strong>：驱动 probe 成功、CHIP ID 读到 0x0219、media-ctl -p 看 pipeline 完整、写寄存器无任何报错，但一 v4l2-ctl –stream-mmap 抓流就是黑屏，CSI 收不到一帧数据。</p>
+<p><strong>排查过程</strong>：</p>
+<ul>
+<li>先锁 I2C 层：i2ctransfer 手动读 CHIP ID，正常 → 排除供电、XCLK、I2C 通路问题</li>
+<li>查时钟：clk_summary 确认 XCLK 24MHz 有输出</li>
+<li>读写Streaming寄存器回读正确，读Clock Lane Status寄存器：发现一直停在 LP-11，从来没有 HS 突发，sensor 压根没进入输出状态。</li>
+<li>查看数据手册上电时序，确认是链路层问题，不是格式协商问题</li>
+</ul>
+<p><strong>根因</strong>：IMX219 的 D-PHY 在 standby 模式下不会自动进入 LP-11，必须先进 streaming 再退回 standby 让 D-PHY 状态机初始化一次。host 的 clock lane 检测超时，所以 CSI 永远收不到同步。</p>
+<blockquote>
+<p><strong>补充：MIPI D-PHY 状态机</strong>：D-PHY 的状态分为两大类——低功耗（LP）状态和高速（HS）状态。</p>
+</blockquote>
+<ol>
+<li><strong>低功耗（LP）状态</strong></li>
+</ol>
+<table>
 <thead>
 <tr>
-<th>特性</th>
-<th>原 imx219.c</th>
-<th>本 imx219-dt.c</th>
+<th align="center">状态</th>
+<th align="center">Dp 线电平</th>
+<th align="center">Dn 线电平</th>
+<th>主要含义</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>regulator 控制</td>
-<td>独立管理 AVDD/DOVDD/DVDD</td>
-<td>移除，由硬件 GPIO 统一控制</td>
+<td align="center">LP-11</td>
+<td align="center">高</td>
+<td align="center">高</td>
+<td>停止/空闲状态，是其他状态切换的起点和终点</td>
 </tr>
 <tr>
-<td>reset GPIO</td>
-<td>独立 XCLR 控制</td>
-<td>移除</td>
+<td align="center">LP-01</td>
+<td align="center">低</td>
+<td align="center">高</td>
+<td>用于发起模式切换的序列（如准备进入高速模式）</td>
 </tr>
 <tr>
-<td>Rockchip 私有 ioctl</td>
-<td>有 <code>RKMODULE_GET_MODULE_INFO</code></td>
-<td>无（待补）</td>
+<td align="center">LP-10</td>
+<td align="center">高</td>
+<td align="center">低</td>
+<td>用于发起模式切换的序列（如进入 Escape 模式）</td>
 </tr>
 <tr>
-<td>模式数量</td>
-<td>更多</td>
-<td>4 个核心模式</td>
-</tr>
-<tr>
-<td>寄存器表注释</td>
-<td>较少</td>
-<td>每行均有中文注释说明功能</td>
-</tr>
-<tr>
-<td>代码风格</td>
-<td>Rockchip BSP 扩展</td>
-<td>精简内核主线风格</td>
+<td align="center">LP-00</td>
+<td align="center">低</td>
+<td align="center">低</td>
+<td>用于模式切换的序列，例如进入高速模式前会经过此状态</td>
 </tr>
 </tbody></table>
+<ol start="2">
+<li><strong>高速（HS）状态</strong><br>是真正”干活”的状态，用于传输图像等大数据量内容。<br>正常的高速传输启动序列：LP-11 → LP-01 → LP-00 → HS-0（开始高速数据传输）</li>
+</ol>
+<h3 id="7-2-开-hflip-vflip-后图像偏色"><a href="#7-2-开-hflip-vflip-后图像偏色" class="headerlink" title="7.2 开 hflip/vflip 后图像偏色"></a>7.2 开 hflip/vflip 后图像偏色</h3><p><strong>现象</strong>：开 hflip/vflip 后图像偏色（红蓝互换）。</p>
+<p><strong>排查</strong>：先开 test pattern 确认链路本身正常，再对比翻转前后图像，检查驱动里 <code>imx219_get_format_code</code> 的映射、是否设了 <code>V4L2_CTRL_FLAG_MODIFY_LAYOUT</code>、streaming 时是否 grab 住 flip、crop 起点奇偶性。</p>
+<p><strong>根因</strong>：翻转改变 Bayer 排列（RGGB→GRBG），media bus code 没同步，下游 ISP 按错误排列解包。</p>
 
     </div>
 
@@ -518,7 +594,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A9%B1%E5%8A%A8%E6%9E%B6%E6%9E%84%E6%80%BB%E8%A7%88"><span class="toc-text">一、驱动架构总览</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%B1%82%E6%AC%A1"><span class="toc-text">1.1 数据结构层次</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E5%85%B3%E9%94%AE%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="toc-text">1.2 关键工作流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%BC%8F%E4%B8%8E%E5%AF%84%E5%AD%98%E5%99%A8%E8%A1%A8"><span class="toc-text">二、支持的模式与寄存器表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E5%9B%9B%E7%A7%8D%E5%88%86%E8%BE%A8%E7%8E%87%E6%A8%A1%E5%BC%8F"><span class="toc-text">2.1 四种分辨率模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%AF%84%E5%AD%98%E5%99%A8%E8%A1%A8%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E4%BD%BF%E7%94%A8%E6%97%B6%E6%9C%BA"><span class="toc-text">2.2 寄存器表的作用与使用时机</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81link-freq-%E4%B8%8E-pixel-rate"><span class="toc-text">三、link_freq 与 pixel_rate</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%A6%82%E5%BF%B5%E5%AE%9A%E4%B9%89"><span class="toc-text">3.1 概念定义</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E9%94%81%E7%9B%B8%E7%8E%AF-PLL"><span class="toc-text">3.2 锁相环(PLL)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E5%B8%B8%E8%A7%81%E8%AF%AF%E8%A7%A3"><span class="toc-text">3.4 常见误解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81DTS-Overlay-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE"><span class="toc-text">四、DTS Overlay 关键配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E6%95%B0%E6%8D%AE%E9%80%9A%E8%B7%AF%E6%8B%93%E6%89%91"><span class="toc-text">4.1 数据通路拓扑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%85%B3%E9%94%AE%E5%B1%9E%E6%80%A7"><span class="toc-text">4.2 关键属性</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Camera-%E4%BC%A0%E6%84%9F%E5%99%A8%E9%A9%B1%E5%8A%A8%E8%B0%83%E8%AF%95%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-text">五、Camera 传感器驱动调试常见问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-probe-%E5%A4%B1%E8%B4%A5"><span class="toc-text">5.1 probe 失败</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-Streaming-%E6%97%A0%E5%9B%BE%E5%83%8F%E8%BE%93%E5%87%BA-%E9%BB%91%E5%B1%8F"><span class="toc-text">5.2 Streaming 无图像输出 &#x2F; 黑屏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E7%94%BB%E9%9D%A2%E9%A2%9C%E8%89%B2%E5%BC%82%E5%B8%B8"><span class="toc-text">5.3 画面颜色异常</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E5%B8%A7%E4%B8%A2%E5%A4%B1-DMA-overflow"><span class="toc-text">5.4 帧丢失 &#x2F; DMA overflow</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-%E5%B8%A7%E7%8E%87%E4%B8%8D%E5%AF%B9"><span class="toc-text">5.5 帧率不对</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-6-I2C-%E9%80%9A%E4%BF%A1%E4%B8%8D%E7%A8%B3%E5%AE%9A-%E5%81%B6%E5%8F%91%E6%80%A7%E5%A4%B1%E8%B4%A5"><span class="toc-text">5.6 I2C 通信不稳定 &#x2F; 偶发性失败</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-7-%E7%B3%BB%E7%BB%9F%E5%94%A4%E9%86%92%E5%90%8E-sensor-%E4%B8%8D%E5%B7%A5%E4%BD%9C"><span class="toc-text">5.7 系统唤醒后 sensor 不工作</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7%E9%80%9F%E6%9F%A5"><span class="toc-text">六、调试工具速查</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E9%A9%B1%E5%8A%A8%E4%BF%AE%E6%94%B9%E8%AE%B0%E5%BD%95"><span class="toc-text">七、驱动修改记录</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A9%B1%E5%8A%A8%E6%9E%B6%E6%9E%84%E6%80%BB%E8%A7%88"><span class="toc-text">一、驱动架构总览</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%B1%82%E6%AC%A1"><span class="toc-text">1.1 数据结构层次</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E5%85%B3%E9%94%AE%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="toc-text">1.2 关键工作流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%BC%8F%E4%B8%8E%E5%AF%84%E5%AD%98%E5%99%A8%E8%A1%A8"><span class="toc-text">二、支持的模式与寄存器表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E5%9B%9B%E7%A7%8D%E5%88%86%E8%BE%A8%E7%8E%87%E6%A8%A1%E5%BC%8F"><span class="toc-text">2.1 四种分辨率模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%AF%84%E5%AD%98%E5%99%A8%E8%A1%A8%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E4%BD%BF%E7%94%A8%E6%97%B6%E6%9C%BA"><span class="toc-text">2.2 寄存器表的作用与使用时机</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81link-freq-%E4%B8%8E-pixel-rate"><span class="toc-text">三、link_freq 与 pixel_rate</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%A6%82%E5%BF%B5%E5%AE%9A%E4%B9%89"><span class="toc-text">3.1 概念定义</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E9%94%81%E7%9B%B8%E7%8E%AF-PLL"><span class="toc-text">3.2 锁相环(PLL)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81DTS-Overlay-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE"><span class="toc-text">四、DTS Overlay 关键配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E6%95%B0%E6%8D%AE%E9%80%9A%E8%B7%AF%E6%8B%93%E6%89%91"><span class="toc-text">4.1 数据通路拓扑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%85%B3%E9%94%AE%E5%B1%9E%E6%80%A7"><span class="toc-text">4.2 关键属性</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E9%A9%B1%E5%8A%A8%E8%B0%83%E8%AF%95%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-text">五、驱动调试常见问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-probe-%E5%A4%B1%E8%B4%A5"><span class="toc-text">5.1 probe 失败</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-Streaming-%E6%97%A0%E5%9B%BE%E5%83%8F%E8%BE%93%E5%87%BA-%E9%BB%91%E5%B1%8F"><span class="toc-text">5.2 Streaming 无图像输出 &#x2F; 黑屏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E5%B8%A7%E4%B8%A2%E5%A4%B1-DMA-overflow"><span class="toc-text">5.3 帧丢失 &#x2F; DMA overflow</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E7%B3%BB%E7%BB%9F%E5%94%A4%E9%86%92%E5%90%8E-sensor-%E4%B8%8D%E5%B7%A5%E4%BD%9C"><span class="toc-text">5.4 系统唤醒后 sensor 不工作</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98"><span class="toc-text">六、面试问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-v4l2%E6%A0%B8%E5%BF%83%E5%AF%B9%E8%B1%A1"><span class="toc-text">6.1 v4l2核心对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-I2C-%E8%AF%BB%E5%86%99"><span class="toc-text">6.2 I2C 读写</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%97%B6%E9%92%9F%E4%B8%8E%E5%B8%A7%E7%8E%87"><span class="toc-text">6.3 时钟与帧率</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-TRY-%E4%B8%8E-ACTIVE"><span class="toc-text">6.4 TRY 与 ACTIVE</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-5-%E6%9B%9D%E5%85%89"><span class="toc-text">6.5 曝光</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-6-Bayer-%E6%8E%92%E5%88%97%E6%8E%A8%E5%AF%BC"><span class="toc-text">6.6 Bayer 排列推导</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-7-suspend-resume-%E4%B8%8E-runtime-PM-%E5%B1%82%E6%AC%A1"><span class="toc-text">6.7 suspend&#x2F;resume 与 runtime PM 层次</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-8-%E5%8D%8F%E5%95%86%E8%AF%AD%E4%B9%89%EF%BC%88%E6%9E%9A%E4%B8%BE%E9%9A%8F-flip-%E6%BC%82%E7%A7%BB%EF%BC%89"><span class="toc-text">6.8 协商语义（枚举随 flip 漂移）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-9-V4L2-%E6%8E%A7%E4%BB%B6%E5%B5%8C%E5%A5%97%E8%B0%83%E7%94%A8%E6%98%AF%E5%90%A6%E6%AD%BB%E9%94%81%EF%BC%9F"><span class="toc-text">6.9 V4L2 控件嵌套调用是否死锁？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-10-MIPI-%E9%93%BE%E8%B7%AF%E5%B8%A6%E5%AE%BD%E8%AE%A1%E7%AE%97"><span class="toc-text">6.10 MIPI 链路带宽计算</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-11-%E6%B7%BB%E5%8A%A0%E4%B8%80%E4%B8%AA%E6%96%B0%E6%A8%A1%E5%BC%8F%E9%9C%80%E8%A6%81%E4%BF%AE%E6%94%B9%E5%93%AA%E4%BA%9B%E5%9C%B0%E6%96%B9%EF%BC%9F"><span class="toc-text">6.11 添加一个新模式需要修改哪些地方？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E7%9C%9F%E5%AE%9E%E6%A1%88%E4%BE%8B"><span class="toc-text">七、真实案例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E4%B8%8A%E5%B1%82%E5%85%A8%E7%BB%BF%E3%80%81MIPI-%E9%93%BE%E8%B7%AF%E6%9C%AA%E5%90%AF%E5%8A%A8"><span class="toc-text">7.1 上层全绿、MIPI 链路未启动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E5%BC%80-hflip-vflip-%E5%90%8E%E5%9B%BE%E5%83%8F%E5%81%8F%E8%89%B2"><span class="toc-text">7.2 开 hflip&#x2F;vflip 后图像偏色</span></a></li></ol></li></ol>
   </div>
 </aside>
 
