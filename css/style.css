@@ -20,7 +20,7 @@
   --grid-size: 24px;
   --content-width: 800px;
   --page-width: 1200px;
-  --sidebar-width: 200px;
+  --sidebar-width: 300px;
   --header-height: 60px;
   --font-sans: 'LXGW WenKai GB', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-serif: 'LXGW WenKai GB', 'Georgia', 'Times New Roman', serif;
@@ -563,6 +563,9 @@ img {
   position: relative;
   max-width: var(--content-width);
   margin: 0 auto;
+  /* 宽屏：正文右移，左缘 ≥ 目录右缘(332px) + 3rem 间隔；视口≥1560px 时平滑回到居中 */
+  /* 修正：以 1200px 主容器居中基准换算，避免与左侧目录重叠 */
+  margin-left: calc(max(380px, 50vw - 400px) - max(0px, 50vw - 600px));
 }
 
 /* --- Post Content Typography --- */
@@ -876,7 +879,7 @@ figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.1
 /* --- TOC Sidebar --- */
 .toc-sidebar {
   position: fixed;
-  right: 2rem;
+  left: 2rem;
   top: calc(var(--header-height) + 2rem);
   width: var(--sidebar-width);
   height: calc(100vh - var(--header-height) - 4rem);
@@ -931,10 +934,21 @@ figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.1
 
 .toc-item {
   margin-bottom: 0.35rem;
+  /* 让折叠按钮与链接同行，子级独占一行 */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .toc-child {
+  flex: 0 0 100%;
   padding-left: 0.85rem;
+}
+
+/* 链接弹性占满剩余宽度，与折叠箭头始终同行（长标题自动收缩换行） */
+.toc-item > .toc-link {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .toc-item > .toc-child {
@@ -1001,6 +1015,34 @@ figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.1
 
 .toc-item.toc-level-4 > .toc-link {
   padding-left: 0.95rem;
+}
+
+/* TOC level expand/collapse button */
+.toc-expand-btn {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  margin-top: 0.4rem;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  font-size: 0.65rem;
+  line-height: 1;
+  text-align: center;
+  transition: color 0.2s, transform 0.2s;
+}
+.toc-expand-btn:hover {
+  color: var(--color-accent);
+}
+.toc-expand-btn::before {
+  content: '\25BE'; /* ▾ */
+}
+.toc-item.collapsed > .toc-expand-btn::before {
+  content: '\25B8'; /* ▸ */
+}
+.toc-item.collapsed > .toc-child {
+  display: none;
 }
 
 /* --- Post Footer --- */
@@ -1237,6 +1279,13 @@ figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.1
 }
 
 /* --- Responsive --- */
+/* 中屏：正文为左侧目录让位并收窄，避免溢出/重叠 */
+@media (min-width: 769px) and (max-width: 1279px) {
+  .post-body-wrapper {
+    max-width: calc(100vw - var(--sidebar-width) - 2rem - 3rem - 2rem);
+  }
+}
+
 /* Mobile: TOC hidden by default, shown via toggle button */
 @media (max-width: 768px) {
   .toc-sidebar {
@@ -1316,6 +1365,7 @@ figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.1
 
   .post-body-wrapper {
     max-width: 100%;
+    margin-left: 0;
   }
 
   .header-inner {
