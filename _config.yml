@@ -46,7 +46,7 @@ future: true
 syntax_highlighter: highlight.js
 highlight:
   line_number: true
-  auto_detect: false
+  auto_detect: true
   tab_replace: ''
   wrap: true
   hljs: false
@@ -97,6 +97,15 @@ ignore:
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
 theme: warmpaper
+
+# MathJax (LaTeX math rendering)
+mathjax:
+  tags: none
+  single_dollars: true
+  cjk_width: 0.9
+  normal_width: 0.6
+  append_css: true
+  every_page: true
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

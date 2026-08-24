@@ -61,6 +61,36 @@
   });
 })();
 
+// TOC level expand/collapse
+(function () {
+  var items = document.querySelectorAll('.toc-item');
+  if (!items.length) return;
+
+  Array.prototype.forEach.call(items, function (item) {
+    var child = null;
+    for (var i = 0; i < item.children.length; i++) {
+      if (item.children[i].classList.contains('toc-child')) {
+        child = item.children[i];
+        break;
+      }
+    }
+    if (!child) return; // 无子级，无需折叠按钮
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toc-expand-btn';
+    btn.setAttribute('aria-label', '展开/折叠子目录');
+    btn.setAttribute('aria-expanded', 'true');
+    item.insertBefore(btn, item.firstChild);
+
+    btn.addEventListener('click', function (e) {
+      var collapsed = item.classList.toggle('collapsed');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      e.stopPropagation();
+    });
+  });
+})();
+
 // Theme toggle
 (function () {
   var STORAGE_KEY = 'warmpaper-theme';
