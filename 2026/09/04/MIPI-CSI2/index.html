@@ -15,7 +15,7 @@
 <meta property="og:image" content="http://example.com/2026/09/04/MIPI-CSI2/long_packet.png">
 <meta property="og:image" content="http://example.com/2026/09/04/MIPI-CSI2/vc.png">
 <meta property="article:published_time" content="2026-09-04T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-04T08:07:27.815Z">
+<meta property="article:modified_time" content="2026-09-04T08:32:08.963Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="MIPI">
 <meta property="article:tag" content="CSI-2">
@@ -275,9 +275,14 @@ mjx-container[display="true"] + br {
 <ul>
 <li><strong>多 sensor 共用同一 CSI 口</strong>：多个 sensor 数据经串行器/MUX 后接一个 CSI 接收端，靠 VC 区分来源——如 <strong>MAX9286</strong> 把 4 路同轴相机合并成一路 CSI-2，每路相机独占一个 VC（0~3），解串器在 SoC 端拆成 4 个 v4l2 节点</li>
 <li><strong>多路数据交错</strong>：同一 sensor 的 RAW 像素 + 嵌入式元数据（embedded data）走不同 VC 同时传，互不阻塞</li>
-<li><strong>低分辨率叠加</strong>：多 sensor 各占 1~2 lane 拼成一路宽 lane CSI，按 VC 分通道接收（用满 4 个 VC 时注意 DT 只剩 64 种中的低 6 bit，由 6 bit DT 提供）</li>
+<li><strong>低分辨率叠加</strong>：多 sensor 各占 1~2 lane 拼成一路宽 lane CSI，按 VC 分通道接收。注意 VC 与 DT 是包头 DI 里<strong>两个独立字段</strong>：VC 只管”走哪个通道”，DT 仍是独立的 6 bit、64 种，二者互不影响</li>
 </ul>
-<p>虚拟通道由包头中的VC与VCX构成，对于D-PHY来说，由4bit组成，最高16路虚拟通道，高2bit来自VCX，低2bit来自VC，根据[VCX:VC]确定走哪个通道。</p>
+<p>VC 字段本身只有 2 bit，<strong>CSI-2 v1.x 下只有 4 个虚拟通道</strong>（这也是绝大多数产品与驱动的口径，如上面 MAX9286 用满 VC0~3）。要更多通道靠 <strong>VCX（Virtual Channel Extension，CSI-2 v2.0 起的可选扩展）</strong>：</p>
+<ul>
+<li><strong>v1.x 基础能力</strong>：包头 DI = <code>[VC(2) | DT(6)]</code>，VC = 0~3，共 4 路</li>
+<li><strong>v2.0+ VCX 扩展</strong>：包头引入 VCX 字段，与 VC 拼成完整通道号 <code>[VCX : VC]</code>——D-PHY 下 VCX 为 2 bit，共 4 bit 通道 ID，0~15 共 16 路；C-PHY 下 VCX 为 3 bit，共 5 bit 通道 ID，最多 32 路</li>
+<li><strong>前提</strong>：VCX 是可选功能，<strong>sensor 发送端与 CSI host 接收端必须都支持并开启</strong>才生效；没开 VCX 时链路仍是 4 路</li>
+</ul>
 <img src="/2026/09/04/MIPI-CSI2/vc.png" class="" title="vc Structure">
 
 
