@@ -842,7 +842,11 @@ figure.highlight .token.inserted { color: #859900; background: rgba(133,153,0,0.
 figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.12); }
 
 .post-content table {
-  width: 100%;
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
   margin: 1.5em 0;
   font-size: 0.95rem;
