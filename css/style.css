@@ -658,6 +658,14 @@ img {
   font-size: 0.88rem;
 }
 
+/* 代码块内 Tab 按 4 个字符宽渲染（浏览器默认 8，缩进会显得过大） */
+.post-content pre,
+figure.highlight pre,
+figure.highlight .line {
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
 /* --- Hexo Highlight Code Blocks — Solarized Light --- */
 figure.highlight {
   background: #fdf6e3;
@@ -748,6 +756,17 @@ figure.highlight .title.function_ {
   color: #268bd2;
 }
 
+/* C 声明：把「数据类型」和「变量名」分开着色
+   hljs 会把 `struct/enum/union 类型 变量;` 整段包进 .class：
+   紧跟在关键字后的第一个 .title 是类型名，其后的 .title 是变量名。
+   只有一个 .title 时（如 `struct lt9611 {`）按类型名处理。 */
+figure.highlight .class > .keyword + .title {
+  color: #b58900; /* 类型名 —— 与 int/static 等 type 同色（Solarized yellow） */
+}
+figure.highlight .class > .title + .title {
+  color: #6c71c4; /* 变量名 —— Solarized violet，与函数名(蓝)/关键字(绿)区分开 */
+}
+
 /* Built-in / Type (red / yellow) */
 figure.highlight .built_in {
   color: #dc322f;
@@ -766,6 +785,17 @@ figure.highlight .attr,
 figure.highlight .attribute,
 figure.highlight .tag .attr {
   color: #b58900;
+}
+
+/* Device Tree：节点标签与 phandle 引用（&dsi0 / &lt9611_in） */
+figure.highlight .variable {
+  color: #cb4b16; /* Solarized orange */
+}
+
+/* Operator / Punctuation：跟正文字色，避免被别的规则染成高亮色 */
+figure.highlight .operator,
+figure.highlight .punctuation {
+  color: #657b83;
 }
 
 /* Regexp / Variable (cyan) */
