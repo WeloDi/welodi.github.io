@@ -504,7 +504,7 @@ static ssize_t mpu6050_read(struct file *file, char __user *buf,
 **笔电 BSP 重点！** 瑞芯微/展锐也很看重。
 
 
-```c
+```dts
 // 设备树中定义 regulator
 avdd_cam: regulator-avdd-cam {
     compatible = "regulator-fixed";
@@ -514,7 +514,9 @@ avdd_cam: regulator-avdd-cam {
     gpio = <&gpio1 RK_PA4 GPIO_ACTIVE_HIGH>;
     enable-active-high;
 };
+```
 
+```c
 // 驱动中使用
 struct regulator *avdd = devm_regulator_get(dev, "avdd");
 regulator_enable(avdd);
@@ -709,13 +711,15 @@ dev_err(&client->dev, "i2c write failed: %d\n", ret);
 
 
 
-```c
+```dts
 // 设备树中引用 power-domains
 &emmc {
     power-domains = <&power RK3588_PD_EMMC>;
     status = "okay";
 };
+```
 
+```c
 // 驱动中实现 PM 回调
 static const struct dev_pm_ops rk_sensor_pm_ops = {
     .suspend         = rk_sensor_suspend,
@@ -775,7 +779,7 @@ booti $kernel_addr_r - $fdt_addr_r
 
 **FIT Image（Flattened Image Tree）：** 一种包含多个组件的组合镜像格式（`.its` 源文件 → `.itb` 二进制），可打包多个内核、设备树、ramdisk 等。相比传统 `zImage + dtb` 分离加载，FIT Image 支持**签名校验**、**多配置**（同一镜像适配多板子）。
 
-```
+```dts
 // .its 简例
 /dts-v1/;
 / {

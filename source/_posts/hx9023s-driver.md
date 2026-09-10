@@ -50,7 +50,7 @@ HX9023S 内部对 5 个感应通道（CH0~CH4）做电容测量，DSP 输出四�
 
 
 ### 2.2 DTS
-```c
+```dts
 &i2c0 {
     proximity@2a {
         compatible = "tyhx,hx9023s";
