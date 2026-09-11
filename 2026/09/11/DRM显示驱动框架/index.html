@@ -11,13 +11,19 @@
 <meta property="og:site_name" content="Welodi">
 <meta property="og:description" content="文档概述本文梳理 Linux 内核 DRM（Direct Rendering Manager） 显示驱动子系统的整体框架：从对象模型、显示管线数据流，到驱动初始化、Atomic Modeset 状态机、关键回调与用户空间接口，给出一条”从注册到点亮屏幕”的完整脉络。  代码路径：drivers&#x2F;gpu&#x2F;drm&#x2F;，核心框架在 drivers&#x2F;gpu&#x2F;drm&#x2F;drm_*.c，具体硬件驱动在 drive">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-layers.png">
+<meta property="og:image" content="http://example.com/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-kms-pipeline.png">
+<meta property="og:image" content="http://example.com/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-display-flow.png">
+<meta property="og:image" content="http://example.com/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-modetest.png">
+<meta property="og:image" content="http://example.com/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-modetest-ids.png">
 <meta property="article:published_time" content="2026-09-11T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-11T03:23:28.034Z">
+<meta property="article:modified_time" content="2026-09-11T03:44:39.407Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="DRM">
 <meta property="article:tag" content="显示驱动">
 <meta property="article:tag" content="Linux内核">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-layers.png">
   <link rel="icon" href="/images/logo.svg">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
@@ -245,10 +251,41 @@ mjx-container[display="true"] + br {
 <td>GEM/TTM，支持 CMA、dma-buf 共享</td>
 </tr>
 </tbody></table>
+<h3 id="1-1-模块组成：libdrm-KMS-GEM"><a href="#1-1-模块组成：libdrm-KMS-GEM" class="headerlink" title="1.1 模块组成：libdrm / KMS / GEM"></a>1.1 模块组成：libdrm / KMS / GEM</h3><p>从模块上，DRM 划分为三部分：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>所在层</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>libdrm</strong></td>
+<td>用户空间</td>
+<td>封装底层 ioctl，向上层提供通用 API，应用通过它统一访问显示资源，避免多应用直接操作显存造成冲突</td>
+</tr>
+<tr>
+<td><strong>KMS</strong></td>
+<td>内核空间</td>
+<td>Kernel Mode Setting，负责<strong>显示参数</strong>（分辨率/刷新率/电源状态）与<strong>显示控制</strong>（buffer 切换、图层合成、位置）</td>
+</tr>
+<tr>
+<td><strong>GEM</strong></td>
+<td>内核空间</td>
+<td>Graphics Execution Manager，抽象显存管理，负责显示 buffer 的分配与释放，也是 GPU 唯一用到 DRM 的地方</td>
+</tr>
+</tbody></table>
+<p>其中 KMS 的子元素包括 <code>CRTC</code>、<code>ENCODER</code>、<code>CONNECTOR</code>、<code>PLANE</code>、<code>FB</code>、<code>VBLANK</code>、<code>property</code>；GEM 的子元素包括 <code>DUMB</code>、<code>PRIME</code>、<code>fence</code>。</p>
+<img src="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-layers.png" class="" title="DRM 分层架构：用户空间 libdrm，内核空间 DRM core / DRM driver，向下管理 GEM 与 KMS">
+
 <p>KMS（Kernel Mode Setting）是 DRM 中负责显示的那一半，也是显示驱动开发的主战场。</p>
 <hr>
 <h2 id="二、核心对象模型"><a href="#二、核心对象模型" class="headerlink" title="二、核心对象模型"></a>二、核心对象模型</h2><p>DRM 用一组对象描述整条显示管线，对象之间通过指针互联：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">     +---------------------------------------------+</span><br><span class="line">     |              drm_device                     |</span><br><span class="line">     |  (一个显卡/显示控制器实例, 持有 mode_config) |</span><br><span class="line">     +---------------------------------------------+</span><br><span class="line">                          |</span><br><span class="line">     +--------------------+---------------------+</span><br><span class="line">     |                                          |</span><br><span class="line">drm_plane                                 drm_crtc  (扫描输出/时序发生器)</span><br><span class="line">(图层: 像素来源,                              |</span><br><span class="line"> 可缩放/叠加)                                 |</span><br><span class="line">     |                                        |</span><br><span class="line">     | 送给                                   v</span><br><span class="line">     +----------------------------------&gt; drm_encoder (编码器)</span><br><span class="line">                                              |</span><br><span class="line">                                              v</span><br><span class="line">                                         drm_connector (物理接口/显示器)</span><br><span class="line">                                              |</span><br><span class="line">                                              v</span><br><span class="line">                                        Panel / Monitor / Bridge</span><br></pre></td></tr></table></figure>
+
+<p>上图为从 <code>drm_device</code> 内部看出去的拓扑：CRTC 取显存数据、按 mode 产生时序，经 Encoder/Connector 送到显示器。</p>
+<img src="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-kms-pipeline.png" class="" title="DRM device 内部：CRTC → Encoder → Connector → 显示器">
 
 <table>
 <thead>
@@ -309,10 +346,21 @@ mjx-container[display="true"] + br {
 <h2 id="三、显示管线数据流"><a href="#三、显示管线数据流" class="headerlink" title="三、显示管线数据流"></a>三、显示管线数据流</h2><p>像素从内存到屏幕的路径：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">GEM object / dma-buf</span><br><span class="line">        │  (映射为 drm_framebuffer)</span><br><span class="line">        v</span><br><span class="line">   drm_plane  ──(缩放/格式转换/叠加混合)──►</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">   drm_crtc   ──(按 drm_display_mode 扫描)──►</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">   drm_encoder ──► drm_bridge(可选, 可级联) ──► drm_connector</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">   PHY / 物理接口 (DSI / eDP / HDMI / DP)</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">      显示器</span><br></pre></td></tr></table></figure>
 
+<p>从对象生命周期看，可以把这些对象分成<strong>三类</strong>：</p>
+<ul>
+<li><strong>用户空间创建</strong>：<code>Framebuffer</code>（描述显存信息），由应用提交；</li>
+<li><strong>静态对象</strong>：<code>Plane</code> → <code>CRTC</code> → <code>Encoder</code>，初始化时创建、长期存在，是数据流的固定通路；</li>
+<li><strong>热插拔对象</strong>：<code>Connector</code>，随显示器接入/拔出而改变状态。</li>
+</ul>
+<img src="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-display-flow.png" class="" title="Objects 关系：Framebuffer 由用户空间创建，Plane/CRTC/Encoder 为静态对象，Connector 可热插拔">
+
+<blockquote>
+<p>与物理 buffer 直接打交道的是 <strong>GEM</strong> 而非 Framebuffer：GEM 负责分配/释放显存，Framebuffer 只描述这块显存（format、pitch、size、offset），Plane 则描述图层信息。<strong>Encoder 是 CRTC 与 Connector 之间的纽带，Plane 是 Framebuffer 与 CRTC 之间的纽带。</strong></p>
+</blockquote>
 <p>对应到一次 <code>atomic_commit</code>：框架按 <strong>plane → crtc → encoder → connector</strong> 的顺序调用各对象的原子回调，把”准备（prepare）”与”提交（commit）”分两阶段执行，避免时序切换时出现花屏。</p>
 <hr>
 <h2 id="四、驱动初始化流程"><a href="#四、驱动初始化流程" class="headerlink" title="四、驱动初始化流程"></a>四、驱动初始化流程</h2><p>一个典型 DRM 显示驱动（如 Rockchip VOP、NXP DPU）的 probe 主脉络：</p>
-<h3 id="4-1-注册-drm-device"><a href="#4-1-注册-drm-device" class="headerlink" title="4.1 注册 drm_device"></a>4.1 注册 drm_device</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">vop_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">drm_device</span> *<span class="title">drm</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vop</span> *<span class="title">vop</span>;</span></span><br><span class="line"></span><br><span class="line">    drm = drm_dev_alloc(&amp;vop_driver, dev);   <span class="comment">/* 分配 drm_device */</span></span><br><span class="line">    vop = devm_kzalloc(dev, <span class="keyword">sizeof</span>(*vop), GFP_KERNEL);</span><br><span class="line">    drm-&gt;dev_private = vop;</span><br><span class="line">    ...</span><br><span class="line">    <span class="title function_">drm_mode_config_init</span>(drm);               <span class="comment">/* 初始化 mode_config */</span></span><br><span class="line">    ...</span><br><span class="line">    ret = component_add(dev, &amp;vop_component_ops);  <span class="comment">/* 参与 component 拼装 */</span></span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<h3 id="4-1-注册-drm-device"><a href="#4-1-注册-drm-device" class="headerlink" title="4.1 注册 drm_device"></a>4.1 注册 drm_device</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">vop_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">drm_device</span> *<span class="title">drm</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vop</span> *<span class="title">vop</span>;</span></span><br><span class="line"></span><br><span class="line">    drm = <span class="title function_">drm_dev_alloc</span>(&amp;vop_driver, dev);   <span class="comment">/* 分配 drm_device */</span></span><br><span class="line">    vop = <span class="title function_">devm_kzalloc</span>(dev, <span class="keyword">sizeof</span>(*vop), GFP_KERNEL);</span><br><span class="line">    drm-&gt;dev_private = vop;</span><br><span class="line">    ...</span><br><span class="line">    <span class="title function_">drm_mode_config_init</span>(drm);               <span class="comment">/* 初始化 mode_config */</span></span><br><span class="line">    ...</span><br><span class="line">    ret = <span class="title function_">component_add</span>(dev, &amp;vop_component_ops);  <span class="comment">/* 参与 component 拼装 */</span></span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p><strong>为什么用 component framework？</strong> 显示链路上的 CRTC、Encoder、Connector、Bridge 往往由不同驱动（不同 compatible）提供，必须等所有子设备 probe 完成后才能拼成一条完整管线。component 框架负责”收集子设备 → 全部就绪后回调 master 的 <code>bind</code>“。</p>
 <h3 id="4-2-创建各类对象"><a href="#4-2-创建各类对象" class="headerlink" title="4.2 创建各类对象"></a>4.2 创建各类对象</h3><p>在 <code>bind</code> 中依次创建并注册 CRTC、Plane、Encoder、Connector、Bridge：</p>
@@ -356,6 +404,19 @@ mjx-container[display="true"] + br {
 <td><code>detect/get_modes/atomic_check/fill_modes</code></td>
 </tr>
 </tbody></table>
+<h3 id="4-4-drm-xxx-funcs-与-drm-xxx-helper-funcs-的区别"><a href="#4-4-drm-xxx-funcs-与-drm-xxx-helper-funcs-的区别" class="headerlink" title="4.4 drm_xxx_funcs 与 drm_xxx_helper_funcs 的区别"></a>4.4 <code>drm_xxx_funcs</code> 与 <code>drm_xxx_helper_funcs</code> 的区别</h3><ul>
+<li><strong><code>drm_xxx_funcs</code><strong>：DRM ioctl 操作的最终入口，是</strong>必选</strong>的基本函数指针（如 <code>destroy</code>、<code>atomic_duplicate_state</code>）。</li>
+<li><strong><code>drm_xxx_helper_funcs</code><strong>：</strong>可选</strong>的辅助函数指针，用于补充/客制化 DRM 提供的 helper 库函数（如 <code>atomic_update</code>、<code>mode_set</code>）。</li>
+<li><strong>helper 库</strong>：框架提供的通用实现（<code>drm_atomic_helper_*</code>、<code>drm_crtc_helper_*</code>），把各厂商驱动里”你抄我、我抄你”的公共流程抽象出来，差异化的寄存器操作留在 <code>helper_funcs</code> 里。</li>
+</ul>
+<p>四条实践规则：</p>
+<ol>
+<li><code>xxx_funcs</code> 必须有，<code>xxx_helper_funcs</code> 可以没有；</li>
+<li><code>drm_xxx_init()</code> 必须有，<code>drm_xxx_helper_add()</code> 可以没有；</li>
+<li>只有当 <code>xxx_funcs</code> 采用 DRM 标准 helper 实现时，才需要定义 <code>xxx_helper_funcs</code>；</li>
+<li><code>xxx_funcs.destroy()</code> 必须实现。</li>
+</ol>
+<p>这样既能用 helper 简化开发，又保留完全自定义（不用 helper）的自由度，还能通过 hook 覆盖默认行为。</p>
 <hr>
 <h2 id="五、Atomic-Modeset-状态机"><a href="#五、Atomic-Modeset-状态机" class="headerlink" title="五、Atomic Modeset 状态机"></a>五、Atomic Modeset 状态机</h2><p>现代 DRM 驱动统一走 <strong>Atomic</strong> 路径（<code>drm_atomic_*</code>），核心思想是”<strong>先校验、后提交</strong>“：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">用户空间 ioctl (drmModeAtomicCommit)</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">drm_atomic_state  ── 收集所有被修改对象的新状态(old/new state)</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">[1] atomic_check  ── 逐对象校验可行性, 失败即整体回滚</span><br><span class="line">        │  (可回退: 尝试低带宽/降速/去掉 overlay)</span><br><span class="line">        v</span><br><span class="line">[2] atomic_commit ── 两阶段提交</span><br><span class="line">        ├─ prepare:  plane prepare_fb / crtc atomic_disable(旧)</span><br><span class="line">        └─ commit :  plane atomic_update / crtc atomic_enable / bridge enable</span><br><span class="line">        │</span><br><span class="line">        v</span><br><span class="line">硬件寄存器生效, 发出 vblank/page_flip 事件</span><br></pre></td></tr></table></figure>
@@ -372,6 +433,11 @@ mjx-container[display="true"] + br {
 
 <h3 id="6-2-读-EDID-决定分辨率"><a href="#6-2-读-EDID-决定分辨率" class="headerlink" title="6.2 读 EDID 决定分辨率"></a>6.2 读 EDID 决定分辨率</h3><p>Connector 的 <code>get_modes</code> 通过 DDC（I2C）读 EDID，解析出显示器支持的 <code>drm_display_mode</code> 列表，作为用户空间选模式的依据。</p>
 <h3 id="6-3-桥接链（Bridge-chain）"><a href="#6-3-桥接链（Bridge-chain）" class="headerlink" title="6.3 桥接链（Bridge chain）"></a>6.3 桥接链（Bridge chain）</h3><p>当输出路径上有中间转换芯片（如 <code>DSI → LT9611 → HDMI</code>）时，用 <code>drm_bridge</code> 串起来，<code>drm_bridge_chain_*</code> 按顺序调用每一级的 <code>enable/disable</code>。桥自身也可同时注册为 Connector。</p>
+<h3 id="6-4-drm-panel：Encoder-驱动与-LCD-驱动的解耦"><a href="#6-4-drm-panel：Encoder-驱动与-LCD-驱动的解耦" class="headerlink" title="6.4 drm_panel：Encoder 驱动与 LCD 驱动的解耦"></a>6.4 drm_panel：Encoder 驱动与 LCD 驱动的解耦</h3><p><strong>耦合是怎么产生的：</strong> Connector 在 LCD 驱动里构造，但初始化时要 attach 一个由另一套硬件驱动生成的 Encoder 对象；同时 Encoder 还负责通知显示设备休眠/唤醒，会直接调用 LCD 驱动导出的全局函数。于是”Encoder 驱动 ↔ LCD 驱动”形成直接耦合，可维护性、可移植性、可扩展性都下降。</p>
+<p><strong>解法：</strong> DRM 提供 <code>drm_panel</code> 结构体，封装 connector/encoder 对 LCD 访问的常用接口（<code>prepare</code>/<code>enable</code>/<code>disable</code>/<code>unprepare</code>/<code>get_modes</code>/<code>backlight</code>），把</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Encoder 驱动 ──► LCD 驱动              (强耦合)</span><br><span class="line">        ↓ 改为</span><br><span class="line">Encoder 驱动 ──► drm_panel ──► LCD 驱动 (低耦合)</span><br></pre></td></tr></table></figure>
+
+<p><code>drm_panel</code> 不属于 7 大 objects，只是一组回调函数的集合，但它是 Panel 驱动（<code>drivers/gpu/drm/panel/</code>）与主机驱动之间的标准接口。</p>
 <hr>
 <h2 id="七、用户空间接口"><a href="#七、用户空间接口" class="headerlink" title="七、用户空间接口"></a>七、用户空间接口</h2><table>
 <thead>
@@ -417,6 +483,30 @@ mjx-container[display="true"] + br {
 <h2 id="八、框架分层小结"><a href="#八、框架分层小结" class="headerlink" title="八、框架分层小结"></a>八、框架分层小结</h2><p>一条自底向上的完整栈（以 DSI 屏为例）：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">用户空间:  libdrm / Weston / KMS++  (atomic commit / page flip)</span><br><span class="line">─────────────────────────────────────────────</span><br><span class="line">内核 DRM 核心:  drm_atomic / drm_crtc_helper / drm_bridge / drm_panel</span><br><span class="line">─────────────────────────────────────────────</span><br><span class="line">厂商显示控制器:  CRTC + Plane + Encoder  (VOP / DPU / DISPC)</span><br><span class="line">─────────────────────────────────────────────</span><br><span class="line">桥接与面板:      drm_bridge (转接芯片) + drm_panel (面板时序/背光)</span><br><span class="line">─────────────────────────────────────────────</span><br><span class="line">底层总线/PHY:    MIPI DSI / LVDS / eDP / HDMI PHY</span><br><span class="line">─────────────────────────────────────────────</span><br><span class="line">硬件:            显示控制器 + PHY + 面板/显示器</span><br></pre></td></tr></table></figure>
 
+<h3 id="8-1-主机驱动-vs-设备驱动"><a href="#8-1-主机驱动-vs-设备驱动" class="headerlink" title="8.1 主机驱动 vs 设备驱动"></a>8.1 主机驱动 vs 设备驱动</h3><p>实际开发中，DRM 驱动通常拆成两部分：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>说明</th>
+<th>代码位置</th>
+<th>谁来写</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>主机驱动（Host）</strong></td>
+<td>片上显示外设驱动，如 MP157 的 LTDC、DSI，完成一个 DRM Host</td>
+<td><code>drivers/gpu/drm/&lt;vendor&gt;/</code>（如 <code>st</code>、<code>nxp</code>、<code>rockchip</code>）</td>
+<td>芯片厂商</td>
+</tr>
+<tr>
+<td><strong>设备驱动（Panel/桥）</strong></td>
+<td>针对某款屏，把其参数（LCD Timing、Size…）与显示方式（DSI/HDMI…）和主机驱动关联</td>
+<td><code>drivers/gpu/drm/panel/</code></td>
+<td>我们自己</td>
+</tr>
+</tbody></table>
+<p>设备驱动的最简参考是 <code>drivers/gpu/drm/panel/panel-simple.c</code>（RGB/DPI 屏）与 <code>panel-himax-hx8394.c</code>（DSI 屏）。注意：同一块板子上 <strong>RGB（DPI）与 DSI 两种接口屏幕通常不能同时使用</strong>。</p>
 <hr>
 <h2 id="九、调试手段"><a href="#九、调试手段" class="headerlink" title="九、调试手段"></a>九、调试手段</h2><ol>
 <li><strong>debugfs</strong>：<code>cat /sys/kernel/debug/dri/0/state</code> 查看当前所有对象的 atomic 状态与连接关系。</li>
@@ -425,12 +515,31 @@ mjx-container[display="true"] + br {
 <li><strong>内核日志</strong>：打开 <code>drm.debug=0x1f</code> 观察 atomic 提交、mode 校验与 vblank。</li>
 <li><strong>常见问题</strong>：黑屏多因 <code>atomic_check</code> 静默失败（降级到更小 mode）、桥未 enable、或 DSI 时钟未锁；花屏多为格式/stride 不匹配或 plane 未 double-buffer。</li>
 </ol>
+<h3 id="9-1-实战：用-modetest-点亮屏幕"><a href="#9-1-实战：用-modetest-点亮屏幕" class="headerlink" title="9.1 实战：用 modetest 点亮屏幕"></a>9.1 实战：用 modetest 点亮屏幕</h3><p>以 STM32MP157 + 4.3 寸 RGB（DPI）屏为例，驱动加载后 <code>/dev/dri/</code> 下会创建 <code>card0</code> 等设备节点。</p>
+<p>把 <code>modetest</code> 上传到开发板并加执行权限后运行，会列出 DRM 下的 Encoders、Connectors、CRTCs：</p>
+<img src="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-modetest.png" class="" title="modetest 输出：列出 Encoders / Connectors / CRTCs">
+
+<p>从输出中找到目标屏对应的 Connector ID 与 CRTC ID（示例中 connected 的 connector id = 31、crtc id = 34，name 显示为 DPI 接口）：</p>
+<img src="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/drm-modetest-ids.png" class="" title="从输出中找出目标屏的 Connector ID 与 CRTC ID（示例为 31 与 34）">
+
+<p>然后执行：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./modetest -M stm -s 31@34:480x272   <span class="comment"># -s &lt;connector&gt;@&lt;crtc&gt;:&lt;分辨率&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>按回车退出测试。若报 <code>Device or resource busy</code> 或卡死，多为设备树插件配置冲突；<code>Permission denied</code> 则需 <code>sudo</code>/root 权限。</p>
+<blockquote>
+<p><strong>fbdev 兼容</strong>：DRM 框架下会模拟一个 fb 设备（如 ST 驱动在 <code>drivers/gpu/drm/stm/drv.c</code> 中生成 <code>/dev/fb0</code>），方便老软件/控制台使用，但只能用到基本功能（显存映射、控制台输出），无法使用 DRM 的高级能力。</p>
+</blockquote>
 <hr>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
 <li>内核文档：<code>Documentation/gpu/drm-kms.rst</code>、<code>drm-kms-helpers.rst</code>、<code>drm-uapi.rst</code></li>
 <li>源码：<code>drivers/gpu/drm/drm_atomic.c</code>、<code>drm_crtc.c</code>、<code>drm_bridge.c</code>、<code>drivers/gpu/drm/drm_panel.c</code></li>
 <li>工具：libdrm（<code>modetest</code>）、<code>kmscube</code></li>
 </ul>
+<h3 id="本文整理自"><a href="#本文整理自" class="headerlink" title="本文整理自"></a>本文整理自</h3><ol>
+<li>何小龙：DRM（Direct Rendering Manager）学习简介 — <a target="_blank" rel="noopener" href="https://blog.csdn.net/hexiaolong2009/article/details/83720940">https://blog.csdn.net/hexiaolong2009/article/details/83720940</a></li>
+<li>野火：DRM 图形显示框架 — <a target="_blank" rel="noopener" href="https://doc.embedfire.com/linux/stm32mp1/driver/zh/latest/linux_driver/framework_drm.html">https://doc.embedfire.com/linux/stm32mp1/driver/zh/latest/linux_driver/framework_drm.html</a></li>
+<li>Kashine：DRM 驱动概念、组成、框架、源码分析 — <a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_41709234/article/details/129472180">https://blog.csdn.net/qq_41709234/article/details/129472180</a></li>
+</ol>
 
     </div>
 
@@ -438,7 +547,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-DRM"><span class="toc-text">一、为什么需要 DRM</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%A0%B8%E5%BF%83%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B"><span class="toc-text">二、核心对象模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%98%BE%E7%A4%BA%E7%AE%A1%E7%BA%BF%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="toc-text">三、显示管线数据流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E9%A9%B1%E5%8A%A8%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B"><span class="toc-text">四、驱动初始化流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E6%B3%A8%E5%86%8C-drm-device"><span class="toc-text">4.1 注册 drm_device</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%88%9B%E5%BB%BA%E5%90%84%E7%B1%BB%E5%AF%B9%E8%B1%A1"><span class="toc-text">4.2 创建各类对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E7%BB%91%E5%AE%9A%E5%9B%9E%E8%B0%83%E4%B8%8E%E6%B3%A8%E5%86%8C"><span class="toc-text">4.3 绑定回调与注册</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Atomic-Modeset-%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="toc-text">五、Atomic Modeset 状态机</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%85%B8%E5%9E%8B%E7%83%AD%E7%82%B9%E6%B5%81%E7%A8%8B"><span class="toc-text">六、典型热点流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E7%83%AD%E6%8F%92%E6%8B%94%EF%BC%88HPD%EF%BC%89"><span class="toc-text">6.1 热插拔（HPD）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E8%AF%BB-EDID-%E5%86%B3%E5%AE%9A%E5%88%86%E8%BE%A8%E7%8E%87"><span class="toc-text">6.2 读 EDID 决定分辨率</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%A1%A5%E6%8E%A5%E9%93%BE%EF%BC%88Bridge-chain%EF%BC%89"><span class="toc-text">6.3 桥接链（Bridge chain）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E6%8E%A5%E5%8F%A3"><span class="toc-text">七、用户空间接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%A1%86%E6%9E%B6%E5%88%86%E5%B1%82%E5%B0%8F%E7%BB%93"><span class="toc-text">八、框架分层小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E8%B0%83%E8%AF%95%E6%89%8B%E6%AE%B5"><span class="toc-text">九、调试手段</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-text">参考</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-DRM"><span class="toc-text">一、为什么需要 DRM</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%A8%A1%E5%9D%97%E7%BB%84%E6%88%90%EF%BC%9Alibdrm-KMS-GEM"><span class="toc-text">1.1 模块组成：libdrm &#x2F; KMS &#x2F; GEM</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%A0%B8%E5%BF%83%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B"><span class="toc-text">二、核心对象模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%98%BE%E7%A4%BA%E7%AE%A1%E7%BA%BF%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="toc-text">三、显示管线数据流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E9%A9%B1%E5%8A%A8%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B"><span class="toc-text">四、驱动初始化流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E6%B3%A8%E5%86%8C-drm-device"><span class="toc-text">4.1 注册 drm_device</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%88%9B%E5%BB%BA%E5%90%84%E7%B1%BB%E5%AF%B9%E8%B1%A1"><span class="toc-text">4.2 创建各类对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E7%BB%91%E5%AE%9A%E5%9B%9E%E8%B0%83%E4%B8%8E%E6%B3%A8%E5%86%8C"><span class="toc-text">4.3 绑定回调与注册</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-drm-xxx-funcs-%E4%B8%8E-drm-xxx-helper-funcs-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-text">4.4 drm_xxx_funcs 与 drm_xxx_helper_funcs 的区别</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Atomic-Modeset-%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="toc-text">五、Atomic Modeset 状态机</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%85%B8%E5%9E%8B%E7%83%AD%E7%82%B9%E6%B5%81%E7%A8%8B"><span class="toc-text">六、典型热点流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E7%83%AD%E6%8F%92%E6%8B%94%EF%BC%88HPD%EF%BC%89"><span class="toc-text">6.1 热插拔（HPD）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E8%AF%BB-EDID-%E5%86%B3%E5%AE%9A%E5%88%86%E8%BE%A8%E7%8E%87"><span class="toc-text">6.2 读 EDID 决定分辨率</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%A1%A5%E6%8E%A5%E9%93%BE%EF%BC%88Bridge-chain%EF%BC%89"><span class="toc-text">6.3 桥接链（Bridge chain）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-drm-panel%EF%BC%9AEncoder-%E9%A9%B1%E5%8A%A8%E4%B8%8E-LCD-%E9%A9%B1%E5%8A%A8%E7%9A%84%E8%A7%A3%E8%80%A6"><span class="toc-text">6.4 drm_panel：Encoder 驱动与 LCD 驱动的解耦</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E6%8E%A5%E5%8F%A3"><span class="toc-text">七、用户空间接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%A1%86%E6%9E%B6%E5%88%86%E5%B1%82%E5%B0%8F%E7%BB%93"><span class="toc-text">八、框架分层小结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E4%B8%BB%E6%9C%BA%E9%A9%B1%E5%8A%A8-vs-%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8"><span class="toc-text">8.1 主机驱动 vs 设备驱动</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E8%B0%83%E8%AF%95%E6%89%8B%E6%AE%B5"><span class="toc-text">九、调试手段</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#9-1-%E5%AE%9E%E6%88%98%EF%BC%9A%E7%94%A8-modetest-%E7%82%B9%E4%BA%AE%E5%B1%8F%E5%B9%95"><span class="toc-text">9.1 实战：用 modetest 点亮屏幕</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-text">参考</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%AC%E6%96%87%E6%95%B4%E7%90%86%E8%87%AA"><span class="toc-text">本文整理自</span></a></li></ol></li></ol>
   </div>
 </aside>
 
