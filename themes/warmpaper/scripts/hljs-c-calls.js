@@ -58,16 +58,85 @@ function patchAtomicTypes(grammar) {
   walk(grammar.contains);
 }
 
+/**
+ * 下标初始化器（designated initializer）着色：
+ *
+ *   static const struct drm_bridge_funcs x = {
+ *       .attach = lt9611_bridge_attach,
+ *   };
+ *
+ * hljs 的 C 语法不为 `.字段名 =` 产生任何 span，整块结构体初始化是一片纯文本，
+ * 和上下文（关键字 / 类型 / 注释有色）对比起来像"没高亮"。补两条规则：
+ *
+ *  1. `.字段名` → .attr（黄）。必须后跟 `=`（且不是 `==`），避免把成员调用
+ *     `.foo(...)`、浮点 `.5` 卷进来；
+ *  2. `.字段名 = 函数指针` 的值 → .title.function（蓝）。用变长后行断言把范围
+ *     锁死在「点号字段 + 等号」之后，所以普通赋值 `int a = b, c;` 不会被染；
+ *     再排除全大写宏（THIS_MODULE / MEDIA_BUS_FMT_*）与 true/false/NULL。
+ *
+ * 两条规则都带 relevance: 0，避免影响 _config.yml 里 auto_detect 的语言判定。
+ */
+const DESIGNATED_FIELD = /\.(?!\d)[A-Za-z_]\w*(?=\s*=[^=])/;
+
+const INITIALIZER_VALUE = new RegExp(
+  '(?<=\\.(?!\\d)[A-Za-z_]\\w*[ \\t]*=[ \\t]*)'
+  + '(?![A-Z][A-Z_0-9]*\\b)(?!true\\b|false\\b|NULL\\b)'
+  + '[A-Za-z_]\\w*(?=[ \\t]*[,\\n}])'
+);
+
+const EXTRA_RULES = [
+  { className: 'attr', begin: DESIGNATED_FIELD, relevance: 0 },
+  { className: 'title.function', begin: INITIALIZER_VALUE, relevance: 0 },
+  { className: 'title.function', begin: FUNCTION_CALL, relevance: 0 }
+];
+
+/**
+ * hljs 的 C 语法里另有一个「表达式上下文」模式（EXPRESSION_CONTEXT）：
+ *   `begin: /=/, end: /;/`   —— `int ret = foo();`
+ *   `begin: /\(/, end: /\)/` —— `if (regmap_read(...))`
+ * 它用的是一份独立的 contains 列表（EXPRESSION_CONTAINS），因此只往顶层
+ * contains 追加规则会漏掉两类内容：
+ *
+ *  1. `int ret = foo();`、`if (regmap_read(...))` 里的调用点拿不到 span；
+ *  2. 结构体初始化时，从第二个 `=` 起、直到末尾 `};` 之间的整段（也就是所有
+ *     `.字段 = 值,` 行）都被这个模式吞掉 —— 于是只有第一行 `.attach` 能命中
+ *     字段规则，其余字段永远没颜色。
+ *
+ * 这里按「contains 中是否含共享的 PREPROCESSOR 模式」找出这些上下文模式，
+ * 把同一套规则也追加进去（顶层 contains 同样含该模式，故一并覆盖）。
+ */
+const PREPROCESSOR_BEGIN = '#\\s*[a-z]+\\b';
+
+function collectExpressionContexts(grammar) {
+  const nodes = [];
+  const seen = new Set();
+  const preprocessors = new Set();
+
+  (function walk(mode) {
+    if (!mode || typeof mode !== 'object' || seen.has(mode)) return;
+    seen.add(mode);
+    nodes.push(mode);
+
+    const begin = String((mode.begin && mode.begin.source) || mode.begin || '');
+    if (mode.className === 'meta' && begin === PREPROCESSOR_BEGIN) preprocessors.add(mode);
+
+    (mode.contains || []).forEach(walk);
+  })(grammar);
+
+  return nodes.filter((mode) =>
+    Array.isArray(mode.contains) && mode.contains.some((child) => preprocessors.has(child))
+  );
+}
+
 function patchFunctionCalls(language) {
   const lang = hljs.getLanguage(language);
   if (!lang || typeof lang.rawDefinition !== 'function') return false;
 
   const grammar = lang.rawDefinition();
   patchAtomicTypes(grammar);
-  grammar.contains = (grammar.contains || []).concat({
-    className: 'title.function',
-    begin: FUNCTION_CALL,
-    relevance: 0
+
+  collectExpressionContexts(grammar).forEach((mode) => {
+    mode.contains = mode.contains.concat(EXTRA_RULES);
   });
 
   hljs.unregisterLanguage(language);
