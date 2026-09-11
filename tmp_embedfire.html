@@ -1,0 +1,599 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+<title>7. DRM图形显示框架 &mdash; [野火]嵌入式Linux驱动开发实战指南——基于STM32MP157开发板  文档</title>
+<link rel="shortcut icon" type="image/x-icon" href="../_static/images/logo.ico"/>
+
+<!--baidu analyse-->
+<script>
+  var _hmt = _hmt || [];
+  (function() {
+    var hm = document.createElement("script");
+    hm.src = "https://hm.baidu.com/hm.js?a9602362d729d6d6a3e9119d85edc92e";
+    var s = document.getElementsByTagName("script")[0]; 
+    s.parentNode.insertBefore(hm, s);
+  })();
+</script>
+
+
+
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script src="../_static/translations.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+    <link rel="next" title="8. 多核异构核间通信–ipcc" href="framework_ipcc.html" />
+    <link rel="prev" title="6. PWM子系统–pwm波形输出实验" href="subsystem_pwm.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+<!-------------------------------------------------------------------------------------------------------------------------------->
+<a href="https://embedfire.com/"><img alt="embedfire" title="官网" src="../_static/images/embedfire.png"/></a>
+&nbsp;<a href="https://www.firebbs.cn/"><img alt="firebbs" title="论坛" src="../_static/images/firebbs.png"/></a>
+&nbsp;<a href="https://gitee.com/embedfire-adc-dac/ebf_adc_ad7192_code"><img alt="gitee" title="gitee" src="../_static/images/gitee.png"/></a>
+&nbsp;<a href="https://github.com/Embedfire"><img alt="github" title="github" src="../_static/images/github.png"/></a>
+&nbsp;<a href="https://doc.embedfire.com/lubancat/python/pdf"><img alt="pdf" title="pdf" src="../_static/images/pdf.png"/></a>
+<!-------------------------------------------------------------------------------------------------------------------------------->
+
+<a href="../index.html">
+  <img src="../_static/logo-1.png" style="margin-top: -20px;" class="logo" alt="Logo"/>
+  [野火]嵌入式Linux驱动开发实战指南——基于STM32MP157开发板
+</a>
+
+
+
+  
+  
+    <!--<div class="version">
+      4b70e40
+    </div>-->
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">阅读指南</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../about_us.html">关于野火</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Linux驱动基础知识</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="base_linuxkernel_module.html">1. Linux内核模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_exper_env.html">2. 驱动章节实验环境搭建</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_first_module.html">3. 第一个内核模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_character_device.html">4. 字符设备驱动</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_led_character_device.html">5. 字符设备驱动——点亮LED灯</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_linux_device_model.html">6. Linux的设备模型</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_platform_driver.html">7. 平台设备驱动</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_driver_tree.html">8. Linux设备树</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_device_tree_rgb_led.html">9. 使用设备树实现RGB 灯驱动</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_dynamic_device_tree.html">10. 使用设备树插件实现RGB灯驱动</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Linux驱动框架</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="subsystem_gpio.html">1. Pinctrl子系统和GPIO子系统–led实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subsystem_i2c.html">2. I2C子系统–mpu6050驱动实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subsystem_spi.html">3. SPI子系统–oled屏实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subsystem_interrupt.html">4. 中断子系统–按键中断实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subsystem_input.html">5. 输入子系统–按键输入实验</a></li>
+<li class="toctree-l1"><a class="reference internal" href="subsystem_pwm.html">6. PWM子系统–pwm波形输出实验</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. DRM图形显示框架</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">7.1. 框架简述</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#libdrm">7.1.1. Libdrm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kms-kernel-mode-setting">7.1.2. KMS（Kernel Mode Setting）</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#planes">7.1.2.1. Planes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#crtc">7.1.2.2. CRTC</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#encoder">7.1.2.3. Encoder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#connector">7.1.2.4. Connector</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#gem-generic-drm-memory-management">7.1.3. GEM（generic DRM memory-management）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">7.2. 驱动简述</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">7.3. 设备树插件描述</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#rgb-lcd">7.3.1. RGB-LCD设备树插件</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dsi-lcd">7.3.2. DSI-LCD设备树插件</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">7.4. 实验准备</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id5">7.4.1. 添加设备树插件</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id6">7.4.2. libdrm测试程序</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">7.5. 实验操作</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="framework_ipcc.html">8. 多核异构核间通信–ipcc</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Linux驱动进阶知识</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="advance_smp.html">1. SMP(Symmetrical Multi-Processing)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advance_concurrency.html">2. linux驱动并发与竞态</a></li>
+</ul>
+<p class="caption"><span class="caption-text">添加驱动模块</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="addmodules_lcd_device.html">1. 添加LCD驱动</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addmodules_touch_screen.html">2. 电容触摸驱动实验</a></li>
+</ul>
+<p class="caption"><span class="caption-text">常见问题</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/index.html">常见问题</a></li>
+</ul>
+<p class="caption"><span class="caption-text">版权</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../LICENSE.html">版权说明</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">[野火]嵌入式Linux驱动开发实战指南——基于STM32MP157开发板</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+<style>
+
+    @media screen and (max-width: 1100px){
+        .prodcut-show-main{
+            display: none;
+        }
+    }
+    .prodcut-show-main{
+        background: #edf0f2;
+        width: 100%;
+        height: 170px;
+        margin-bottom: 24px;
+    }
+    .prodcut-show-main .prodcut-show-main-left{
+        width: 33%;
+    }
+    .prodcut-show-main .prodcut-show-main-right{
+        width: 64%;
+        margin-top: 13px;
+        margin-right: 18px;
+    }
+    .prodcut-show-main .prodcut-show-main-right p{
+        color: gray;
+        font-size: 84%;
+        height: 74px;
+        overflow-x: hidden;
+    }
+    .product-show-name .fa-pull-left{
+        
+        font-size: 124%;
+        color: #0077ff;
+        font-weight: bolder;
+        
+    }
+    .product-show-name{
+        margin-bottom: 12px;
+    }
+    .fa-pull-right a{
+        
+        background: #0077ff;
+        color: white;
+        padding: 6px 16px;
+        border-radius: 4px;
+        font-size: 80%;
+        margin-right: 10px;
+
+    }
+    .prodcut-show-img{
+        height: 170px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+</style>
+
+<div class="prodcut-show-main clearfix">
+    <div class="fa-pull-left prodcut-show-main-left">
+        <div class="prodcut-show-img">
+        <!------------------------------------------------------------------------------------------------------>
+        <a href="https://detail.tmall.com/item.htm?spm=a1z10.5-b-s.w4011-23268010681.53.60da2780x5Jvdb&id=603861416510&rn=03b3e8d3e6354758847d709d1278ebdd&abbucket=18">
+            <img alt="产品图片" height="80%" width="80%" src="../_static/images/product.png"/>
+        </a>
+        <!------------------------------------------------------------------------------------------------------>
+        </div>
+    </div>
+    <div class="fa-pull-right prodcut-show-main-right">
+        <div class="product-show-name clearfix">
+            <div class="fa-pull-left ">
+                STM32MP157 Pro/Mini开发板 <span></span>
+            </div>
+        </div>
+
+        <div class="fa-pull-left">
+            <!-------------------------------------------------------------------------------------------------------------------------------->
+            <a href="http://doc.embedfire.com/linux/imx6/hardware/zh/latest/index.html" target="_blank">
+                产品规格书
+            </a>
+            <a href="https://gitee.com/embedfire-st/embed_linux_driver_tutorial_stm32mp157_code" target="_blank">
+                配套程序
+            </a>
+            <a href="https://detail.tmall.com/item.htm?spm=a1z10.5-b-s.w4011-23268010681.53.60da2780x5Jvdb&id=603861416510&rn=03b3e8d3e6354758847d709d1278ebdd&abbucket=18" target="_blank">
+                立即购买
+            </a>
+            <a href="https://doc.embedfire.com/linux/stm32mp1/driver/pdf" target="_blank">
+                本书pdf
+            </a>              <!-------------------------------------------------------------------------------------------------------------------------------->
+            
+        </div>
+        <br>
+        <br>
+        <!-------------------------------------------------------------------------------------------------------------------------------->
+        <p>
+            STM32MP157开发板是野火电子基于STM32MP系列处理器设计的一款低功耗单板电脑， 工业级主频可达 650MHz， 
+            提供完整的SDK驱动开发包、核心板封装库，底板应用参考设计原理图， 可帮助客户大大缩减产品的开发时间，加快产品上市。 
+            配套的系统支持Debian、Ubuntu系统，支持python、Qt等组件。
+        </p>
+        <!-------------------------------------------------------------------------------------------------------------------------------->
+    </div>
+</div>
+
+<div class="rst-content">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><span class="section-number">7. </span>DRM图形显示框架</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+  <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+   <div itemprop="articleBody">
+    
+  <div class="section" id="drm">
+<h1><span class="section-number">7. </span>DRM图形显示框架<a class="headerlink" href="#drm" title="永久链接至标题">¶</a></h1>
+<p>以往我们在Linux上为显示设备开发驱动时，通常使用的是FrameBuffer的驱动框架，
+在FrameBuffer驱动框架下，我们能够快速开发出可供简单使用的显示驱动。
+但是随着芯片显示外设的性能逐渐增强及GPU的引入，FrameBuffer框架看起来似乎就有些落伍了，
+最直接的体现，就是在传统的框架下，对于许多芯片显示外设的新特性如：
+显示覆盖（菜单层级）、GPU加速、硬件光标等功能并不能得到很好得支持，
+并且FrameBuffer框架将底层的显存通过用户空间/dev/fb接口，暴露给了用户空间，
+这很容易导致不同的应用程序在操作显存时，产生访问冲突，而且这种方式看起来似乎不是那么安全。</p>
+<p>在这背景下，就需要一个现代的图形显示框架来解决这些问题，那么DRM（Direct Rendering Manager，直接图形管理器）诞生。</p>
+<div class="section" id="id1">
+<h2><span class="section-number">7.1. </span>框架简述<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h2>
+<p>那么DRM图形显示框架是怎么解决FrameBuffer框架遇到的困境呢？
+DRM将现代显示领域中会涉及的一些操作进行分层并使这些模块独立，
+如过上层应用想操作显存、显示效果抑或是GPU，都必须在一些框架的约束下进行，我们可以来了解一下。</p>
+<p>我们可以从用户空间、内核空间的两个角度去了解DRM框架：</p>
+<p>用户空间（libdrm driver）：</p>
+<ul class="simple">
+<li><p>Libdrm（DRM框架在用户空间的Lib）</p></li>
+</ul>
+<p>内核空间（DRM driver）：</p>
+<ul class="simple">
+<li><p>KMS（Kernel Mode Setting，内核显示模式设置）</p></li>
+<li><p>GEM（Graphic Execution Manager，图形执行管理器）</p></li>
+</ul>
+<img alt="broken" class="align-center" src="../_images/framework_drm.png" />
+<div class="section" id="libdrm">
+<h3><span class="section-number">7.1.1. </span>Libdrm<a class="headerlink" href="#libdrm" title="永久链接至标题">¶</a></h3>
+<p>DRM框架在用户空间提供的Lib，用户或应用程序在用户空间调用libdrm提供的库函数，
+即可访问到显示的资源，并对显示资源进行管理和使用。</p>
+<p>这样通过libdrm对显示资源进行统一访问，libdrm将命令传递到内核最终由DRM驱动接管各应用的请求并处理，
+可以有效避免访问冲突。</p>
+</div>
+<div class="section" id="kms-kernel-mode-setting">
+<h3><span class="section-number">7.1.2. </span>KMS（Kernel Mode Setting）<a class="headerlink" href="#kms-kernel-mode-setting" title="永久链接至标题">¶</a></h3>
+<p>KMS属于DRM框架下的一个大模块，主要负责两个功能：显示参数及显示控制。
+这两个基本功能可以说是显示驱动必须基本的能力，在DRM框架下，
+为了将这两部分适配得符合现代显示设备逻辑，又分出了几部分子模块配合框架。</p>
+<div class="section" id="planes">
+<h4><span class="section-number">7.1.2.1. </span>Planes<a class="headerlink" href="#planes" title="永久链接至标题">¶</a></h4>
+<p>基本的显示控制单位，每个图像拥有一个Planes，Planes的属性控制着图像的显示区域、图像翻转、色彩混合方式等，
+最终图像经过Planes并通过CRTC组件，得到多个图像的混合显示或单独显示的等等功能。</p>
+</div>
+<div class="section" id="crtc">
+<h4><span class="section-number">7.1.2.2. </span>CRTC<a class="headerlink" href="#crtc" title="永久链接至标题">¶</a></h4>
+<p>CRTC的工作，就是负责把要显示图像，转化为底层硬件层面上的具体时序要求，还负责着帧切换、电源控制、色彩调整等等。</p>
+</div>
+<div class="section" id="encoder">
+<h4><span class="section-number">7.1.2.3. </span>Encoder<a class="headerlink" href="#encoder" title="永久链接至标题">¶</a></h4>
+<p>Encoder的工作则是负责电源管理、视频输出格式封装（比如要将视频输出到HDMI接口、MIPI接口等）。</p>
+</div>
+<div class="section" id="connector">
+<h4><span class="section-number">7.1.2.4. </span>Connector<a class="headerlink" href="#connector" title="永久链接至标题">¶</a></h4>
+<p>Connector连接器负责硬件设备的接入、屏参获取等。</p>
+<p>上述的这些组件，最终完成了一个完整的DRM显示控制过程，如下图所示：</p>
+<img alt="broken" class="align-center" src="../_images/framework_drm1.png" />
+<p>参考资料 <a class="reference external" href="https://dri.freedesktop.org/docs/drm/gpu/drm-kms.html#kernel-mode-setting-kms">Kernel Mode Setting (KMS)</a> .</p>
+</div>
+</div>
+<div class="section" id="gem-generic-drm-memory-management">
+<h3><span class="section-number">7.1.3. </span>GEM（generic DRM memory-management）<a class="headerlink" href="#gem-generic-drm-memory-management" title="永久链接至标题">¶</a></h3>
+<p>顾名思义，GEM负责对DRM使用的内存（如显存）进行管理。</p>
+<p>GEM框架提供的功能包括：</p>
+<ul class="simple">
+<li><p>内存分配和释放</p></li>
+<li><p>命令执行</p></li>
+<li><p>执行命令时的管理</p></li>
+</ul>
+<p>参考资料 <a class="reference external" href="https://dri.freedesktop.org/docs/drm/gpu/drm-mm.html#the-graphics-execution-manager-gem">The Graphics Execution Manager (GEM)</a> .</p>
+</div>
+</div>
+<div class="section" id="id2">
+<h2><span class="section-number">7.2. </span>驱动简述<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<p>我们通过简单讲解了DRM驱动的框架，简单地带领大家认识了DRM框架下对显示功能的实现方法。
+实际的代码细节远比上述给大家介绍的内容复杂得多，给大家讲解框架组件功能只是起到一个抛砖引玉的作用，
+如果对代码细节感兴趣的同学，可以在目录 <code class="docutils literal notranslate"><span class="pre">drivers/gpu/drm</span></code> 中，查看具体的驱动实现。</p>
+<p>在实际的使用中，我这里将DRM的驱动实现分为了两个部分，主机驱动和设备驱动。主机驱动指的是片上的负责显示功能的外设驱动，如MP157上的LTDC外设、DSI外设的驱动，
+这些一般由芯片厂商如ST、NXP等来负责实现，完成一个DRM-Host，主机驱动代码一般位于 <code class="docutils literal notranslate"><span class="pre">drivers/gpu/drm/xxx/</span></code> 目录下，这里xxx代指芯片厂商如ST、NXP。</p>
+<p>一般我们要做的，就是现实一个设备驱动，比如针对某款LCD显示屏，
+将其参数（LCD Timing、Size…）、显示方式（DSI、HDMI…）等通过设备驱动，和主机驱动关联起来。</p>
+<p>在内核的DRM驱动目录中，给出了许多设备驱动的示例，详见目录： <code class="docutils literal notranslate"><span class="pre">drivers/gpu/drm/panel</span></code> .</p>
+<p>一个简单的DRM框架显示设备驱动例子可以参考 <code class="docutils literal notranslate"><span class="pre">drivers/gpu/drm/panel/panel-simple.c</span></code> .</p>
+</div>
+<div class="section" id="id3">
+<h2><span class="section-number">7.3. </span>设备树插件描述<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h2>
+<p>MP157开发板支持两种接口的LCD显示屏：RGB（MIPI DPI）、MIPI DSI，由于显示原理不同，所以分别对应着两款设备树插件，
+使用的也是不同的设备驱动，但是其驱动框架仍是DRM。</p>
+<div class="admonition important">
+<p class="admonition-title">重要</p>
+<p>两种接口RGB、DSI屏幕不可同时使用！</p>
+</div>
+<p>既然作为显示设备，那么设备树上描述的属性必然是和显示屏相关的内容，
+比如：屏幕的display timing、ddc读取显示器EDID结构等，
+详见及参考内核 <code class="docutils literal notranslate"><span class="pre">Documentation/devicetree/bindings/display/panel</span></code> 目录下的各种dt-bingdings，如：</p>
+<ul>
+<li><p>通用的bingdings文档：</p>
+<p><code class="docutils literal notranslate"><span class="pre">Documentation/devicetree/bindings/display/panel/panel-common.txt</span></code>
+<code class="docutils literal notranslate"><span class="pre">Documentation/devicetree/bindings/display/panel/panel-dpi.txt</span></code>
+<code class="docutils literal notranslate"><span class="pre">Documentation/devicetree/bindings/display/panel/panel-dsi-cm.txt</span></code></p>
+</li>
+<li><p>各种实例显示设备的bingdings文档。</p></li>
+</ul>
+<p>各种的bingdings文档，可以帮助你快速了解一个设备树里描述的属性内容，及如何去写一个对应的设备树节点。</p>
+<p>这里再补充一些知识，MIPI联盟提出了许多显示规范，有：DBI（Display Bus Interface带控制器及显存的并行接口显示模块）、
+DPI（Display Pixel Interface不带控制器或显存的并行接口显示模块）、DSI（Display Serial Interface高速串行接口）、
+DCS(Display Command Set用显示命令集操作的显示模块）。我们常说的RGB接口屏幕，也就是不带控制器及显存的并行接口屏幕，DBI的代表则有80接口MCU屏，
+至于DSI则是串行接口屏幕了，手机中常用的就是DSI接口屏幕。</p>
+<p>参考资料： <a class="reference external" href="https://www.mipi.org/current-specifications">MIPI Specifications</a> .</p>
+<div class="section" id="rgb-lcd">
+<h3><span class="section-number">7.3.1. </span>RGB-LCD设备树插件<a class="headerlink" href="#rgb-lcd" title="永久链接至标题">¶</a></h3>
+<p>设备树插件的源码非常长，此处不便展示，源码位于如下目录：</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arch/arm/boot/dts/overlays/stm-fire-lcd-overlay.dts
+</pre></div>
+</div>
+<p>其驱动目录对应为：</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>drivers/gpu/drm/panel/panel-simple.c
+</pre></div>
+</div>
+</div>
+<div class="section" id="dsi-lcd">
+<h3><span class="section-number">7.3.2. </span>DSI-LCD设备树插件<a class="headerlink" href="#dsi-lcd" title="永久链接至标题">¶</a></h3>
+<p>源码位于如下目录：</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>arch/arm/boot/dts/overlays/stm-fire-mipi-overlay.dts
+</pre></div>
+</div>
+<p>其驱动目录对应为：</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>drivers/gpu/drm/panel/panel-himax-hx8394.c
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="id4">
+<h2><span class="section-number">7.4. </span>实验准备<a class="headerlink" href="#id4" title="永久链接至标题">¶</a></h2>
+<p>下面我们就以野火的4.3寸RGB屏幕为例，为大家测试在DRM驱动框架下的驱动效果，我们进行屏幕的测试。</p>
+<div class="section" id="id5">
+<h3><span class="section-number">7.4.1. </span>添加设备树插件<a class="headerlink" href="#id5" title="永久链接至标题">¶</a></h3>
+<p>方法参考如下：</p>
+<img alt="broken" class="align-center" src="../_images/commentdtoverlay1.png" />
+<div class="admonition important">
+<p class="admonition-title">重要</p>
+<p>如果使用DSI屏幕，请将 <code class="docutils literal notranslate"><span class="pre">stm-fire-lcd.dtbo</span></code> 及 <code class="docutils literal notranslate"><span class="pre">stm-fire-mipi.dtbo</span></code> 设备树插件同时打开。
+若使用RGB屏幕，则只将 <code class="docutils literal notranslate"><span class="pre">stm-fire-lcd.dtbo</span></code> 打开。</p>
+</div>
+<p>以野火的4.3寸RGB屏幕为例，操作如下：</p>
+<img alt="broken" class="align-center" src="../_images/framework_drm2.png" />
+<p>如需调整屏幕参数，请使用fire-config工具调整，参考：</p>
+<p><a class="reference external" href="https://doc.embedfire.com/linux/stm32mp1/quick_start_guide/zh/latest/quick_start/framebuffer/framebuffer.html#fire-config">《fire-config修改液晶参数》</a></p>
+<p>如若运行代码时出现“Device or resource busy”或者运行代码卡死等等现象，
+请按上述情况检查并按上述步骤操作。</p>
+<p>如出现 <code class="docutils literal notranslate"><span class="pre">Permission</span> <span class="pre">denied</span></code> 或类似字样，请注意用户权限，大部分操作硬件外设的功能，几乎都需要root用户权限，简单的解决方案是在执行语句前加入sudo或以root用户运行程序。</p>
+</div>
+<div class="section" id="id6">
+<h3><span class="section-number">7.4.2. </span>libdrm测试程序<a class="headerlink" href="#id6" title="永久链接至标题">¶</a></h3>
+<p>野火MP157开发板中，DRM驱动默认被配置为编译进内核，驱动加载后，会在 <code class="docutils literal notranslate"><span class="pre">/dev/dri/</span></code> 目录下创建显示设备的节点，
+我们的应用程序就是通过open这些节点，调用libdrm的API去进行LCD控制和显示的。</p>
+<p>如下图，我们的RGB显示屏即为 <code class="docutils literal notranslate"><span class="pre">/dev/dri/card0</span></code> 节点.</p>
+<img alt="broken" class="align-center" src="../_images/framework_drm7.png" />
+<p>编写一个libdrm的测试程序较为复杂，这里我们使用libdrm官方的测试工具来进行测试，我们可以在这里下载源码并进行交叉编译出测试工具，以供在开发板上使用：
+<a class="reference external" href="https://dri.freedesktop.org/libdrm/">libdrm</a> .</p>
+<p>新版的libdrm使用meson+ninja的构建方式，而不是老版的autotools，没有基础的同学构建新版libdrm会比较痛苦。
+建议直接使用我们给大家编译好的测试程序，测试程序位于\linux_driver\framework_drm\modetest。</p>
+<p>对libdrm测试程序感兴趣的同学，可以下载libdrm源码解压，在其目录/libdrm-2.4.105/tests/下，查看modetest.c文件，此为测试程序源码。</p>
+</div>
+</div>
+<div class="section" id="id8">
+<h2><span class="section-number">7.5. </span>实验操作<a class="headerlink" href="#id8" title="永久链接至标题">¶</a></h2>
+<p>将上述的modetest测试程序上传至开发板中，并使用chmod添加执行权限。</p>
+<p>运行modetest程序，点击图片可放大：</p>
+<a class="reference internal image-reference" href="../_images/framework_drm3.png"><img alt="broken" class="align-center" src="../_images/framework_drm3.png" style="width: 9in;" /></a>
+<p>待程序检测执行完毕，会列举出开发板上的DRM框架下的显示设备。</p>
+<p>其中一些字样如Encoders、Connectors、CRTCs经过前面的介绍，大家都应该有了一点印象。</p>
+<p>DRM框架下的显示过程如下图示：</p>
+<img alt="broken" class="align-center" src="../_images/framework_drm4.png" />
+<p>我们要做的，就是找出前面终端中打印的RGB屏幕对应的connectors、CRTCs的ID：</p>
+<a class="reference internal image-reference" href="../_images/framework_drm5.png"><img alt="broken" class="align-center" src="../_images/framework_drm5.png" style="width: 9in;" /></a>
+<p>图中状态为connected的connectorsID为31，并且从name中可以看出为DPI接口的屏幕，正是我们的RGB屏。
+CRTCs对象中，唯一个id为34的CRTC，参数也为我们的RGB屏幕参数。</p>
+<p>则我们可以执行如下命令进行测试：</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>./modetest -M stm -s <span class="m">31</span>@34:480x272
+</pre></div>
+</div>
+<p>其中31、34分别为我们屏幕的Connectors ID、CRTCs ID，实验现象如图示：</p>
+<a class="reference internal image-reference" href="../_images/framework_drm6.png"><img alt="broken" class="align-center" src="../_images/framework_drm6.png" style="width: 2in;" /></a>
+<p>在终端中按下回车键退出测试。</p>
+<p>关于测试的更多相关内容，可以参考 <a class="reference external" href="https://www.cnblogs.com/yaongtime/p/12940386.html">linux DRM/KMS 测试工具 modetest</a> .</p>
+<p>文章末尾补充小知识，虽说DRM功能符合现代显示设备的需求，但是仍有众多的老设备及软件需要Framebuffer的支持。
+所以在DRM框架下，有部分代码用于实现在DRM框架下，去模拟FB设备。</p>
+<p>在ST提供的显示驱动代码中，也有模拟FB设备的相关代码，参见drivers/gpu/drm/stm/drv.c文件，
+最终效果就是设备目录下，出现熟悉的身影 <code class="docutils literal notranslate"><span class="pre">/dev/fb0</span></code> 。</p>
+<p>我们可以通过传统测试FrameBuffer设备的方式，使用如下命令来测试它：</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># 会得到类似花屏的效果</span>
+cat /dev/random &gt; /dev/fb0
+</pre></div>
+</div>
+<p>相关新闻可以查看 <a class="reference external" href="https://www.phoronix.com/scan.php?page=news_item&amp;px=Generic-FBDEV-Emulation-V3">Generic-FBDEV-Emulation</a> .</p>
+</div>
+</div>
+
+
+   </div>
+   
+  </div>
+  <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="framework_ipcc.html" class="btn btn-neutral float-right" title="8. 多核异构核间通信–ipcc" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="subsystem_pwm.html" class="btn btn-neutral float-left" title="6. PWM子系统–pwm波形输出实验" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, embedfire-野火 www.embedfire.com
+    <br>
+      
+        <span class="commit">
+          Revision <code>4b70e40</code>.
+        </span>
+      
+        <span class="lastupdated">
+          最后更新于 2023-02-11, 14:37:04 — GMT+08:00 .
+        </span>
+
+    <br><a href="https://beian.miit.gov.cn" target="_blank">粤ICP备18017226号-1</a>
+    </p>
+  </div> 
+
+</footer>
+
+</div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
