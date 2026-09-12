@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="2956" viewBox="0 0 960 2956" role="img" aria-label="LT9611 完整调用流程：probe 建链（drm_bridge_attach 调用关系）→ 插入 → 点亮 → 拔出" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Noto Sans CJK SC', sans-serif">
+<defs>
+<marker id="ltar" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+<path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8"/>
+</marker>
+<marker id="ltar-b" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+<path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/>
+</marker>
+</defs>
+<rect x="24" y="24" width="912" height="1236" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="24" width="912" height="34" rx="10" fill="#0ea5e9"/>
+<rect x="24" y="48" width="912" height="10" fill="#0ea5e9"/>
+<text x="40" y="46" font-size="14.5" font-weight="700" fill="#ffffff">probe 建链</text>
+<rect x="40" y="76" width="876" height="192" rx="8" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.4"/>
+<text x="58" y="108"><tspan fill="#0f172a" font-size="13" font-weight="600">① lt9611 驱动侧（lt9611.c）</tspan></text>
+<text x="58" y="134"><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_probe()</tspan></text>
+<text x="58" y="160"><tspan fill="#475569" font-size="12">├─ </tspan><tspan x="86" fill="#2563eb" font-size="12" font-weight="600">lt9611_parse_dt()</tspan><tspan fill="#475569" font-size="12">　← 解析 DT，取出 next_bridge（HDMI connector）</tspan></text>
+<text x="58" y="186"><tspan fill="#475569" font-size="12">├─ </tspan><tspan x="86" fill="#2563eb" font-size="12" font-weight="600">drm_bridge_add(&amp;lt9611-&gt;bridge)</tspan><tspan fill="#475569" font-size="12">　← 只挂进 DRM 全局列表</tspan></text>
+<text x="58" y="212"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="86" fill="#2563eb" font-size="12" font-weight="600">lt9611_attach_dsi()</tspan><tspan fill="#475569" font-size="12">　← 把 LT9611 这个 DSI 设备接到 host 上</tspan></text>
+<text x="86" y="238"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="114" fill="#2563eb" font-size="12" font-weight="600">mipi_dsi_attach(dsi)</tspan></text>
+<rect x="40" y="300" width="876" height="192" rx="8" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.4"/>
+<text x="58" y="332"><tspan fill="#0f172a" font-size="13" font-weight="600">② 上游 DSI host 侧（mtk_dsi.c）</tspan></text>
+<text x="58" y="358"><tspan fill="#2563eb" font-size="12" font-weight="600">.attach = mtk_dsi_host_attach</tspan></text>
+<text x="58" y="384"><tspan fill="#475569" font-size="12">├─ </tspan><tspan x="86" fill="#475569" font-size="12">记下 lanes / format / mode_flags；取出 next_bridge</tspan></text>
+<text x="58" y="410"><tspan fill="#475569" font-size="12">├─ </tspan><tspan x="86" fill="#2563eb" font-size="12" font-weight="600">drm_bridge_add(&amp;dsi-&gt;bridge)</tspan><tspan fill="#475569" font-size="12">　← 只挂进全局列表，还没 attach</tspan></text>
+<text x="58" y="436"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="86" fill="#2563eb" font-size="12" font-weight="600">component_add(&amp;mtk_dsi_component_ops)</tspan><tspan fill="#475569" font-size="12">　← 只登记为组件，不建 encoder</tspan></text>
+<text x="58" y="462"><tspan fill="#475569" font-size="12">—— 以上全部在 probe 期间发生；encoder / bridge 的挂接还没开始 ——</tspan></text>
+<path d="M248,234 H292 A8,8 0 0 1 300,242 V346 A8,8 0 0 1 292,354 H275" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<text x="292" y="285" text-anchor="end" font-size="11.5" font-weight="600" fill="#94a3b8">回调</text>
+<rect x="40" y="524" width="876" height="348" rx="8" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.4"/>
+<path d="M480,496 V516" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<text x="58" y="556"><tspan fill="#0f172a" font-size="13" font-weight="600">③ DRM 组件框架 mtk_drm_drv.c</tspan></text>
+<text x="58" y="582"><tspan fill="#475569" font-size="12">组件全部登记完成后，DRM 组件框架开始挨个回调各组件的 .bind：</tspan></text>
+<text x="58" y="608"><tspan fill="#2563eb" font-size="12" font-weight="600">mtk_drm_bind()</tspan></text>
+<text x="58" y="634"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="86" fill="#2563eb" font-size="12" font-weight="600">mtk_drm_kms_init()</tspan></text>
+<text x="86" y="660"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="114" fill="#2563eb" font-size="12" font-weight="600">component_bind_all()</tspan></text>
+<text x="114" y="686"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="142" fill="#2563eb" font-size="12" font-weight="600">mtk_dsi_bind()</tspan><tspan fill="#475569" font-size="12">　← DSI 这一项的 .bind</tspan></text>
+<text x="142" y="712"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="170" fill="#2563eb" font-size="12" font-weight="600">mtk_dsi_encoder_init()</tspan></text>
+<text x="170" y="738"><tspan fill="#475569" font-size="12">├─ </tspan><tspan x="198" fill="#2563eb" font-size="12" font-weight="600">drm_bridge_attach(encoder, &amp;dsi-&gt;bridge, NULL, NO_CONNECTOR)</tspan></text>
+<text x="170" y="764"><tspan fill="#475569" font-size="12">│</tspan><tspan x="198" fill="#475569" font-size="12">└─ </tspan><tspan x="226" fill="#2563eb" font-size="12" font-weight="600">[回调] mtk_dsi_bridge_attach()</tspan></text>
+<text x="170" y="790"><tspan fill="#475569" font-size="12">│</tspan><tspan x="226" fill="#475569" font-size="12">└─ </tspan><tspan x="254" fill="#2563eb" font-size="12" font-weight="600">drm_bridge_attach(encoder, dsi-&gt;next_bridge /* = LT9611 */, &amp;dsi-&gt;bridge, flags)</tspan></text>
+<text x="170" y="816"><tspan fill="#475569" font-size="12">│</tspan><tspan x="254" fill="#475569" font-size="12">└─ </tspan><tspan x="282" fill="#2563eb" font-size="12" font-weight="600">[回调] lt9611_bridge_attach()</tspan><tspan fill="#475569" font-size="12">　★ 本图要交代的一步</tspan></text>
+<text x="170" y="842"><tspan fill="#475569" font-size="12">└─ </tspan><tspan x="198" fill="#2563eb" font-size="12" font-weight="600">drm_bridge_connector_init()</tspan><tspan fill="#475569" font-size="12">　← 最后统一生成 connector</tspan></text>
+<rect x="40" y="904" width="876" height="166" rx="8" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.4"/>
+<path d="M600,738 H852 A8,8 0 0 1 860,746 V880 A8,8 0 0 1 852,888 H230 A8,8 0 0 0 222,896 V902" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<text x="866" y="866" font-size="11.5" font-weight="600" fill="#94a3b8">展开</text>
+<text x="58" y="936"><tspan fill="#2563eb" font-size="13" font-weight="600">④ drm_bridge_attach()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　← DRM 核心函数（drm_bridge.c）</tspan></text>
+<text x="58" y="962"><tspan fill="#2563eb" font-size="12" font-weight="600">int drm_bridge_attach(encoder, bridge, previous, flags)</tspan><tspan fill="#475569" font-size="12" font-weight="400">　做三件事：</tspan></text>
+<text x="58" y="988"><tspan fill="#475569" font-size="12" font-weight="400">　① 校验 previous 并登记 bridge-&gt;encoder / bridge-&gt;dev</tspan></text>
+<text x="58" y="1014"><tspan fill="#475569" font-size="12" font-weight="400">　② 回调 </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">bridge-&gt;funcs-&gt;attach(bridge, flags)</tspan><tspan fill="#475569" font-size="12" font-weight="400">　★ 驱动实现从这里被调用</tspan></text>
+<text x="58" y="1040"><tspan fill="#475569" font-size="12" font-weight="400">　③ previous-&gt;next = bridge　← 把 bridge 串进 encoder 的 bridge 链</tspan></text>
+<path d="M480,1070 V1094" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<rect x="40" y="1102" width="876" height="140" rx="8" fill="#ffffff" stroke="#7dd3fc" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="58" y="1134"><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_attach()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 把 attach 转发给 next_bridge（HDMI connector）</tspan></text>
+<text x="58" y="1160"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_bridge_add()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 把 bridge 挂进 DRM 全局列表；attach 到 encoder 发生在 </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">mtk_dsi_encoder_init()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 之后</tspan></text>
+<text x="58" y="1186"><tspan fill="#475569" font-size="12" font-weight="400">LT9611 用 </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">DRM_BRIDGE_ATTACH_NO_CONNECTOR</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 挂链，connector 由 </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">drm_bridge_connector_init()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 统一生成</tspan></text>
+<text x="58" y="1212"><tspan fill="#475569" font-size="12" font-weight="400">使能 HPD：</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">drm_bridge_hpd_enable()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> → </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_hpd_enable()</tspan></text>
+<rect x="24" y="1318" width="912" height="598" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="1318" width="912" height="34" rx="10" fill="#22c55e"/>
+<rect x="24" y="1342" width="912" height="10" fill="#22c55e"/>
+<text x="40" y="1340" font-size="14.5" font-weight="700" fill="#ffffff">插入：显示器拉高 HPD → LT9611 触发中断 → SoC IRQ</text>
+<rect x="40" y="1370" width="876" height="114" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="478" y="1402" text-anchor="middle"><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_irq_thread_handler()</tspan></text>
+<text x="478" y="1428" text-anchor="middle"><tspan fill="#94a3b8" font-size="15" font-weight="700">↓</tspan></text>
+<text x="478" y="1454" text-anchor="middle"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_kms_helper_hotplug_event()</tspan></text>
+<path d="M480,1484 V1508" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+<path d="M240,1508 H716" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+<path d="M240,1508 V1556" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<path d="M716,1508 V1556" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<rect x="40" y="1564" width="400" height="114" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="58" y="1596"><tspan fill="#0f172a" font-size="13" font-weight="600">① 通知用户态</tspan></text>
+<text x="58" y="1622"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_sysfs_hotplug_event()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> → uevent</tspan></text>
+<text x="58" y="1648"><tspan fill="#475569" font-size="12" font-weight="400">udev / systemd → 合成器</tspan></text>
+<rect x="516" y="1564" width="400" height="114" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="534" y="1596"><tspan fill="#0f172a" font-size="13" font-weight="600">② 通知内核 client</tspan></text>
+<text x="534" y="1622"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_client_dev_hotplug()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> →</tspan></text>
+<text x="534" y="1648"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_fb_helper_hotplug_event()</tspan></text>
+<path d="M240,1678 V1702" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+<path d="M716,1678 V1702" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+<path d="M240,1702 H716" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+<path d="M480,1702 V1750" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<rect x="40" y="1758" width="876" height="140" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="58" y="1790"><tspan fill="#0f172a" font-size="13" font-weight="600">探测 → 取模式表</tspan></text>
+<text x="58" y="1816"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_helper_probe_detect()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> → </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_detect()</tspan></text>
+<text x="58" y="1842"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_helper_probe_get_modes()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> → </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_edid_read()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> → </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">drm_add_edid_modes()</tspan></text>
+<text x="58" y="1868"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_bridge_chain_mode_valid()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> → </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_mode_valid()</tspan></text>
+<rect x="24" y="1974" width="912" height="424" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="1974" width="912" height="34" rx="10" fill="#f59e0b"/>
+<rect x="24" y="1998" width="912" height="10" fill="#f59e0b"/>
+<text x="40" y="1996" font-size="14.5" font-weight="700" fill="#ffffff">两条路汇合：一次 atomic commit（决定最终分辨率 / 刷新率）</text>
+<rect x="40" y="2026" width="876" height="192" rx="8" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.4"/>
+<text x="58" y="2058"><tspan fill="#2563eb" font-size="13" font-weight="600">drm_atomic_commit()</tspan></text>
+<text x="58" y="2084"><tspan fill="#475569" font-size="12" font-weight="400">check：</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">drm_atomic_helper_bridge_duplicate_state()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　+　</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_atomic_get_input_bus_fmts()</tspan></text>
+<text x="58" y="2110"><tspan fill="#475569" font-size="12" font-weight="400">check：</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_mode_valid()</tspan></text>
+<text x="58" y="2136"><tspan fill="#475569" font-size="12" font-weight="400">commit：</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_atomic_pre_enable()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　← 仅 sleep == true 时唤醒芯片</tspan></text>
+<text x="58" y="2162"><tspan fill="#475569" font-size="12" font-weight="400">commit：</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">encoder-&gt;helper_private-&gt;atomic_enable()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　← 上游 DSI host 送视频流</tspan></text>
+<text x="58" y="2188"><tspan fill="#475569" font-size="12" font-weight="400">commit：</tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_atomic_enable()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　★ 画面出现</tspan></text>
+<path d="M480,2218 V2242" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<rect x="40" y="2250" width="876" height="62" rx="8" fill="#ffffff" stroke="#fcd34d" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="478" y="2282" text-anchor="middle"><tspan fill="#2563eb" font-size="12" font-weight="600">atomic_enable()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 内部：MIPI 输入 → TxPLL → MIPI 时序 → PCR → MIPI AFE → infoframe → HDMI TX / PHY → 使能输出</tspan></text>
+<text x="480" y="2376" text-anchor="middle"><tspan fill="#475569" font-size="13" font-weight="400">┈┈┈┈　正常显示中（持续输出）　┈┈┈┈</tspan></text>
+<rect x="24" y="2456" width="912" height="476" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="2456" width="912" height="34" rx="10" fill="#ef4444"/>
+<rect x="24" y="2480" width="912" height="10" fill="#ef4444"/>
+<text x="40" y="2478" font-size="14.5" font-weight="700" fill="#ffffff">拔出：显示器拉低 HPD → LT9611 触发中断 → SoC IRQ</text>
+<rect x="40" y="2508" width="876" height="166" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="478" y="2540" text-anchor="middle"><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_irq_thread_handler()</tspan></text>
+<text x="478" y="2566" text-anchor="middle"><tspan fill="#94a3b8" font-size="15" font-weight="700">↓</tspan></text>
+<text x="478" y="2592" text-anchor="middle"><tspan fill="#2563eb" font-size="12" font-weight="600">drm_kms_helper_hotplug_event()</tspan></text>
+<text x="478" y="2618" text-anchor="middle"><tspan fill="#94a3b8" font-size="15" font-weight="700">↓</tspan></text>
+<text x="478" y="2644" text-anchor="middle"><tspan fill="#475569" font-size="12" font-weight="400">重新探测：detect = disconnected，mode 表清空</tspan></text>
+<path d="M480,2674 V2698" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<rect x="40" y="2706" width="876" height="114" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="58" y="2738"><tspan fill="#0f172a" font-size="13" font-weight="600">用户态提交一次「关闭」commit</tspan></text>
+<text x="58" y="2764"><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_atomic_disable()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　← 关闭 HDMI 输出 + </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_power_off()</tspan></text>
+<text x="58" y="2790"><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_atomic_post_disable()</tspan><tspan fill="#475569" font-size="12" font-weight="400">　← </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_sleep_setup()</tspan><tspan fill="#475569" font-size="12" font-weight="400">，sleep = true</tspan></text>
+<path d="M480,2820 V2844" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ltar)"/>
+<rect x="40" y="2852" width="876" height="62" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="478" y="2884" text-anchor="middle"><tspan fill="#475569" font-size="12" font-weight="400">芯片停在 sleep 态，等下一次插入由 </tspan><tspan fill="#2563eb" font-size="12" font-weight="600">lt9611_bridge_atomic_pre_enable()</tspan><tspan fill="#475569" font-size="12" font-weight="400"> 唤醒</tspan></text>
+</svg>
