@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/09/10/lt9611-driver/lt9611-call-flow.svg">
 <meta property="article:published_time" content="2026-09-10T12:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-13T03:59:32.201Z">
+<meta property="article:modified_time" content="2026-09-13T08:07:51.377Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="驱动开发">
 <meta property="article:tag" content="drm">
@@ -261,31 +261,13 @@ mjx-container[display="true"] + br {
 <p><code>lt9611_sleep_setup()</code> 里的关键几笔：<code>0x8102 = 0x48</code>（MIPI Rx 掉电）、<code>0x8130 = 0x00</code>（输出全关）、<code>0x8011 = 0x0a</code>（低功耗），写完把 <code>sleep</code> 置真。</p>
 </blockquote>
 <hr>
-<h2 id="五、HDMI-音频通路"><a href="#五、HDMI-音频通路" class="headerlink" title="五、HDMI 音频通路"></a>五、HDMI 音频通路</h2><p>LT9611 同时把 DSI 携带的音频转发进 HDMI 的音频通道，作为 ASoC codec 注册回调：</p>
-<table>
-<thead>
-<tr>
-<th>回调</th>
-<th>功能</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>.hw_params</code></td>
-<td>设置音频采样率 (48k/96k)</td>
-</tr>
-<tr>
-<td><code>.audio_startup</code></td>
-<td>启动音频通路</td>
-</tr>
-<tr>
-<td><code>.audio_shutdown</code></td>
-<td>关闭音频通路</td>
-</tr>
-<tr>
-<td><code>.get_dai_id</code></td>
-<td>获取 DAI ID (sound port)</td>
-</tr>
-</tbody></table>
+<h2 id="五、HDMI-音频通路"><a href="#五、HDMI-音频通路" class="headerlink" title="五、HDMI 音频通路"></a>五、HDMI 音频通路</h2><p>音频并不走 DSI 链路：SoC 的 I2S（最多 8 声道）直接接到 LT9611，DTS 里 <code>lt9611</code> 节点的 <code>#sound-dai-cells = &lt;1&gt;</code> 就是为它准备的。驱动把芯片注册成一个标准的 <code>hdmi-codec</code> 平台设备交给 ASoC，播放时由下面这组 ops 把采样率、音频时钟、通路开关写进芯片，音频随 HDMI 数据流一起发出去。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//作用：暴露给 ASoC（hdmi-codec）的 codec 回调</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">hdmi_codec_ops</span> <span class="title">lt9611_codec_ops</span> =</span> {</span><br><span class="line">	<span class="attr">.hw_params</span>      = <span class="title function_">lt9611_hdmi_hw_params</span>,      <span class="comment">/* 按采样率配音频时钟（48k/96k） */</span></span><br><span class="line">	<span class="attr">.audio_shutdown</span> = <span class="title function_">lt9611_audio_shutdown</span>,      <span class="comment">/* 关音频通路 */</span></span><br><span class="line">	<span class="attr">.audio_startup</span>  = <span class="title function_">lt9611_audio_startup</span>,       <span class="comment">/* 开音频通路与音频时钟 */</span></span><br><span class="line">	<span class="attr">.get_dai_id</span>     = <span class="title function_">lt9611_hdmi_i2s_get_dai_id</span>, <span class="comment">/* 在 DTS 里认出音频端点并返回 DAI id */</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">hdmi_codec_pdata</span> <span class="title">codec_data</span> =</span> {</span><br><span class="line">	<span class="attr">.ops</span> = &amp;lt9611_codec_ops,</span><br><span class="line">	<span class="attr">.max_i2s_channels</span> = <span class="number">8</span>,   <span class="comment">/* I2S 最多 8 声道 */</span></span><br><span class="line">	<span class="attr">.i2s</span> = <span class="number">1</span>,                <span class="comment">/* 音频走 I2S 接口（另一种可选 SPDIF） */</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">//作用：把 LT9611 注册成 hdmi-codec 平台设备，probe 末尾调用一次</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">lt9611_audio_init</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="keyword">struct</span> lt9611 *lt9611)</span></span><br><span class="line">{</span><br><span class="line">	codec_data<span class="attr">.data</span> = lt9611;               <span class="comment">//回调里的 data 参数就是从这来的</span></span><br><span class="line"></span><br><span class="line">	lt9611-&gt;audio_pdev =</span><br><span class="line">		<span class="title function_">platform_device_register_data</span>(dev, HDMI_CODEC_DRV_NAME,</span><br><span class="line">					      PLATFORM_DEVID_AUTO,   <span class="comment">//设备名与 id 交给内核分配</span></span><br><span class="line">					      &amp;codec_data, <span class="keyword">sizeof</span>(codec_data));</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="title function_">PTR_ERR_OR_ZERO</span>(lt9611-&gt;audio_pdev);   <span class="comment">//注册失败则 probe 直接失败</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注 1：<code>probe</code> 里的 <code>lt9611_audio_init()</code> 只负责注册设备，音频寄存器要等 ASoC 起流时才写下去 —— 所以 HDMI 插上、屏也亮了，并不代表音频已经就绪。</p>
+<p>注 2：较新的内核把这段换成了 DRM bridge 原生的 HDMI helper（<code>.hdmi_audio_startup</code> / <code>.hdmi_audio_prepare</code> / <code>.hdmi_audio_shutdown</code>，配合 <code>DRM_BRIDGE_OP_HDMI_AUDIO</code>），不再注册 <code>hdmi-codec</code>，但写的是同一批寄存器。</p>
+</blockquote>
 <hr>
 
     </div>
