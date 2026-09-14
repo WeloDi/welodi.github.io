@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
-  <link rel="stylesheet" href="/css/style.css?v=e073b6f7">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
   
   <script>
     (function () {
@@ -153,14 +153,18 @@ mjx-container[display="true"] + br {
       
         <a class="nav-link" href="/">Home</a>
       
-        <a class="nav-link" href="/archives">Archives</a>
+        <a class="nav-link" href="/categories">Categories</a>
       
         <a class="nav-link" href="/tags">Tags</a>
       
-        <a class="nav-link" href="/categories">Categories</a>
-      
         <a class="nav-link" href="/about">About</a>
       
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
       <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
         <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="4"/>
@@ -203,16 +207,277 @@ mjx-container[display="true"] + br {
   
     <article class="post-card">
   <h2 class="post-card-title">
-    <a href="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/">DRM显示驱动框架</a>
+    <a href="/2026/09/13/mt7925-01-driver-stack/">MT7925 驱动学习 01：硬件架构与 Linux 6.12 驱动栈分层</a>
   </h2>
   <div class="post-card-meta">
-    <time datetime="2026-09-11T02:00:00.000Z">2026-09-11</time>
+    <time datetime="2026-09-13T15:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
     
   </div>
   <div class="post-card-excerpt">
     
       
-      <p>文档概述 本文梳理 Linux 内核 DRM（Direct Rendering Manager） 显示驱动子系统的整体框架：从”为什么需要 DRM”、核心对象模型，到主机驱动的初始化流程、Atomic Modeset 状态机、典型热点流程与用户空间接口，再到分层归属（主机驱动 vs 设备驱动）与调试手段，给出一条”从注册到点亮屏幕”的完整脉络。. 一、为什么需要 DRM ...</p>
+      <p>本文梳理 Linux 6.12 中 MediaTek MT7925（Wi-Fi 7 / 802.11be）网卡驱动的硬件接口与源码分层。驱动路径 ，向上挂 mac80211/cfg80211，向下经 PCIe 或 USB 访问芯片，协议栈的关键逻辑跑在片内 MCU 的固件里。. MT7925 是一颗 tri-band（2.4 / 5 / 6GHz）Wi-Fi 7 芯片，驱动里通过三个 ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-01-driver-stack/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/WiFi-7/">#WiFi 7</a>
+      
+        <a href="/tags/mt76/">#mt76</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-02-pcie-bus/">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe / 中断 / DMA / 电源 / 卸载）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T14:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>本文只讲 PCIe：以 MT7925E（）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：. 涉及的源文件：. USB 分支只在倒数第二节做对照，不展开。. 一个 PCIe 驱动的最小骨架就这几件事，每一项 mt7925 都做到了，可以直接当模板抄：. 值得学（和吐槽）的细节：. 塞固件名字符串。 的 是 ，这里直接放 常量。理由：0x7925 和 0x0717 两种 ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-02-pcie-bus/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/PCIe/">#PCIe</a>
+      
+        <a href="/tags/DMA/">#DMA</a>
+      
+        <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/">#Linux驱动</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-03-firmware-mcu/">MT7925 驱动学习 03：固件加载与 MCU 通信（ROM patch、命令与事件通道）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T13:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>MT7925 的射频、速率自适应、扫描、省电等核心逻辑都运行在片内 WF_MCU 上。驱动与 MCU 的交互只有两件事：下载固件 / 收发命令。本文梳理固件文件、下载序列、命令通道（TX ring）与事件通道（RX ring）的完整链路。. 固件名不是写死在 里，而是按芯片 ID 从共享层挑：. MT7925 用两份文件：. 两个文件名同时用 声明，从而进入 module 的 depends ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-03-firmware-mcu/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/%E5%9B%BA%E4%BB%B6%E5%8A%A0%E8%BD%BD/">#固件加载</a>
+      
+        <a href="/tags/MCU/">#MCU</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-04-mac-init/">MT7925 驱动学习 04：MAC 初始化与硬件寄存器配置</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T12:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>本文从 开始，追一遍 MT7925 上电到”可收发包”的全过程：软资源初始化 → 异步 → 固件/MAC 寄存器配置 → WTBL 与定点速率表 → wiphy 能力上报（HE/EHT/MLO）。. probe 的最后一步（无论 PCIe 还是 USB 都汇聚到这里）。它只做”分配 + 挂接 + 排队”，真正的硬件操作全部丢给 ：. 这里出现的三个默认值值得单独记：. 顺序上的因果链：. ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-04-mac-init/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/MAC/">#MAC</a>
+      
+        <a href="/tags/register/">#register</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-05-mac80211/">MT7925 驱动学习 05：mac80211 集成（ops 回调、扫描/认证/关联、MLO 链路）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T11:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>mac80211 与驱动的接口就是一张 。本文把 MT7925 的这张表按功能拆开讲清楚：哪些回调是 MT7925 自己的、哪些直接复用 mt792x/mt76 的公共实现，以及 MLO（多链路）如何在 mac80211 的链路模型上与驱动对接。. 注意最后一行：它不是 ，而是 。原因是 会复制一份并打补丁：. 同一个 被 PCIe/USB、不同 capability ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-05-mac80211/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/mac80211/">#mac80211</a>
+      
+        <a href="/tags/MLO/">#MLO</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-06-data-path/">MT7925 驱动学习 06：数据通路（TX/RX 队列、TXWI/RXD、token 与 TX_FREE）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T10:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>本文梳理 MT7925 收发包的完整软件路径：队列划分与尺寸、TX 侧 TXWI 构造与 token 生命周期、RX 侧从 DMA ring 到 的解析流程，以及 MLO 在数据通路上的体现（per-link wcid / WTBL）。. TXWI 组成：（）。. NAPI 轮询时 mt76 框架先调 判断”这一批要不要交给 “；MT7925 借它顺手把两类不需要 skb 的回收信息处理掉：. ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-06-data-path/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/DMA/">#DMA</a>
+      
+        <a href="/tags/%E6%95%B0%E6%8D%AE%E9%80%9A%E8%B7%AF/">#数据通路</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-07-power-management/">MT7925 驱动学习 07：电源管理（runtime PM、深度睡眠、系统休眠与 WoWLAN）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T09:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>MT7925 的电管理分三个层次：mac80211 的 PS（省电模式）、mt76 的 runtime PM（含 deep sleep）、系统 suspend/resume + WoWLAN。这三层容易互相混淆，尤其”掉线”和”唤醒失败”类问题往往出在第二、三层的交界处。本文逐层拆开。. 一句话区分：PS 是”我在省电”，runtime PM 是”我睡着了但还可以被叫醒”，suspend ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-07-power-management/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86/">#电源管理</a>
+      
+        <a href="/tags/WoWLAN/">#WoWLAN</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/13/mt7925-08-debugging/">MT7925 驱动学习 08：调试与问题定位（debugfs、固件日志、coredump、故障树）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-13T08:00:00.000Z">2026-09-13</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>前面七篇讲了结构，这篇讲怎么查。MT7925 的可观测性分四类：内核日志（dmesg）、debugfs、固件自身（日志 + coredump）、以及系统层（iw/ethtool/ftrace）。本文给出每类工具的入口、读法和一套按现象分诊的故障树。. MT7925 的日志关键字基本可以直接映射到前几篇讲过的函数：. 打开更细的日志：. 条目由 与 （公共项）共同创建，名字以实际 ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/13/mt7925-08-debugging/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/MT7925/">#MT7925</a>
+      
+        <a href="/tags/%E8%B0%83%E8%AF%95/">#调试</a>
+      
+        <a href="/tags/debugfs/">#debugfs</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/">DRM显示驱动框架</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-11T02:00:00.000Z">2026-09-11</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/">显示驱动</a><span class="separator">/</span><a href="/categories/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/DRM/">DRM</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>本文梳理 Linux 内核 DRM（Direct Rendering Manager） 显示驱动子系统的整体框架：从”为什么需要 DRM”、核心对象模型，到主机驱动的初始化流程、Atomic Modeset 状态机、典型热点流程与用户空间接口，再到分层归属（主机驱动 vs 设备驱动）与调试手段，给出一条”从注册到点亮屏幕”的完整脉络。. 在屏幕上显示一张图片，底层实际上要做这么多活：. ...</p>
     
   </div>
   <a class="read-more" href="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/">Read More &rarr;</a>
@@ -237,11 +502,14 @@ mjx-container[display="true"] + br {
   <div class="post-card-meta">
     <time datetime="2026-09-10T12:00:00.000Z">2026-09-10</time>
     
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/">显示驱动</a><span class="separator">/</span><a href="/categories/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/%E6%A1%A5%E6%8E%A5%E8%8A%AF%E7%89%87/">桥接芯片</a>
+    
   </div>
   <div class="post-card-excerpt">
     
       
-      <p>文档概述 本文记录龙迅（Lontium）的 MIPI DSI → HDMI 1.4 桥接芯片LT9611驱动 的架构、probe 流程、DRM 回调链路、热插拔（HPD）处理、显示配置流程与音频通路。. 一、芯片工作原理 LT9611 数据与控制通路如下：. 输入：MIPI DSI，由 SoC 的 DSI 输出提供像素流。 输出：HDMI TMDS，另含 DDC 通道（读显示器 EDID）与 ...</p>
+      <p>本文记录龙迅（Lontium）的 MIPI DSI → HDMI 1.4 桥接芯片LT9611驱动 的架构、probe 流程、DRM 回调链路、热插拔（HPD）处理、显示配置流程与音频通路。. LT9611 数据与控制通路如下：. 输入：MIPI DSI，由 SoC 的 DSI 输出提供像素流。 输出：HDMI TMDS，另含 DDC 通道（读显示器 EDID）与 HPD（热插拔检测）。 ...</p>
     
   </div>
   <a class="read-more" href="/2026/09/10/lt9611-driver/">Read More &rarr;</a>
@@ -253,231 +521,6 @@ mjx-container[display="true"] + br {
         <a href="/tags/drm/">#drm</a>
       
     </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/09/06/color-encoding/">色彩编码格式</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-09-06T02:00:00.000Z">2026-09-06</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>〇、像素的”颜色”加工 一张相机的彩色图，不是 sensor”直接拍出来的彩色”，而是经过多级处理：. RAW 图像的每个像素只有 1 个通道值（只感 R 或 G 或 B 一种光），不是”彩色像素” 同一种”视觉颜色”，在不同阶段叫不同格式：sensor 端 = Bayer 相位 + 位深；ISP 输出 = RGB/YCbCr + 位深 + 色度抽样；内存里 = V4L2 fourcc. ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/09/06/color-encoding/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/MIPI/">#MIPI</a>
-      
-        <a href="/tags/Camera/">#Camera</a>
-      
-        <a href="/tags/ISP/">#ISP</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/09/05/multi-sensor-sync/">多传感器同步</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-09-05T02:20:00.000Z">2026-09-05</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>一、时间同步的作用与挑战 时间同步要解决的三类问题：. 硬件时钟漂移：不同设备的晶振频率存在微小差异（普通晶振 ±20~50ppm），且频率随温度漂移；误差随时间线性累积——20ppm 的时钟一天约漂移 1.7s。软件”对表”只能校正相位（offset），校正不了频率（skew），因此需要持续驯服而非一次同步。. 网络延迟波动：基于网络/总线传输的传感器（以太网摄像头、USB ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/09/05/multi-sensor-sync/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/Camera/">#Camera</a>
-      
-        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>
-      
-        <a href="/tags/IMU/">#IMU</a>
-      
-        <a href="/tags/%E5%90%8C%E6%AD%A5/">#同步</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/09/04/MIPI-CSI2/">MIPI-CSI2协议</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-09-04T04:00:00.000Z">2026-09-04</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>〇、物理链路总览 后文所有概念（包、DT、LP/HS、时序）都运行在以下链路上。以 IMX219（2-lane）接 RK SoC 为例：. 注意：. 每个 lane 有两种模式：LP（1.2V 低速，空闲/握手）和 HS（低摆幅差分，真正高速传数据，时钟 lane 持续翻转） 两种时钟别搞反：XVCLK = SoC 给 sensor 干活用的主时钟（24M）；MIPI CLK lane = ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/09/04/MIPI-CSI2/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/MIPI/">#MIPI</a>
-      
-        <a href="/tags/CSI-2/">#CSI-2</a>
-      
-        <a href="/tags/Camera/">#Camera</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/08/22/hx9023s-driver/">hx9023s_driver</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-08-22T12:00:00.000Z">2026-08-22</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>文档概述 本文档详细分析 Linux 6.12 内核中南京天易合芯（TYHX）HX9023S 电容式接近传感器（SAR）驱动 的架构设计。. 一、传感器工作原理 HX9023S 单芯片最多支持 5 路感应通道，I2C 接口，带 1 个硬件中断脚。 ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/08/22/hx9023s-driver/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/iio/">#iio</a>
-      
-        <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/">#驱动开发</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/08/08/imx219-driver/">imx219_driver</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-08-08T12:32:18.000Z">2026-08-08</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>文档概述 本文档记录 Sony IMX219 相机传感器驱动的架构设计、工作流程、与 RK3588 ISP 管线的集成方式，以及 BSP 相机驱动调试中常遇到的问题和解决方法。 驱动源码：DTS overlay：. 一、驱动架构总览 1.1 数据结构层次 . v4l2_subdev_ops :. V4L2 controls 回调. imx219_internal_ops. 1.2 关键工作流程 ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/08/08/imx219-driver/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/camera/">#camera</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/08/06/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%BF%9B%E9%98%B6)/">Linux BSP 面试题总结（进阶篇）</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-08-05T17:16:00.000Z">2026-08-06</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>一、设备树（Device Tree） 1. 设备树概述 设备树（Device Tree）是一种描述硬件拓扑的数据结构，将板级硬件信息从内核源码中分离。以 （源）→ （二进制）的形式，在启动时由 Bootloader 传给内核。 核心概念：. 为什么 ARM 需要设备树？ ARM 生态中硬件变化频繁（同一 SoC 不同板子外设不同），不像 x86 有 ACPI/BIOS 统一枚举。...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/08/06/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%BF%9B%E9%98%B6)/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/">#驱动开发</a>
-      
-        <a href="/tags/Linux/">#Linux</a>
-      
-        <a href="/tags/BSP/">#BSP</a>
-      
-        <a href="/tags/%E9%9D%A2%E8%AF%95/">#面试</a>
-      
-        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/">Linux BSP 面试题总结（基础篇）</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-08-04T22:55:10.000Z">2026-08-05</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>一、C 语言基础 1. volatile 关键字详解 答：volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中. 典型反例（不加 volatile 的后果）：. 2. 内存分区 . 3. 进程与线程的核心区别与通信方式 进程间通信（IPC）方式：. 内核中的线程：. / ：创建内核线程 内核线程没有独立的地址空间（mm = ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/">#驱动开发</a>
-      
-        <a href="/tags/Linux/">#Linux</a>
-      
-        <a href="/tags/BSP/">#BSP</a>
-      
-        <a href="/tags/%E9%9D%A2%E8%AF%95/">#面试</a>
-      
-        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>
-      
-    </div>
-  
-</article>
-
-  
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/06/12/Interview/">Interview</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-06-12T10:27:58.000Z">2026-06-12</time>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      嵌入式 Linux 驱动开发面试笔记，涵盖基础知识（编译流程、OSI七层模型、IIC/SPI/UART总线、中断、DMA、IPC）、工业协议（CANopen、EtherCAT）、ROS2、U-Boot 启动流程、CPU 调度与实时补丁、DRM 显示框架、USB 设备枚举、以及一个实际 G-Sensor 驱动问题调试案例。
-    
-  </div>
-  <a class="read-more" href="/2026/06/12/Interview/">Read More &rarr;</a>
   
 </article>
 
@@ -497,12 +540,37 @@ mjx-container[display="true"] + br {
       <p>&copy; 2026 Welodi</p>
     
     <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
   </div>
 </footer>
 
   </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
   
 <script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
 
 </body>
 </html>

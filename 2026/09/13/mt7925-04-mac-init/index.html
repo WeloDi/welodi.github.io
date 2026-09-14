@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT7925 驱动学习 04：MAC 初始化与硬件寄存器配置 | Welodi</title>
+  <meta name="description" content="文档概述本文从 mt7925_register_device() 开始，追一遍 MT7925 上电到”可收发包”的全过程：软资源初始化 → 异步 init_work → 固件&#x2F;MAC 寄存器配置 → WTBL 与定点速率表 → wiphy 能力上报（HE&#x2F;EHT&#x2F;MLO）。  一、软资源初始化：mt7925_register_device()probe 的最后一步（无论 PCIe 还是 USB 都">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MT7925 驱动学习 04：MAC 初始化与硬件寄存器配置">
+<meta property="og:url" content="http://example.com/2026/09/13/mt7925-04-mac-init/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="文档概述本文从 mt7925_register_device() 开始，追一遍 MT7925 上电到”可收发包”的全过程：软资源初始化 → 异步 init_work → 固件&#x2F;MAC 寄存器配置 → WTBL 与定点速率表 → wiphy 能力上报（HE&#x2F;EHT&#x2F;MLO）。  一、软资源初始化：mt7925_register_device()probe 的最后一步（无论 PCIe 还是 USB 都">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-09-13T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-13T09:16:00.994Z">
+<meta property="article:author" content="Welodi">
+<meta property="article:tag" content="MT7925">
+<meta property="article:tag" content="MAC">
+<meta property="article:tag" content="register">
+<meta name="twitter:card" content="summary">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+        <a class="nav-link" href="/">Home</a>
+      
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">MT7925 驱动学习 04：MAC 初始化与硬件寄存器配置</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-13T12:00:00.000Z">2026-09-13</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>本文从 <code>mt7925_register_device()</code> 开始，追一遍 MT7925 上电到”可收发包”的全过程：软资源初始化 → 异步 <code>init_work</code> → 固件/MAC 寄存器配置 → WTBL 与定点速率表 → wiphy 能力上报（HE/EHT/MLO）。</p>
+<hr>
+<h2 id="一、软资源初始化：mt7925-register-device"><a href="#一、软资源初始化：mt7925-register-device" class="headerlink" title="一、软资源初始化：mt7925_register_device()"></a>一、软资源初始化：<code>mt7925_register_device()</code></h2><p>probe 的最后一步（无论 PCIe 还是 USB 都汇聚到这里）。它只做”分配 + 挂接 + 排队”，真正的硬件操作全部丢给 <code>init_work</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mt7925_register_device</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">ieee80211_hw</span> *<span class="title">hw</span> =</span> <span class="title function_">mt76_hw</span>(dev);</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	dev-&gt;phy<span class="attr">.dev</span> = dev;</span><br><span class="line">	dev-&gt;phy<span class="attr">.mt76</span> = &amp;dev-&gt;mt76.phy;</span><br><span class="line">	dev-&gt;mt76.tx_worker<span class="attr">.fn</span> = mt792x_tx_worker;   <span class="comment">/* 每个 PHY 的 TX worker */</span></span><br><span class="line"></span><br><span class="line">	<span class="title function_">spin_lock_init</span>(&amp;dev-&gt;phy.stats_lock);</span><br><span class="line">	<span class="title function_">mutex_init</span>(&amp;dev-&gt;mt76.mutex);</span><br><span class="line">	<span class="title function_">INIT_WORK</span>(&amp;dev-&gt;init_work, mt7925_init_work);</span><br><span class="line">	<span class="title function_">INIT_WORK</span>(&amp;dev-&gt;reset_work, mt7925_mac_reset_work);</span><br><span class="line">	<span class="title function_">INIT_WORK</span>(&amp;dev-&gt;phy.roc_work, mt7925_roc_work);</span><br><span class="line">	<span class="title function_">INIT_WORK</span>(&amp;dev-&gt;dump_work, mt7925_coredump_work);</span><br><span class="line">	<span class="title function_">timer_setup</span>(&amp;dev-&gt;phy.roc_timer, mt7925_roc_timer, <span class="number">0</span>);</span><br><span class="line">	<span class="title function_">init_waitqueue_head</span>(&amp;dev-&gt;wait);</span><br><span class="line">	<span class="title function_">INIT_LIST_HEAD</span>(&amp;dev-&gt;ipv6_ns_list);</span><br><span class="line">	<span class="title function_">INIT_WORK</span>(&amp;dev-&gt;ipv6_ns_work, mt7925_ipv6_ns_work);</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mutex_init</span>(&amp;dev-&gt;pm.mutex);</span><br><span class="line">	<span class="title function_">init_waitqueue_head</span>(&amp;dev-&gt;pm.wait);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 省电默认值：USB 与 PCIe 行为不同 */</span></span><br><span class="line">	dev-&gt;pm<span class="attr">.idle_timeout</span> = MT792x_PM_TIMEOUT;   <span class="comment">/* = HZ / 12，约 83ms */</span></span><br><span class="line">	dev-&gt;pm<span class="attr">.ds_enable</span> = <span class="title function_">mt76_is_mmio</span>(&amp;dev-&gt;mt76) &amp;&amp; !dev-&gt;disable_runtime_pm;</span><br><span class="line">	dev-&gt;pm<span class="attr">.enable</span> = !dev-&gt;disable_runtime_pm;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">spin_lock_init</span>(&amp;dev-&gt;token_lock);</span><br><span class="line">	<span class="title function_">idr_init</span>(&amp;dev-&gt;token);</span><br><span class="line">	<span class="comment">/* 允许的最大 STA/AP 数：MT7925_WTBL_SIZE(=20) 里留出广播等 */</span></span><br><span class="line">	dev-&gt;wcid<span class="attr">.max_txqs</span> = MT7925_WTBL_SIZE - <span class="number">1</span>;</span><br><span class="line">	dev-&gt;wcid.tx_info |= MT_WCID_TX_INFO_SET;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt792x_init_wcid</span>(dev);       <span class="comment">/* wcid 表：从 MT_WCID_TAG 开始 */</span></span><br><span class="line">	<span class="title function_">mt792x_init_wiphy</span>(hw);</span><br><span class="line"></span><br><span class="line">	hw-&gt;wiphy-&gt;flags |= WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;</span><br><span class="line">	hw-&gt;wiphy-&gt;features |= NL80211_FEATURE_...</span><br><span class="line">	hw-&gt;max_rates = <span class="number">2</span>;</span><br><span class="line">	<span class="title function_">SET_IEEE80211_PERM_ADDR</span>(hw, dev-&gt;macaddr ...);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* HT 能力 */</span></span><br><span class="line">	hw-&gt;wiphy-&gt;bands[NL80211_BAND_5GHZ]-&gt;ht<span class="attr">.sgi</span> = <span class="literal">true</span>;</span><br><span class="line">	hw-&gt;wiphy-&gt;bands[NL80211_BAND_2GHZ]-&gt;ht<span class="attr">.sgi</span> = <span class="literal">true</span>;</span><br><span class="line">	...</span><br><span class="line">	<span class="title function_">queue_work</span>(system_wq, &amp;dev-&gt;init_work);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>这里出现的三个默认值值得单独记：</p>
+<table>
+<thead>
+<tr>
+<th>字段/常量</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MT792x_PM_TIMEOUT</code></td>
+<td><code>HZ / 12</code>（≈83ms）</td>
+<td>空闲多久尝试进入省电</td>
+</tr>
+<tr>
+<td><code>MT7925_WTBL_SIZE</code></td>
+<td>20</td>
+<td>硬件 WTBL 表项数，决定最大 STA/AP 与链路对象数</td>
+</tr>
+<tr>
+<td><code>hw-&gt;max_rates</code></td>
+<td>2</td>
+<td>每个 STA 提供两个 fallback 速率（配合 <code>set_fixed_rate_table()</code>）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="二、异步初始化：mt7925-init-work"><a href="#二、异步初始化：mt7925-init-work" class="headerlink" title="二、异步初始化：mt7925_init_work()"></a>二、异步初始化：<code>mt7925_init_work()</code></h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">mt7925_init_work</span><span class="params">(<span class="keyword">struct</span> work_struct *work)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mt792x_dev</span> *<span class="title">dev</span> =</span> <span class="title function_">container_of</span>(work, <span class="keyword">struct</span> mt792x_dev, init_work);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">ieee80211_hw</span> *<span class="title">hw</span> =</span> <span class="title function_">mt76_hw</span>(dev);</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt7925_init_hardware</span>(dev);</span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">goto</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt76_set_stream_caps</span>(&amp;dev-&gt;mphy, <span class="literal">true</span>);</span><br><span class="line">	dev-&gt;phy.eht_cap.phy_cap_info[<span class="number">0</span>] ...   <span class="comment">/* 见第三节 */</span></span><br><span class="line">	<span class="title function_">mt7925_set_stream_he_eht_caps</span>(&amp;dev-&gt;phy);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* MLO 能力（依赖 chip_cap；缺能力位时静默跳过，不返回错误） */</span></span><br><span class="line">	<span class="title function_">mt7925_init_mlo_caps</span>(&amp;dev-&gt;phy);</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt76_register_device</span>(&amp;dev-&gt;mt76, <span class="literal">true</span>, mt7925_rates,</span><br><span class="line">				   <span class="title function_">ARRAY_SIZE</span>(mt7925_rates));</span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">goto</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt7925_init_debugfs</span>(dev);</span><br><span class="line">	<span class="title function_">mt7925_thermal_init</span>(&amp;dev-&gt;phy);</span><br><span class="line">	<span class="title function_">set_bit</span>(MT76_STATE_INITIALIZED, &amp;dev-&gt;mphy.state);</span><br><span class="line">	dev-&gt;hw_init_done = <span class="literal">true</span>;</span><br><span class="line">	<span class="title function_">mt792x_init_acpi_sar_power</span>(dev, !dev-&gt;disable_runtime_pm);</span><br><span class="line">	<span class="title function_">mt792x_mcu_drv_pmctrl</span>(dev);</span><br><span class="line">	<span class="title function_">mt792x_pm_power_save_sched</span>(dev);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>顺序上的因果链：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mt7925_init_hardware()</span><br><span class="line">   └─ 固件跑起来 + MAC 寄存器配置 + WTBL 就绪</span><br><span class="line">        ↓</span><br><span class="line">mt7925_set_stream_he_eht_caps()   → wiphy 有 HE/EHT 能力</span><br><span class="line">        ↓</span><br><span class="line">mt7925_init_mlo_caps()            → wiphy-&gt;flags |= WIPHY_FLAG_SUPPORTS_MLO</span><br><span class="line">        ↓</span><br><span class="line">mt76_register_device()            → 此时才把 wiphy 注册给 mac80211</span><br></pre></td></tr></table></figure>
+
+<p><strong>能力必须在 <code>mt76_register_device()</code> 之前填完</strong>——注册之后再改 <code>wiphy</code> 就不生效了，这是和 mac80211 “先上报后使用”模型的直接冲突点。</p>
+<hr>
+<h2 id="三、mt7925-init-hardware-与重试机制"><a href="#三、mt7925-init-hardware-与重试机制" class="headerlink" title="三、mt7925_init_hardware() 与重试机制"></a>三、<code>mt7925_init_hardware()</code> 与重试机制</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">mt7925_init_hardware</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> ret, i;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt76_wr</span>(dev, MT_INT_SOURCE_CSR, ~<span class="number">0</span>);      <span class="comment">/* 清所有中断源 */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; MT792x_MCU_INIT_RETRY_COUNT; i++) {     <span class="comment">/* 10 次 */</span></span><br><span class="line">		ret = <span class="title function_">mt792x_mcu_init</span>(dev);            <span class="comment">/* → mt7925e_mcu_init()/mt7925u_mcu_init() */</span></span><br><span class="line">		<span class="keyword">if</span> (!ret)</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		<span class="title function_">mt792x_init_reset</span>(dev);                <span class="comment">/* 失败就复位，再试 */</span></span><br><span class="line">		<span class="title function_">msleep</span>(<span class="number">20</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt76_eeprom_override</span>(&amp;dev-&gt;mphy);    <span class="comment">/* 用 DT/ACPI 里的 MAC 覆盖 */</span></span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt7925_mcu_set_eeprom</span>(dev);          <span class="comment">/* 把 eeprom 数据交给固件 */</span></span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="title function_">mt7925_mac_init</span>(dev);               <span class="comment">/* 下一节 */</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>两层重试要分清：</p>
+<ul>
+<li><strong>固件下载重试</strong>：<code>MT792x_MCU_INIT_RETRY_COUNT = 10</code>，每次失败 <code>mt792x_init_reset()</code> 后睡 20ms 再来。板子时序不对时会看到 dmesg 连续打印 10 次失败。</li>
+<li><strong>运行期复位</strong>：<code>mt792x_reset()</code>（MCU 超时/固件异常触发），走的是<strong>软复位</strong> <code>mt7925_mac_reset_work()</code>，与这里不同。</li>
+</ul>
+<hr>
+<h2 id="四、MAC-寄存器初始化：mt7925-mac-init"><a href="#四、MAC-寄存器初始化：mt7925-mac-init" class="headerlink" title="四、MAC 寄存器初始化：mt7925_mac_init()"></a>四、MAC 寄存器初始化：<code>mt7925_mac_init()</code></h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">mt7925_mac_init</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt76_rmw_field</span>(dev, MT_MDP_DCR1, MT_MDP_DCR1_MAX_RX_LEN, <span class="number">1536</span>);</span><br><span class="line">	<span class="comment">/* enable hardware de-agg */</span></span><br><span class="line">	<span class="title function_">mt76_set</span>(dev, MT_MDP_DCR0, MT_MDP_DCR0_DAMSDU_EN);</span><br><span class="line">	<span class="comment">/* 清 WTBL：把 20 个表项全部无效化 */</span></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; MT792x_WTBL_SIZE; i++)</span><br><span class="line">		<span class="title function_">mt7925_mac_wtbl_update</span>(dev, i, MT_WTBL_UPDATE_ADM_COUNT_CLEAR);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; __MT_MAX_BAND; i++)     <span class="comment">/* BN0 / BN1 两个 band */</span></span><br><span class="line">		<span class="title function_">mt7925_mac_init_band</span>(dev, i);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 基础速率表：11 组，用于 beacon/管理帧 */</span></span><br><span class="line">	<span class="title function_">mt76_clear</span>(dev, MT_WTBL_BASE_CFG, ...);</span><br><span class="line">	<span class="title function_">mt76_wr</span>(dev, MT_WTBL_ITCR, ...);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 监管域缺省值 */</span></span><br><span class="line">	<span class="title function_">mt7925_mcu_set_mlo_alpha2</span>(dev);   <span class="comment">/* dev-&gt;alpha2 缺省全 0，等 mac80211 下发 */</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>三件事各自的含义：</p>
+<ol>
+<li>**<code>MT_MDP_DCR1_MAX_RX_LEN = 1536</code>**：MAC 层允许的最大接收长度（避免把超大帧塞进 skb）。改这个值会直接影响 RX 缓冲占用。</li>
+<li><strong><code>MT_MDP_DCR0_DAMSDU_EN</code><strong>：硬件去聚合（de-AMSDU）。</strong>这是 <code>MT_DRV_AMSDU_OFFLOAD</code> 能生效的前提</strong>——硬件帮驱动拆 A-MSDU，RX 路径就不用处理聚合子帧。</li>
+<li><strong>WTBL 清零</strong>：WTBL（Weight Table，硬件 STA 表）是 MT7925 MAC 的核心。每个 <code>wcid</code> 对应一个表项，存地址、密钥、BA 会话、速率、队列归属。初始化必须全清，否则残留表项会让 RX 匹配到错误 STA。</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mt7925_mac_wtbl_update</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev, <span class="type">int</span> idx, u32 mask)</span></span><br><span class="line">{</span><br><span class="line">	<span class="title function_">mt76_rmw</span>(dev, MT_WTBL_UPDATE, MT_WTBL_UPDATE_WLAN_IDX, <span class="title function_">FIELD_PREP</span>(MT_WTBL_UPDATE_WLAN_IDX, idx));</span><br><span class="line">	<span class="title function_">mt76_set</span>(dev, MT_WTBL_UPDATE, mask);</span><br><span class="line">	<span class="title function_">mt76_set</span>(dev, MT_WTBL_UPDATE, MT_WTBL_UPDATE_BUSY);   <span class="comment">/* 触发 */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!<span class="title function_">mt76_poll_msec</span>(dev, MT_WTBL_UPDATE, MT_WTBL_UPDATE_BUSY, <span class="number">0</span>, <span class="number">500</span>))</span><br><span class="line">		<span class="title function_">dev_err</span>(dev-&gt;mt76.dev, <span class="string">"WTBL update timeout\n"</span>);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p><code>MT_WTBL_UPDATE_BUSY</code> 是硬件握手位：写进去后要轮询它归零，超时 500ms 会打印 <code>WTBL update timeout</code>（表项操作太频繁或总线访问被 PM 打断时出现）。</p>
+<h3 id="定点速率表"><a href="#定点速率表" class="headerlink" title="定点速率表"></a>定点速率表</h3><p>每 STA 的固定速率（<code>set_fixed_rate_table</code>）通过 WTBL 的间接访问寄存器写：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 通过 MT_WTBL_ITDR0/1 写一张 8 项速率表，再用 ITCR 提交 */</span></span><br><span class="line"><span class="title function_">mt76_rmw_field</span>(dev, MT_WTBL_ITCR, MT_WTBL_ITCR_WR, <span class="number">1</span>);</span><br><span class="line">... </span><br><span class="line">ret = <span class="title function_">mt76_poll</span>(dev, MT_WTBL_ITCR, MT_WTBL_ITCR_BUSY, <span class="number">0</span>, <span class="number">5000</span>);</span><br><span class="line"><span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">return</span> ret;</span><br></pre></td></tr></table></figure>
+
+<p>管理帧（beacon/probe resp）与 <code>hw-&gt;max_rates = 2</code> 的 fallback 都依赖这张表。</p>
+<hr>
+<h2 id="五、寄存器访问层：三条路径别混用"><a href="#五、寄存器访问层：三条路径别混用" class="headerlink" title="五、寄存器访问层：三条路径别混用"></a>五、寄存器访问层：三条路径别混用</h2><p>MT7925 里有<strong>三种</strong>访问寄存器的方式，调试时经常被混淆：</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>入口</th>
+<th>适用场景</th>
+<th>限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>mmio（驱动内部）</td>
+<td><code>mt76_rr/wr/rmw</code> → <code>mt7925_rr/wr/rmw</code> → <code>__mt7925_reg_addr()</code></td>
+<td>驱动自己初始化、跑流程</td>
+<td>只能在 device 上下文；需要 L1/L2 重映射</td>
+</tr>
+<tr>
+<td>MCU 代理读写</td>
+<td><code>mt7925_mcu_regval()</code> → <code>MCU_WM_UNI_CMD(REG_ACCESS)</code></td>
+<td>debugfs 的 <code>regval</code>、固件持有控制权时</td>
+<td>只能访问固件允许的地址；命令超时会触发复位</td>
+</tr>
+<tr>
+<td>固件上报</td>
+<td><code>MCU_WM_UNI_CMD_QUERY(REG_ACCESS)</code></td>
+<td>读固件内部状态</td>
+<td>异步/需等事件</td>
+</tr>
+</tbody></table>
+<p>关键 chip id / rev 寄存器（<code>mt7925/regs.h</code> 侧使用）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">MT_HW_CHIPID     <span class="comment">/* 芯片 ID，probe 里 &lt;&lt;16 存进 dev-&gt;rev */</span></span><br><span class="line">MT_HW_REV        <span class="comment">/* 版本号（低 8 位） */</span></span><br><span class="line">MT_HW_EMI_CTL    <span class="comment">/* EMI 省电保护，probe 里 SLPPROT_EN 置 1 */</span></span><br><span class="line">MT_CONN_ON_MISC  <span class="comment">/* MT_TOP_MISC2_FW_N9_RDY：固件就绪位 */</span></span><br><span class="line">MT_PCIE_MAC_INT_ENABLE / MT_WFDMA0_HOST_INT_ENA  <span class="comment">/* 中断使能 */</span></span><br></pre></td></tr></table></figure>
+
+<p><code>MT_HW_CHIPID</code> 决定”这到底是什么芯片”，所以 <code>mt792x_ram_name()</code>、能力表都靠它分流；<code>MT_HW_REV</code> 则影响部分 workaround 分支。</p>
+<hr>
+<h2 id="六、能力上报：HE-EHT-MLO"><a href="#六、能力上报：HE-EHT-MLO" class="headerlink" title="六、能力上报：HE / EHT / MLO"></a>六、能力上报：HE / EHT / MLO</h2><h3 id="6-1-频段与-HE"><a href="#6-1-频段与-HE" class="headerlink" title="6.1 频段与 HE"></a>6.1 频段与 HE</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 2GHz：HE 最大 40MHz */</span></span><br><span class="line">phy-&gt;mt76-&gt;sband_2g.sband.iftype[band].he_cap.he_cap_elem.phy_cap_info[<span class="number">0</span>] &amp;=</span><br><span class="line">	~IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;</span><br><span class="line"><span class="comment">/* 5GHz：40/80/160 */</span></span><br></pre></td></tr></table></figure>
+
+<p>频段来源是 <code>cap.has_2ghz/has_5ghz/has_6ghz</code>（EEPROM/NIC 能力决定），能力位按频段分别填。</p>
+<h3 id="6-2-EHT（Wi-Fi-7）"><a href="#6-2-EHT（Wi-Fi-7）" class="headerlink" title="6.2 EHT（Wi-Fi 7）"></a>6.2 EHT（Wi-Fi 7）</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* EHT PHY 能力：只填 80MHz / 160MHz 两档带宽 */</span></span><br><span class="line">mcs = eht_cap-&gt;eht_mcs_...</span><br><span class="line">eht_cap-&gt;eht_mcs_... = IEEE80211_EHT_MCS_NSS_RX / _TX</span><br><span class="line">bw<span class="attr">._80</span> = ...;   bw<span class="attr">._160</span> = ...;</span><br></pre></td></tr></table></figure>
+
+<p>从能力位能反推硬件档位：<strong>MT7925 的 EHT 上报里只有 80MHz / 160MHz 两个带宽域</strong>，没有 320MHz 相关字段。功率表结构也印证这一点（有 <code>eht_ru_*</code> 条目但带宽档位仍以 160 为上限）。</p>
+<h3 id="6-3-MLO"><a href="#6-3-MLO" class="headerlink" title="6.3 MLO"></a>6.3 MLO</h3><p>这个函数定义在 <code>mt7925/main.c</code>（不是 init.c），代码很短但信息量很大：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mt7925_init_mlo_caps</span><span class="params">(<span class="keyword">struct</span> mt792x_phy *phy)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">wiphy</span> *<span class="title">wiphy</span> =</span> phy-&gt;mt76-&gt;hw-&gt;wiphy;</span><br><span class="line">	<span class="type">static</span> <span class="type">const</span> u8 ext_capa_sta[] = {</span><br><span class="line">		[<span class="number">7</span>] = WLAN_EXT_CAPA8_OPMODE_NOTIF,</span><br><span class="line">	};</span><br><span class="line">	<span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">wiphy_iftype_ext_capab</span> <span class="title">ext_capab</span>[] =</span> {</span><br><span class="line">		{</span><br><span class="line">			<span class="attr">.iftype</span> = NL80211_IFTYPE_STATION,</span><br><span class="line">			<span class="attr">.extended_capabilities</span> = <span class="title function_">ext_capa_sta</span>,</span><br><span class="line">			<span class="attr">.extended_capabilities_mask</span> = <span class="title function_">ext_capa_sta</span>,</span><br><span class="line">			<span class="attr">.extended_capabilities_len</span> = <span class="keyword">sizeof</span>(ext_capa_sta),</span><br><span class="line">		},</span><br><span class="line">	};</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!(phy-&gt;chip_cap &amp; MT792x_CHIP_CAP_MLO_EVT_EN))</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;                       <span class="comment">/* ★ 静默跳过，不报错 */</span></span><br><span class="line"></span><br><span class="line">	ext_capab[<span class="number">0</span>]<span class="attr">.eml_capabilities</span> = phy-&gt;eml_cap;</span><br><span class="line">	ext_capab[<span class="number">0</span>]<span class="attr">.mld_capa_and_ops</span> =</span><br><span class="line">		<span class="title function_">u16_encode_bits</span>(<span class="number">1</span>, IEEE80211_MLD_CAP_OP_MAX_SIMUL_LINKS);</span><br><span class="line">	wiphy-&gt;flags |= WIPHY_FLAG_SUPPORTS_MLO;</span><br><span class="line">	wiphy-&gt;iftype_ext_capab = ext_capab;</span><br><span class="line">	wiphy-&gt;num_iftype_ext_capab = <span class="title function_">ARRAY_SIZE</span>(ext_capab);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>三个要点：</p>
+<ul>
+<li><strong>MLO 是否可用由固件说了算</strong>：<code>MT792x_CHIP_CAP_MLO_EVT_EN</code> 来自 <code>mt7925_mcu_get_nic_capability()</code>。没有这一位就<strong>静默 return 0</strong>（不会打印任何错误），此时 <code>WIPHY_FLAG_SUPPORTS_MLO</code> 不开——“iw 里看不到 MLD”的根因常常在固件/NIC capability，而不是 mac80211，而且因为没有报错，只能通过 <code>iw phy</code> 看不到 MLO 能力来发现。</li>
+<li><strong>能力挂在 <code>wiphy-&gt;iftype_ext_capab</code> 上</strong>（STA + OPMODE_NOTIF 扩展能力位），不是全局 <code>hw-&gt;wiphy-&gt;eml_capabilities</code>。</li>
+<li><strong><code>phy-&gt;eml_cap</code> 也来自固件</strong>（NIC capability），驱动只是转手填进 <code>wiphy_iftype_ext_capab.eml_capabilities</code>。EMLSR/EMLMR 的最终行为在 mac80211 与固件的协作里。</li>
+</ul>
+<hr>
+<h2 id="七、初始化超时-失败排查表"><a href="#七、初始化超时-失败排查表" class="headerlink" title="七、初始化超时 / 失败排查表"></a>七、初始化超时 / 失败排查表</h2><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>落点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hardware init failed</code></td>
+<td><code>mt7925_init_work()</code> 的 <code>mt7925_init_hardware()</code></td>
+<td>10 次 <code>mt792x_mcu_init()</code> 全失败；先看固件文件是否加载成功</td>
+</tr>
+<tr>
+<td><code>Timeout for initializing firmware</code></td>
+<td><code>mt792x_load_firmware()</code></td>
+<td>见第 3 篇；<code>MT_TOP_MISC2_FW_N9_RDY</code> 未置位</td>
+</tr>
+<tr>
+<td><code>WTBL update timeout</code></td>
+<td><code>mt7925_mac_wtbl_update()</code></td>
+<td>WTBL 操作未完成，常见于复位/PM 打断时序</td>
+</tr>
+<tr>
+<td><code>iw phy</code> 里没有 MLD/MLO 能力</td>
+<td><code>mt7925_init_mlo_caps()</code></td>
+<td><code>chip_cap</code> 缺 <code>MT792x_CHIP_CAP_MLO_EVT_EN</code>：静默跳过，<strong>没有任何报错</strong>，只能靠 <code>iw phy</code> 反推</td>
+</tr>
+<tr>
+<td>6GHz 无信道</td>
+<td><code>mt7925_mac_init()</code> + CLC</td>
+<td><code>alpha2</code> 未下发（缺省全 0）、监管域/CLC 限制</td>
+</tr>
+<tr>
+<td>注册成功但立刻掉线</td>
+<td><code>mt7925_init_work()</code> 尾部</td>
+<td><code>mt792x_mcu_drv_pmctrl()</code> + <code>mt792x_pm_power_save_sched()</code> 之后立刻进入省电，见第 7 篇</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、小结"><a href="#八、小结" class="headerlink" title="八、小结"></a>八、小结</h2><ol>
+<li><code>mt7925_register_device()</code> 只负责<strong>软资源 + 排队</strong>，硬件初始化全在异步 <code>init_work</code> 里，避免 probe 阻塞。</li>
+<li>初始化顺序有硬约束：**固件 → MAC/WTBL → HE/EHT/MLO 能力 → <code>mt76_register_device()</code>**，能力必须在上报前填完。</li>
+<li>MAC 初始化三件套：DCR（最大 RX 长度 + 硬件 de-AMSDU）、WTBL 全清（20 表项）、定点速率表；WTBL 是理解 MT7925 MAC 的关键。</li>
+<li>寄存器访问分三条路径（mmio / MCU 代理 / 固件上报），<strong>不能混用也不能互相比对结果</strong>。</li>
+</ol>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%BD%AF%E8%B5%84%E6%BA%90%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%9Amt7925-register-device"><span class="toc-text">一、软资源初始化：mt7925_register_device()</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%BC%82%E6%AD%A5%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%9Amt7925-init-work"><span class="toc-text">二、异步初始化：mt7925_init_work()</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81mt7925-init-hardware-%E4%B8%8E%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6"><span class="toc-text">三、mt7925_init_hardware() 与重试机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81MAC-%E5%AF%84%E5%AD%98%E5%99%A8%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%9Amt7925-mac-init"><span class="toc-text">四、MAC 寄存器初始化：mt7925_mac_init()</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9A%E7%82%B9%E9%80%9F%E7%8E%87%E8%A1%A8"><span class="toc-text">定点速率表</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%AF%84%E5%AD%98%E5%99%A8%E8%AE%BF%E9%97%AE%E5%B1%82%EF%BC%9A%E4%B8%89%E6%9D%A1%E8%B7%AF%E5%BE%84%E5%88%AB%E6%B7%B7%E7%94%A8"><span class="toc-text">五、寄存器访问层：三条路径别混用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%83%BD%E5%8A%9B%E4%B8%8A%E6%8A%A5%EF%BC%9AHE-EHT-MLO"><span class="toc-text">六、能力上报：HE &#x2F; EHT &#x2F; MLO</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E9%A2%91%E6%AE%B5%E4%B8%8E-HE"><span class="toc-text">6.1 频段与 HE</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-EHT%EF%BC%88Wi-Fi-7%EF%BC%89"><span class="toc-text">6.2 EHT（Wi-Fi 7）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-MLO"><span class="toc-text">6.3 MLO</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%88%9D%E5%A7%8B%E5%8C%96%E8%B6%85%E6%97%B6-%E5%A4%B1%E8%B4%A5%E6%8E%92%E6%9F%A5%E8%A1%A8"><span class="toc-text">七、初始化超时 &#x2F; 失败排查表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-text">八、小结</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+      <div class="post-tags">
+        
+          <a href="/tags/MT7925/">#MT7925</a>
+        
+          <a href="/tags/MAC/">#MAC</a>
+        
+          <a href="/tags/register/">#register</a>
+        
+      </div>
+    
+    <nav class="post-nav">
+      
+        <a class="prev" href="/2026/09/13/mt7925-03-firmware-mcu/">&laquo; MT7925 驱动学习 03：固件加载与 MCU 通信（ROM patch、命令与事件通道）</a>
+      
+      
+        <a class="next" href="/2026/09/13/mt7925-05-mac80211/">MT7925 驱动学习 05：mac80211 集成（ops 回调、扫描/认证/关联、MLO 链路） &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+</body>
+</html>

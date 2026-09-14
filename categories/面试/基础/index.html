@@ -6,7 +6,7 @@
   <title>Welodi</title>
   <meta property="og:type" content="website">
 <meta property="og:title" content="Welodi">
-<meta property="og:url" content="http://example.com/archives/2026/page/2/index.html">
+<meta property="og:url" content="http://example.com/categories/%E9%9D%A2%E8%AF%95/%E5%9F%BA%E7%A1%80/index.html">
 <meta property="og:site_name" content="Welodi">
 <meta property="og:locale" content="en_US">
 <meta property="article:author" content="Welodi">
@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
-  <link rel="stylesheet" href="/css/style.css?v=e073b6f7">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
   
   <script>
     (function () {
@@ -153,14 +153,18 @@ mjx-container[display="true"] + br {
       
         <a class="nav-link" href="/">Home</a>
       
-        <a class="nav-link" href="/archives">Archives</a>
+        <a class="nav-link" href="/categories">Categories</a>
       
         <a class="nav-link" href="/tags">Tags</a>
       
-        <a class="nav-link" href="/categories">Categories</a>
-      
         <a class="nav-link" href="/about">About</a>
       
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
       <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
         <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="4"/>
@@ -176,26 +180,16 @@ mjx-container[display="true"] + br {
 
     <main class="main-content">
       <div class="archive">
-  <h1 class="archive-title">Archives</h1>
+  <h1 class="category-title"><span>#</span> 基础</h1>
   
-  
-    
-    
-      <h2 class="archive-year">2026</h2>
-      
-    
     <div class="archive-post">
-      <span class="archive-post-date">06-11</span>
+      <span class="archive-post-date">2026-08-05</span>
       <span class="archive-post-title">
-        <a href="/2026/06/11/suspend-resume/">suspend-resume</a>
+        <a href="/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/">Linux BSP 面试题总结（基础篇）</a>
       </span>
     </div>
   
   
-  <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/archives/2026/">&laquo; Prev</a><a class="page-number" href="/archives/2026/">1</a><span class="page-number current">2</span>
-  </nav>
-
 
 </div>
 
@@ -206,12 +200,37 @@ mjx-container[display="true"] + br {
       <p>&copy; 2026 Welodi</p>
     
     <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
   </div>
 </footer>
 
   </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
   
 <script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
 
 </body>
 </html>

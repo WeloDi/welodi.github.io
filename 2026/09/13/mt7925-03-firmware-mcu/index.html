@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT7925 驱动学习 03：固件加载与 MCU 通信（ROM patch、命令与事件通道） | Welodi</title>
+  <meta name="description" content="文档概述MT7925 的射频、速率自适应、扫描、省电等核心逻辑都运行在片内 WF_MCU 上。驱动与 MCU 的交互只有两件事：下载固件 &#x2F; 收发命令。本文梳理固件文件、下载序列、命令通道（TX ring）与事件通道（RX ring）的完整链路。  一、固件文件从哪来固件名不是写死在 mt7925&#x2F; 里，而是按芯片 ID 从共享层挑： 1234567891011121314151617181920">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MT7925 驱动学习 03：固件加载与 MCU 通信（ROM patch、命令与事件通道）">
+<meta property="og:url" content="http://example.com/2026/09/13/mt7925-03-firmware-mcu/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="文档概述MT7925 的射频、速率自适应、扫描、省电等核心逻辑都运行在片内 WF_MCU 上。驱动与 MCU 的交互只有两件事：下载固件 &#x2F; 收发命令。本文梳理固件文件、下载序列、命令通道（TX ring）与事件通道（RX ring）的完整链路。  一、固件文件从哪来固件名不是写死在 mt7925&#x2F; 里，而是按芯片 ID 从共享层挑： 1234567891011121314151617181920">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-09-13T13:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-13T09:15:45.008Z">
+<meta property="article:author" content="Welodi">
+<meta property="article:tag" content="MT7925">
+<meta property="article:tag" content="固件加载">
+<meta property="article:tag" content="MCU">
+<meta name="twitter:card" content="summary">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+        <a class="nav-link" href="/">Home</a>
+      
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">MT7925 驱动学习 03：固件加载与 MCU 通信（ROM patch、命令与事件通道）</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-13T13:00:00.000Z">2026-09-13</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>MT7925 的射频、速率自适应、扫描、省电等核心逻辑都运行在片内 <strong>WF_MCU</strong> 上。驱动与 MCU 的交互只有两件事：<strong>下载固件 / 收发命令</strong>。本文梳理固件文件、下载序列、命令通道（TX ring）与事件通道（RX ring）的完整链路。</p>
+<hr>
+<h2 id="一、固件文件从哪来"><a href="#一、固件文件从哪来" class="headerlink" title="一、固件文件从哪来"></a>一、固件文件从哪来</h2><p>固件名不是写死在 <code>mt7925/</code> 里，而是按芯片 ID 从共享层挑：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* mt792x.h */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7920_FIRMWARE_WM <span class="string">"mediatek/WIFI_RAM_CODE_MT7961_1a.bin"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7921_FIRMWARE_WM <span class="string">"mediatek/WIFI_RAM_CODE_MT7961_1.bin"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7922_FIRMWARE_WM <span class="string">"mediatek/WIFI_RAM_CODE_MT7922_1.bin"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7925_FIRMWARE_WM <span class="string">"mediatek/mt7925/WIFI_RAM_CODE_MT7925_1_1.bin"</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7920_ROM_PATCH <span class="string">"mediatek/WIFI_MT7961_patch_mcu_1a_2_hdr.bin"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7921_ROM_PATCH <span class="string">"mediatek/WIFI_MT7961_patch_mcu_1_2_hdr.bin"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7922_ROM_PATCH <span class="string">"mediatek/WIFI_MT7922_patch_mcu_1_1_hdr.bin"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT7925_ROM_PATCH <span class="string">"mediatek/mt7925/WIFI_MT7925_PATCH_MCU_1_1_hdr.bin"</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">char</span> *<span class="title function_">mt792x_ram_name</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">switch</span> (<span class="title function_">mt76_chip</span>(&amp;dev-&gt;mt76)) {</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x7920</span>:  <span class="keyword">return</span> MT7920_FIRMWARE_WM;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x7922</span>:  <span class="keyword">return</span> MT7922_FIRMWARE_WM;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x7925</span>:  <span class="keyword">return</span> MT7925_FIRMWARE_WM;</span><br><span class="line">	<span class="keyword">default</span>:      <span class="keyword">return</span> MT7921_FIRMWARE_WM;   <span class="comment">/* 7921 */</span></span><br><span class="line">	}</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">char</span> *<span class="title function_">mt792x_patch_name</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">switch</span> (<span class="title function_">mt76_chip</span>(&amp;dev-&gt;mt76)) {</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x7920</span>:  <span class="keyword">return</span> MT7920_ROM_PATCH;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x7922</span>:  <span class="keyword">return</span> MT7922_ROM_PATCH;</span><br><span class="line">	<span class="keyword">case</span> <span class="number">0x7925</span>:  <span class="keyword">return</span> MT7925_ROM_PATCH;</span><br><span class="line">	<span class="keyword">default</span>:      <span class="keyword">return</span> MT7921_ROM_PATCH;</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>MT7925 用两份文件：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mediatek/mt7925/WIFI_MT7925_PATCH_MCU_1_1_hdr.bin</code></td>
+<td>ROM patch：给 ROM 里的 MCU 代码打补丁，必须先下载</td>
+</tr>
+<tr>
+<td><code>mediatek/mt7925/WIFI_RAM_CODE_MT7925_1_1.bin</code></td>
+<td>RAM code：真正实现 802.11 行为的固件主体</td>
+</tr>
+</tbody></table>
+<p>两个文件名同时用 <code>MODULE_FIRMWARE()</code> 声明，从而进入 module 的 depends 信息（<code>modinfo mt7925e</code> 能看到）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(MT7925_FIRMWARE_WM);</span><br><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(MT7925_ROM_PATCH);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意路径里带了 <code>mt7925/</code> 子目录，而 7921/7922 的固件直接放在 <code>mediatek/</code> 下 —— 从 <code>linux-firmware</code> 里找文件时容易找错位置。</p>
+</blockquote>
+<hr>
+<h2 id="二、下载序列：mt792x-load-firmware"><a href="#二、下载序列：mt792x-load-firmware" class="headerlink" title="二、下载序列：mt792x_load_firmware()"></a>二、下载序列：<code>mt792x_load_firmware()</code></h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mt792x_load_firmware</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt76_connac2_load_patch</span>(&amp;dev-&gt;mt76, <span class="title function_">mt792x_patch_name</span>(dev));</span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="title function_">mt76_is_sdio</span>(&amp;dev-&gt;mt76)) {</span><br><span class="line">		<span class="comment">/* activate again */</span></span><br><span class="line">		ret = <span class="title function_">__mt792x_mcu_fw_pmctrl</span>(dev);</span><br><span class="line">		<span class="keyword">if</span> (!ret)</span><br><span class="line">			ret = <span class="title function_">__mt792x_mcu_drv_pmctrl</span>(dev);</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt76_connac2_load_ram</span>(&amp;dev-&gt;mt76, <span class="title function_">mt792x_ram_name</span>(dev), <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!<span class="title function_">mt76_poll_msec</span>(dev, MT_CONN_ON_MISC, MT_TOP_MISC2_FW_N9_RDY,</span><br><span class="line">			    MT_TOP_MISC2_FW_N9_RDY, <span class="number">1500</span>)) {</span><br><span class="line">		<span class="title function_">dev_err</span>(dev-&gt;mt76.dev, <span class="string">"Timeout for initializing firmware\n"</span>);</span><br><span class="line">		<span class="keyword">return</span> -EIO;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_PM</span></span><br><span class="line">	dev-&gt;mt76.hw-&gt;wiphy-&gt;wowlan = &amp;mt76_connac_wowlan_support;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	<span class="title function_">dev_dbg</span>(dev-&gt;mt76.dev, <span class="string">"Firmware init done\n"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>四个关键点：</p>
+<ol>
+<li><strong>先 patch 后 RAM</strong>：<code>mt76_connac2_load_patch()</code> 把 ROM patch 分段塞进 MCU 的 SYSRAM，并在结尾向固件请求”patch 信号量”（<code>MCU_CMD(PATCH_SEM_CONTROL)</code>）；<code>mt76_connac2_load_ram()</code> 才下载带 trailer 描述（region）的固件主体。</li>
+<li><strong>SDIO（含 USB 同族路径）需要重新握手电源</strong>：下载 patch 后 MCU 已醒来一次，必须再次 <code>fw_pmctrl</code> / <code>drv_pmctrl</code> 才能进入 RAM code 下载。</li>
+<li><strong>就绪靠轮询一个 bit</strong>：<code>MT_CONN_ON_MISC</code> 的 <code>MT_TOP_MISC2_FW_N9_RDY</code>，超时 1500ms。这一位不通就是 <code>Timeout for initializing firmware</code>。</li>
+<li><strong>WoWLAN 能力在这里挂上</strong>：<code>wiphy-&gt;wowlan = &amp;mt76_connac_wowlan_support</code>。</li>
+</ol>
+<hr>
+<h2 id="三、驱动侧的固件入口：mt7925-run-firmware"><a href="#三、驱动侧的固件入口：mt7925-run-firmware" class="headerlink" title="三、驱动侧的固件入口：mt7925_run_firmware()"></a>三、驱动侧的固件入口：<code>mt7925_run_firmware()</code></h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mt7925_run_firmware</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">	err = <span class="title function_">mt792x_load_firmware</span>(dev);</span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	err = <span class="title function_">mt7925_mcu_get_nic_capability</span>(dev);</span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">set_bit</span>(MT76_STATE_MCU_RUNNING, &amp;dev-&gt;mphy.state);</span><br><span class="line"></span><br><span class="line">	err = <span class="title function_">mt7925_load_clc</span>(dev, <span class="title function_">mt792x_ram_name</span>(dev));</span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="title function_">mt7925_mcu_fw_log_2_host</span>(dev, <span class="number">1</span>);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>顺序很有信息量：</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mt792x_load_firmware()</code></td>
+<td>patch + RAM code 下载并等就绪</td>
+</tr>
+<tr>
+<td><code>mt7925_mcu_get_nic_capability()</code></td>
+<td>问固件”你支持什么” → 填 <code>phy-&gt;chip_cap</code>、<code>phy-&gt;eml_cap</code>、频段等</td>
+</tr>
+<tr>
+<td><code>set_bit(MT76_STATE_MCU_RUNNING, ...)</code></td>
+<td>标记 MCU 已跑起来（后续 <code>mt76_mcu_send_msg</code> 才敢发）</td>
+</tr>
+<tr>
+<td><code>mt7925_load_clc()</code></td>
+<td>下载 <strong>CLC</strong>（Country/Level Control）功率与信道限制表</td>
+</tr>
+<tr>
+<td><code>mt7925_mcu_fw_log_2_host(dev, 1)</code></td>
+<td>打开固件日志上报（debugfs <code>fw_debug</code> 也控制它）</td>
+</tr>
+</tbody></table>
+<h3 id="CLC-表为什么要单独处理"><a href="#CLC-表为什么要单独处理" class="headerlink" title="CLC 表为什么要单独处理"></a>CLC 表为什么要单独处理</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">mt7925_load_clc</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev, <span class="type">const</span> <span class="type">char</span> *fw_name)</span></span><br><span class="line">{</span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">if</span> (mt7925_disable_clc || <span class="title function_">mt76_is_usb</span>(&amp;dev-&gt;mt76))</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;                       <span class="comment">/* USB 不做，模块参数可关 */</span></span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">request_firmware</span>(&amp;fw, fw_name, mdev-&gt;dev);   <span class="comment">/* 复用 RAM code 文件 */</span></span><br><span class="line">	...</span><br><span class="line">	<span class="keyword">if</span> ((region-&gt;feature_set &amp; FW_FEATURE_NON_DL) &amp;&amp; region-&gt;type == FW_TYPE_CLC) {</span><br><span class="line">		clc_base = (u8 *)(fw-&gt;data + offset);</span><br><span class="line">		<span class="keyword">break</span>;</span><br><span class="line">	}</span><br><span class="line">	...</span><br><span class="line">	ret = <span class="title function_">mt7925_mcu_set_clc</span>(dev, <span class="string">"00"</span>, ENVIRON_INDOOR);</span><br></pre></td></tr></table></figure>
+
+<p>CLC 数据<strong>不是单独文件</strong>，而是 RAM code 固件文件里一个不下载到芯片的 region（<code>FW_FEATURE_NON_DL</code> + <code>FW_TYPE_CLC</code>）：驱动本地解析后再用 <code>MCU_UNI_CMD(SET_POWER_LIMIT)</code> 把规则发给固件。所以 6GHz 信道、发射功率被限，第一嫌疑就是 CLC / 监管域。</p>
+<hr>
+<h2 id="四、PCIe-侧的-MCU-初始化：mt7925e-mcu-init"><a href="#四、PCIe-侧的-MCU-初始化：mt7925e-mcu-init" class="headerlink" title="四、PCIe 侧的 MCU 初始化：mt7925e_mcu_init()"></a>四、PCIe 侧的 MCU 初始化：<code>mt7925e_mcu_init()</code></h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">mt7925e_mcu_init</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt76_mcu_ops</span> <span class="title">mt7925_mcu_ops</span> =</span> {</span><br><span class="line">		<span class="attr">.headroom</span> = <span class="keyword">sizeof</span>(<span class="keyword">struct</span> mt76_connac2_mcu_txd),</span><br><span class="line">		<span class="attr">.mcu_skb_send_msg</span> = <span class="title function_">mt7925_mcu_send_message</span>,</span><br><span class="line">		<span class="attr">.mcu_parse_response</span> = <span class="title function_">mt7925_mcu_parse_response</span>,</span><br><span class="line">	};</span><br><span class="line">	<span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">	dev-&gt;mt76<span class="attr">.mcu_ops</span> = &amp;mt7925_mcu_ops;     <span class="comment">/* ① 换掉 MCU 收发实现 */</span></span><br><span class="line"></span><br><span class="line">	err = <span class="title function_">mt792xe_mcu_fw_pmctrl</span>(dev);        <span class="comment">/* ② 固件侧电源控制 */</span></span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	err = <span class="title function_">__mt792xe_mcu_drv_pmctrl</span>(dev);     <span class="comment">/* ③ 驱动取回控制权 */</span></span><br><span class="line">	<span class="keyword">if</span> (err)</span><br><span class="line">		<span class="keyword">return</span> err;</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt76_rmw_field</span>(dev, MT_PCIE_MAC_PM, MT_PCIE_MAC_PM_L0S_DIS, <span class="number">1</span>);  <span class="comment">/* ④ 禁 L0S */</span></span><br><span class="line"></span><br><span class="line">	err = <span class="title function_">mt7925_run_firmware</span>(dev);                                  <span class="comment">/* ⑤ 跑固件 */</span></span><br><span class="line">	<span class="title function_">mt76_queue_tx_cleanup</span>(dev, dev-&gt;mt76.q_mcu[MT_MCUQ_FWDL], <span class="literal">false</span>);<span class="comment">/* ⑥ 清 FWDL 环 */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> err;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>headroom = sizeof(struct mt76_connac2_mcu_txd)</code>：MCU 命令的每个 skb 都要在头部预留一个 16 字节命令描述符（TXWI 前的 MCU 头），这是 mt76 分配 MCU skb 时 <code>skb_reserve()</code> 的依据。</li>
+<li>USB 侧的 <code>mt7925u_mcu_init()</code> 用的是 <code>mt76_mcu_ops</code> 变体：<code>headroom = MT_SDIO_HDR_SIZE + sizeof(struct mt76_connac2_mcu_txd)</code>、<code>tailroom = MT_USB_TAIL_SIZE</code>。</li>
+<li><code>mt7925_run_firmware()</code> 返回后 FWDL 队列里的残留 skb 一次性清掉（下载过程中它们是”发完即弃”的）。</li>
+</ul>
+<hr>
+<h2 id="五、命令通道：MCU-消息怎么发出去"><a href="#五、命令通道：MCU-消息怎么发出去" class="headerlink" title="五、命令通道：MCU 消息怎么发出去"></a>五、命令通道：MCU 消息怎么发出去</h2><h3 id="5-1-发送入口"><a href="#5-1-发送入口" class="headerlink" title="5.1 发送入口"></a>5.1 发送入口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">mt7925_mcu_send_message</span><span class="params">(<span class="keyword">struct</span> mt76_dev *mdev, <span class="keyword">struct</span> sk_buff *skb,</span></span><br><span class="line"><span class="params">				   <span class="type">int</span> cmd, <span class="type">int</span> *seq)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">mt76_mcuq_id</span> <span class="title">txq</span> =</span> MT_MCUQ_WM;</span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	ret = <span class="title function_">mt7925_mcu_fill_message</span>(mdev, skb, cmd, seq);</span><br><span class="line">	<span class="keyword">if</span> (ret)</span><br><span class="line">		<span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">	mdev-&gt;mcu<span class="attr">.timeout</span> = <span class="number">3</span> * HZ;                 <span class="comment">/* 默认 3 秒超时 */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (cmd == <span class="title function_">MCU_CMD</span>(FW_SCATTER))</span><br><span class="line">		txq = MT_MCUQ_FWDL;                 <span class="comment">/* 固件下载走独立队列 */</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="title function_">mt76_tx_queue_skb_raw</span>(dev, mdev-&gt;q_mcu[txq], skb, <span class="number">0</span>);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>**命令就是”反向的发包”**：MCU 命令被当成一个 skb，插在 TX ring 的 MCU 队列（<code>MT7925_TXQ_MCU_WM = 15</code>）上，由 DMA 送给固件。所以 TX ring 卡住 = 所有控制命令（扫描、关联、改信道）一起卡住。</p>
+<h3 id="5-2-命令描述符构造：mt7925-mcu-fill-message"><a href="#5-2-命令描述符构造：mt7925-mcu-fill-message" class="headerlink" title="5.2 命令描述符构造：mt7925_mcu_fill_message()"></a>5.2 命令描述符构造：<code>mt7925_mcu_fill_message()</code></h3><p>MT7925 支持两种命令格式：老的 <code>mt76_connac2_mcu_txd</code>（非 UNI）和新的 <code>mt76_connac2_mcu_uni_txd</code>（UNI），由 <code>cmd</code> 的 UNI 标志位决定：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* <span class="doctag">TODO:</span> make dynamic based on msg type */</span></span><br><span class="line">mdev-&gt;mcu<span class="attr">.timeout</span> = <span class="number">20</span> * HZ;</span><br><span class="line"></span><br><span class="line">seq = ++mdev-&gt;mcu.msg_seq &amp; <span class="number">0xf</span>;              <span class="comment">/* 4bit 序列号，0 跳过 */</span></span><br><span class="line"><span class="keyword">if</span> (!seq)</span><br><span class="line">	seq = ++mdev-&gt;mcu.msg_seq &amp; <span class="number">0xf</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (cmd == <span class="title function_">MCU_CMD</span>(FW_SCATTER))               <span class="comment">/* 固件数据不用 TXWI */</span></span><br><span class="line">	<span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line"></span><br><span class="line">txd_len = cmd &amp; __MCU_CMD_FIELD_UNI ? <span class="keyword">sizeof</span>(*uni_txd) : <span class="keyword">sizeof</span>(*mcu_txd);</span><br><span class="line">txd = (__le32 *)<span class="title function_">skb_push</span>(skb, txd_len);</span><br><span class="line"></span><br><span class="line">val = <span class="title function_">FIELD_PREP</span>(MT_TXD0_TX_BYTES, skb-&gt;len) |</span><br><span class="line">      <span class="title function_">FIELD_PREP</span>(MT_TXD0_PKT_FMT, MT_TX_TYPE_CMD) |</span><br><span class="line">      <span class="title function_">FIELD_PREP</span>(MT_TXD0_Q_IDX, MT_TX_MCU_PORT_RX_Q0);</span><br><span class="line">txd[<span class="number">0</span>] = <span class="title function_">cpu_to_le32</span>(val);</span><br><span class="line">txd[<span class="number">1</span>] = <span class="title function_">cpu_to_le32</span>(<span class="title function_">FIELD_PREP</span>(MT_TXD1_HDR_FORMAT, MT_HDR_FORMAT_CMD));</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (cmd &amp; __MCU_CMD_FIELD_UNI) {</span><br><span class="line">	uni_txd = (<span class="keyword">struct</span> mt76_connac2_mcu_uni_txd *)txd;</span><br><span class="line">	uni_txd-&gt;len = <span class="title function_">cpu_to_le16</span>(skb-&gt;len - <span class="keyword">sizeof</span>(uni_txd-&gt;txd));</span><br><span class="line">	uni_txd-&gt;cid = <span class="title function_">cpu_to_le16</span>(mcu_cmd);</span><br><span class="line">	uni_txd-&gt;s2d_index = MCU_S2D_H2N;</span><br><span class="line">	uni_txd-&gt;pkt_type = MCU_PKT_ID;</span><br><span class="line">	uni_txd-&gt;seq = seq;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (cmd &amp; __MCU_CMD_FIELD_QUERY)</span><br><span class="line">		uni_txd-&gt;option = MCU_CMD_UNI_QUERY_ACK;   <span class="comment">/* 需要回包 */</span></span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		uni_txd-&gt;option = MCU_CMD_UNI_EXT_ACK;</span><br><span class="line">	<span class="keyword">goto</span> <span class="built_in">exit</span>;</span><br><span class="line">}</span><br><span class="line"><span class="comment">/* 非 UNI：老格式，用 cid/ext_cid + set_query */</span></span><br><span class="line">mcu_txd-&gt;cid = mcu_cmd;</span><br><span class="line">mcu_txd-&gt;ext_cid = <span class="title function_">FIELD_GET</span>(__MCU_CMD_FIELD_EXT_ID, cmd);</span><br><span class="line">...</span><br><span class="line">mcu_txd-&gt;set_query = mcu_txd-&gt;ext_cid ? MCU_Q_SET : MCU_Q_NA;</span><br><span class="line">mcu_txd-&gt;s2d_index = (cmd &amp; __MCU_CMD_FIELD_WA) ? MCU_S2D_H2C : MCU_S2D_H2N;</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li><strong><code>seq</code> 是 4bit 回绕</strong>，<code>0</code> 被跳过（0 表示”不需要匹配”）。</li>
+<li><strong><code>option</code> 决定要不要等回包</strong>：<code>MCU_CMD_UNI_QUERY_ACK</code> 会阻塞等待对应 <code>seq</code> 的响应；<code>MCU_CMD_UNI_EXT_ACK</code> 只等一个”已收到”的确认。</li>
+<li><strong><code>s2d_index</code></strong> 区分命令发给谁：<code>H2N</code>（固件网络侧）/ <code>H2C</code>（WA 通路）。</li>
+<li>宏 <code>MCU_UNI_CMD(x)</code>、<code>MCU_WM_UNI_CMD(x)</code>、<code>MCU_WMWA_UNI_CMD(x)</code>、<code>MCU_CMD(x)</code>、<code>MCU_UNI_CMD_QUERY(x)</code> 就是把 cid/ext_cid/uni/query/wa 几个位段拼成一个 <code>int cmd</code>。</li>
+</ul>
+<h3 id="5-3-MT7925-用到的命令族（节选自-mt7925-mcu-c）"><a href="#5-3-MT7925-用到的命令族（节选自-mt7925-mcu-c）" class="headerlink" title="5.3 MT7925 用到的命令族（节选自 mt7925/mcu.c）"></a>5.3 MT7925 用到的命令族（节选自 <code>mt7925/mcu.c</code>）</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MCU_UNI_CMD(DEV_INFO_UPDATE)</code></td>
+<td>设备级信息：频段、能力、RTS 阈值等</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(BSS_INFO_UPDATE)</code></td>
+<td>BSS/链路级：bss_info、beacon、PS、Inet 等</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(STA_REC_UPDATE)</code> / <code>MCU_WMWA_UNI_CMD(STA_REC_UPDATE)</code></td>
+<td>STA 记录与 WTBL 相关（含 EHT/MLD 记录）</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(EDCA_UPDATE)</code> / <code>QUEUE_UPDATE</code></td>
+<td>WMM/EDCA 参数</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(SCAN_REQ)</code> / <code>(SNIFFER)</code> / <code>(ROC)</code></td>
+<td>扫描、监听、Remain-On-Channel</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(HIF_CTRL)</code> / <code>(SUSPEND)</code></td>
+<td>总线挂起、系统休眠协作</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(CHIP_CONFIG)</code> / <code>(WSYS_CONFIG)</code> / <code>(EFUSE_CTRL)</code></td>
+<td>芯片配置、efuse/eeprom</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(SET_POWER_LIMIT)</code></td>
+<td>功率限制（CLC 也走它）</td>
+</tr>
+<tr>
+<td><code>MCU_WM_UNI_CMD(REG_ACCESS)</code> / <code>_QUERY(THERMAL)</code></td>
+<td>寄存器访问、温度读取</td>
+</tr>
+<tr>
+<td><code>MCU_UNI_CMD(BAND_CONFIG)</code> / <code>(SET_DOMAIN_INFO)</code> / <code>(SET_DBDC_PARMS)</code></td>
+<td>频段与监管域配置</td>
+</tr>
+</tbody></table>
+<p>STA 场景的 TLV 构造统一走 <code>__mt76_connac_mcu_alloc_sta_req()</code> + <code>mt76_connac_mcu_add_tlv()</code>，MT7925 的 TLV 标签里能看到 Wi-Fi 7 的痕迹：<code>STA_REC_EHT</code>、<code>STA_REC_EHT_MLD</code>、<code>STA_REC_MLD</code>、<code>STA_REC_MLD_OFF</code>、<code>STA_REC_HE_6G</code>、<code>STA_REC_HW_AMSDU</code>、<code>STA_REC_RA</code>…</p>
+<hr>
+<h2 id="六、事件通道：从-RX-ring-到-mt7925-mcu-rx-event"><a href="#六、事件通道：从-RX-ring-到-mt7925-mcu-rx-event" class="headerlink" title="六、事件通道：从 RX ring 到 mt7925_mcu_rx_event()"></a>六、事件通道：从 RX ring 到 <code>mt7925_mcu_rx_event()</code></h2><p>MCU 事件也是”包”，从 <code>MT_RXQ_MCU</code> ring 上来，经 <code>mt7925_queue_rx_skb()</code> 的 <code>PKT_TYPE_RX_EVENT</code> 分支进入：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mt7925_mcu_rx_event</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev, <span class="keyword">struct</span> sk_buff *skb)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mt7925_mcu_rxd</span> *<span class="title">rxd</span> =</span> (<span class="keyword">struct</span> mt7925_mcu_rxd *)skb-&gt;data;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="title function_">skb_linearize</span>(skb))</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (rxd-&gt;option &amp; MCU_UNI_CMD_UNSOLICITED_EVENT) {</span><br><span class="line">		<span class="title function_">mt7925_mcu_uni_rx_unsolicited_event</span>(dev, skb);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt76_mcu_rx_event</span>(&amp;dev-&gt;mt76, skb);   <span class="comment">/* 否则是某个命令的响应 */</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>主动事件按 <code>eid</code> 分发：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (rxd-&gt;eid) {</span><br><span class="line"><span class="keyword">case</span> MCU_UNI_EVENT_FW_LOG_2_HOST:      <span class="title function_">mt7925_mcu_uni_debug_msg_event</span>(dev, skb); <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> MCU_UNI_EVENT_ROC:                <span class="title function_">mt7925_mcu_uni_roc_event</span>(dev, skb);       <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> MCU_UNI_EVENT_SCAN_DONE:          <span class="title function_">mt7925_mcu_scan_event</span>(dev, skb);          <span class="keyword">return</span>;</span><br><span class="line"><span class="keyword">case</span> MCU_UNI_EVENT_TX_DONE:            <span class="title function_">mt7925_mcu_tx_done_event</span>(dev, skb);       <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> MCU_UNI_EVENT_BSS_BEACON_LOSS:    <span class="title function_">mt7925_mcu_connection_loss_event</span>(dev, skb); <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> MCU_UNI_EVENT_COREDUMP:</span><br><span class="line">	dev-&gt;fw_assert = <span class="literal">true</span>;</span><br><span class="line">	<span class="title function_">mt76_connac_mcu_coredump_event</span>(&amp;dev-&gt;mt76, skb, &amp;dev-&gt;coredump);</span><br><span class="line">	<span class="keyword">return</span>;                            <span class="comment">/* skb 交给 coredump 处理 */</span></span><br><span class="line"><span class="keyword">default</span>: <span class="keyword">break</span>;</span><br><span class="line">}</span><br><span class="line"><span class="title function_">dev_kfree_skb</span>(skb);</span><br></pre></td></tr></table></figure>
+
+<p>两类”路径”值得注意：</p>
+<ul>
+<li><strong>响应 vs 事件</strong>：只有 <code>option &amp; MCU_UNI_CMD_UNSOLICITED_EVENT</code> 才走事件分发，其余进 <code>mt76_mcu_rx_event()</code> 按 <code>seq</code> 匹配等待中的命令（这一层是阻塞式同步调用）。</li>
+<li><strong>谁负责释放 skb</strong>：<code>SCAN_DONE</code> 与 <code>COREDUMP</code> 是 <code>return</code>（skb 被挂到 <code>scan_event_list</code> / coredump 队列，由 work 处理），其余分支自己 <code>dev_kfree_skb()</code>。写这块代码时最容易出 skb 泄漏或 double free。</li>
+</ul>
+<h3 id="响应解析：mt7925-mcu-parse-response"><a href="#响应解析：mt7925-mcu-parse-response" class="headerlink" title="响应解析：mt7925_mcu_parse_response()"></a>响应解析：<code>mt7925_mcu_parse_response()</code></h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">rxd = (<span class="keyword">struct</span> mt7925_mcu_rxd *)skb-&gt;data;</span><br><span class="line"><span class="keyword">if</span> (seq != rxd-&gt;seq)</span><br><span class="line">	<span class="keyword">return</span> -EAGAIN;                       <span class="comment">/* seq 不匹配 → 不是我要的，回去继续等 */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (cmd == <span class="title function_">MCU_CMD</span>(PATCH_SEM_CONTROL) || cmd == <span class="title function_">MCU_CMD</span>(PATCH_FINISH_REQ)) {</span><br><span class="line">	<span class="title function_">skb_pull</span>(skb, <span class="keyword">sizeof</span>(*rxd) - <span class="number">4</span>);</span><br><span class="line">	ret = *skb-&gt;data;                     <span class="comment">/* patch 类响应：单字节状态 */</span></span><br><span class="line">} <span class="keyword">else</span> <span class="keyword">if</span> (cmd == <span class="title function_">MCU_UNI_CMD</span>(DEV_INFO_UPDATE) || cmd == <span class="title function_">MCU_UNI_CMD</span>(BSS_INFO_UPDATE) ||</span><br><span class="line">	   cmd == <span class="title function_">MCU_UNI_CMD</span>(STA_REC_UPDATE) || cmd == <span class="title function_">MCU_UNI_CMD</span>(HIF_CTRL) ||</span><br><span class="line">	   cmd == <span class="title function_">MCU_UNI_CMD</span>(OFFLOAD) || cmd == <span class="title function_">MCU_UNI_CMD</span>(SUSPEND)) {</span><br><span class="line">	<span class="keyword">struct</span> mt7925_mcu_uni_event *event;</span><br><span class="line">	<span class="title function_">skb_pull</span>(skb, <span class="keyword">sizeof</span>(*rxd));</span><br><span class="line">	event = (<span class="keyword">struct</span> mt7925_mcu_uni_event *)skb-&gt;data;</span><br><span class="line">	ret = <span class="title function_">le32_to_cpu</span>(event-&gt;status);     <span class="comment">/* 这几种命令的响应带 status */</span></span><br><span class="line">	<span class="keyword">if</span> (mcu_cmd != event-&gt;cid)            <span class="comment">/* cid 对不上，继续等 */</span></span><br><span class="line">		ret = -EAGAIN;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>三个状态码含义（面试常问）：</p>
+<table>
+<thead>
+<tr>
+<th>返回</th>
+<th>含义</th>
+<th>mt76 的后续动作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>0</code></td>
+<td>成功</td>
+<td>调用者继续</td>
+</tr>
+<tr>
+<td><code>-EAGAIN</code></td>
+<td>收到的是别的响应/事件</td>
+<td>不报错，继续等自己的 seq</td>
+</tr>
+<tr>
+<td><code>-ETIMEDOUT</code></td>
+<td>等不到（<code>skb == NULL</code>）</td>
+<td>打印 <code>Message %08x (seq %d) timeout</code> 并 <strong><code>mt792x_reset(mdev)</code></strong></td>
+</tr>
+</tbody></table>
+<p>最后这条很重要：<strong>一次 MCU 超时就会触发整个芯片复位</strong>，所以 dmesg 里出现 <code>Message ... timeout</code> 往往后面紧跟一串 reset 日志，根因却可能在别处（TX ring 满、固件崩了、bus 挂起时序）。</p>
+<hr>
+<h2 id="七、调试线索速查"><a href="#七、调试线索速查" class="headerlink" title="七、调试线索速查"></a>七、调试线索速查</h2><table>
+<thead>
+<tr>
+<th>dmesg 关键字</th>
+<th>位置</th>
+<th>常见原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>direct firmware load ... mt7925/WIFI_...</code> 失败</td>
+<td><code>request_firmware()</code></td>
+<td>linux-firmware 缺失或版本不对（注意 <code>mt7925/</code> 子目录）</td>
+</tr>
+<tr>
+<td><code>Timeout for initializing firmware</code></td>
+<td><code>mt792x_load_firmware()</code> 的 1500ms 轮询</td>
+<td>patch/RAM 下载后固件没起、<code>MT_TOP_MISC2_FW_N9_RDY</code> 不通</td>
+</tr>
+<tr>
+<td><code>Message %08x (seq %d) timeout</code></td>
+<td><code>mt7925_mcu_parse_response()</code></td>
+<td>命令超时 → 随后自动 <code>mt792x_reset()</code></td>
+</tr>
+<tr>
+<td><code>iw</code> 里没有 MLD/MLO 能力</td>
+<td><code>mt7925_mcu_get_nic_capability()</code> + <code>mt7925_init_mlo_caps()</code></td>
+<td><code>chip_cap</code> 里缺 <code>MT792x_CHIP_CAP_MLO_EVT_EN</code>，此时 MLO 能力被<strong>静默跳过</strong>（不打印错误）</td>
+</tr>
+<tr>
+<td>6GHz 信道不可用 / 功率偏低</td>
+<td>CLC + <code>SET_POWER_LIMIT</code></td>
+<td><code>alpha2</code> 未设（<code>00</code>）、CLC region 没匹配、监管域限制</td>
+</tr>
+</tbody></table>
+<p>配套开关：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 打开固件日志上报（1 开 0 关）</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/ieee80211/&lt;phy&gt;/mt76/fw_debug</span><br><span class="line"><span class="comment"># 关掉 CLC（排查功率/信道限制是否来自 CLC）</span></span><br><span class="line">modprobe mt7925e disable_clc=1</span><br><span class="line"><span class="comment"># 打印 MCU 消息（需要 CONFIG_DYNAMIC_DEBUG）</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'module mt7925e +p'</span> &gt; /sys/kernel/debug/dynamic_debug/control</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="八、小结"><a href="#八、小结" class="headerlink" title="八、小结"></a>八、小结</h2><ol>
+<li>MT7925 需要 <strong>patch + RAM code 两份固件</strong>，名字由 <code>mt792x_ram_name()/mt792x_patch_name()</code> 按 chip id 选出，放在 <code>mediatek/mt7925/</code> 下。</li>
+<li>下载由 <code>mt792x_load_firmware()</code> 完成：patch → （SDIO/USB 需再握手电源）→ RAM code → 轮询 <code>MT_TOP_MISC2_FW_N9_RDY</code>。</li>
+<li><code>mt7925_run_firmware()</code> 在固件跑起来后补三件事：取 NIC 能力、置 <code>MT76_STATE_MCU_RUNNING</code>、下发 CLC 并打开固件日志。</li>
+<li>命令与事件共用 TX/RX 的 MCU 环：命令走 <code>MT7925_TXQ_MCU_WM(=15)</code>，<code>FW_SCATTER</code> 走独立的 FWDL 环；响应用 4bit <code>seq</code> 匹配，主动事件由 <code>option</code> 标志区分。</li>
+</ol>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%9B%BA%E4%BB%B6%E6%96%87%E4%BB%B6%E4%BB%8E%E5%93%AA%E6%9D%A5"><span class="toc-text">一、固件文件从哪来</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%B8%8B%E8%BD%BD%E5%BA%8F%E5%88%97%EF%BC%9Amt792x-load-firmware"><span class="toc-text">二、下载序列：mt792x_load_firmware()</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%A9%B1%E5%8A%A8%E4%BE%A7%E7%9A%84%E5%9B%BA%E4%BB%B6%E5%85%A5%E5%8F%A3%EF%BC%9Amt7925-run-firmware"><span class="toc-text">三、驱动侧的固件入口：mt7925_run_firmware()</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CLC-%E8%A1%A8%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%8D%95%E7%8B%AC%E5%A4%84%E7%90%86"><span class="toc-text">CLC 表为什么要单独处理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81PCIe-%E4%BE%A7%E7%9A%84-MCU-%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%9Amt7925e-mcu-init"><span class="toc-text">四、PCIe 侧的 MCU 初始化：mt7925e_mcu_init()</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%91%BD%E4%BB%A4%E9%80%9A%E9%81%93%EF%BC%9AMCU-%E6%B6%88%E6%81%AF%E6%80%8E%E4%B9%88%E5%8F%91%E5%87%BA%E5%8E%BB"><span class="toc-text">五、命令通道：MCU 消息怎么发出去</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%8F%91%E9%80%81%E5%85%A5%E5%8F%A3"><span class="toc-text">5.1 发送入口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E5%91%BD%E4%BB%A4%E6%8F%8F%E8%BF%B0%E7%AC%A6%E6%9E%84%E9%80%A0%EF%BC%9Amt7925-mcu-fill-message"><span class="toc-text">5.2 命令描述符构造：mt7925_mcu_fill_message()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-MT7925-%E7%94%A8%E5%88%B0%E7%9A%84%E5%91%BD%E4%BB%A4%E6%97%8F%EF%BC%88%E8%8A%82%E9%80%89%E8%87%AA-mt7925-mcu-c%EF%BC%89"><span class="toc-text">5.3 MT7925 用到的命令族（节选自 mt7925&#x2F;mcu.c）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E4%BA%8B%E4%BB%B6%E9%80%9A%E9%81%93%EF%BC%9A%E4%BB%8E-RX-ring-%E5%88%B0-mt7925-mcu-rx-event"><span class="toc-text">六、事件通道：从 RX ring 到 mt7925_mcu_rx_event()</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E8%A7%A3%E6%9E%90%EF%BC%9Amt7925-mcu-parse-response"><span class="toc-text">响应解析：mt7925_mcu_parse_response()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%B0%83%E8%AF%95%E7%BA%BF%E7%B4%A2%E9%80%9F%E6%9F%A5"><span class="toc-text">七、调试线索速查</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-text">八、小结</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+      <div class="post-tags">
+        
+          <a href="/tags/MT7925/">#MT7925</a>
+        
+          <a href="/tags/%E5%9B%BA%E4%BB%B6%E5%8A%A0%E8%BD%BD/">#固件加载</a>
+        
+          <a href="/tags/MCU/">#MCU</a>
+        
+      </div>
+    
+    <nav class="post-nav">
+      
+        <a class="prev" href="/2026/09/13/mt7925-02-pcie-bus/">&laquo; MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe / 中断 / DMA / 电源 / 卸载）</a>
+      
+      
+        <a class="next" href="/2026/09/13/mt7925-04-mac-init/">MT7925 驱动学习 04：MAC 初始化与硬件寄存器配置 &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+</body>
+</html>

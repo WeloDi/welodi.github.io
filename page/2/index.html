@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
-  <link rel="stylesheet" href="/css/style.css?v=e073b6f7">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
   
   <script>
     (function () {
@@ -153,14 +153,18 @@ mjx-container[display="true"] + br {
       
         <a class="nav-link" href="/">Home</a>
       
-        <a class="nav-link" href="/archives">Archives</a>
+        <a class="nav-link" href="/categories">Categories</a>
       
         <a class="nav-link" href="/tags">Tags</a>
       
-        <a class="nav-link" href="/categories">Categories</a>
-      
         <a class="nav-link" href="/about">About</a>
       
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
       <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
         <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="4"/>
@@ -180,10 +184,262 @@ mjx-container[display="true"] + br {
   
     <article class="post-card">
   <h2 class="post-card-title">
+    <a href="/2026/09/06/color-encoding/">色彩编码格式</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-06T02:00:00.000Z">2026-09-06</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/Camera/">Camera</a><span class="separator">/</span><a href="/categories/Camera/%E5%9B%BE%E5%83%8F%E5%A4%84%E7%90%86/">图像处理</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>一张相机的彩色图，不是 sensor”直接拍出来的彩色”，而是经过多级处理：. RAW 图像的每个像素只有 1 个通道值（只感 R 或 G 或 B 一种光），不是”彩色像素” 同一种”视觉颜色”，在不同阶段叫不同格式：sensor 端 = Bayer 相位 + 位深；ISP 输出 = RGB/YCbCr + 位深 + 色度抽样；内存里 = V4L2 fourcc. 单色 sensor ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/06/color-encoding/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/Camera/">#Camera</a>
+      
+        <a href="/tags/MIPI/">#MIPI</a>
+      
+        <a href="/tags/ISP/">#ISP</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/05/multi-sensor-sync/">多传感器同步</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-05T02:20:00.000Z">2026-09-05</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/Camera/">Camera</a><span class="separator">/</span><a href="/categories/Camera/%E6%97%B6%E9%97%B4%E5%90%8C%E6%AD%A5/">时间同步</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>时间同步要解决的三类问题：. 硬件时钟漂移：不同设备的晶振频率存在微小差异（普通晶振 ±20~50ppm），且频率随温度漂移；误差随时间线性累积——20ppm 的时钟一天约漂移 1.7s。软件”对表”只能校正相位（offset），校正不了频率（skew），因此需要持续驯服而非一次同步。. 网络延迟波动：基于网络/总线传输的传感器（以太网摄像头、USB ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/05/multi-sensor-sync/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/Camera/">#Camera</a>
+      
+        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>
+      
+        <a href="/tags/IMU/">#IMU</a>
+      
+        <a href="/tags/%E5%90%8C%E6%AD%A5/">#同步</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/09/04/MIPI-CSI2/">MIPI-CSI2协议</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-04T04:00:00.000Z">2026-09-04</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E5%8D%8F%E8%AE%AE/">协议</a><span class="separator">/</span><a href="/categories/%E5%8D%8F%E8%AE%AE/MIPI/">MIPI</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>后文所有概念（包、DT、LP/HS、时序）都运行在以下链路上。以 IMX219（2-lane）接 RK SoC 为例：. 注意：. 每个 lane 有两种模式：LP（1.2V 低速，空闲/握手）和 HS（低摆幅差分，真正高速传数据，时钟 lane 持续翻转） 两种时钟别搞反：XVCLK = SoC 给 sensor 干活用的主时钟（24M）；MIPI CLK lane = sensor 给 ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/04/MIPI-CSI2/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/Camera/">#Camera</a>
+      
+        <a href="/tags/MIPI/">#MIPI</a>
+      
+        <a href="/tags/CSI-2/">#CSI-2</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/08/22/hx9023s-driver/">hx9023s_driver</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-08-22T12:00:00.000Z">2026-08-22</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E4%BC%A0%E6%84%9F%E5%99%A8/">传感器</a><span class="separator">/</span><a href="/categories/%E4%BC%A0%E6%84%9F%E5%99%A8/%E4%BC%A0%E6%84%9F%E5%99%A8%E9%A9%B1%E5%8A%A8/">传感器驱动</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>本文档详细分析 Linux 6.12 内核中南京天易合芯（TYHX）HX9023S 电容式接近传感器（SAR）驱动 的架构设计。. HX9023S 单芯片最多支持 5 路感应通道，I2C 接口，带 1 个硬件中断脚。 ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/08/22/hx9023s-driver/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/iio/">#iio</a>
+      
+        <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/">#驱动开发</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/08/08/imx219-driver/">imx219_driver</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-08-08T12:32:18.000Z">2026-08-08</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/Camera/">Camera</a><span class="separator">/</span><a href="/categories/Camera/%E4%BC%A0%E6%84%9F%E5%99%A8%E9%A9%B1%E5%8A%A8/">传感器驱动</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>本文档记录 Sony IMX219 相机传感器驱动的架构设计、工作流程、与 RK3588 ISP 管线的集成方式，以及 BSP 相机驱动调试中常遇到的问题和解决方法。 驱动源码：DTS overlay：. v4l2_subdev_ops :. V4L2 controls 回调. imx219_internal_ops. 内核的 V4L2 框架采用了异步驱动模型。这是因为在系统启动时，sensor ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/08/08/imx219-driver/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/camera/">#camera</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/08/06/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%BF%9B%E9%98%B6)/">Linux BSP 面试题总结（进阶篇）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-08-05T17:16:00.000Z">2026-08-06</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E9%9D%A2%E8%AF%95/">面试</a><span class="separator">/</span><a href="/categories/%E9%9D%A2%E8%AF%95/%E8%BF%9B%E9%98%B6/">进阶</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>设备树（Device Tree）是一种描述硬件拓扑的数据结构，将板级硬件信息从内核源码中分离。以 （源）→ （二进制）的形式，在启动时由 Bootloader 传给内核。 核心概念：. 为什么 ARM 需要设备树？ ARM 生态中硬件变化频繁（同一 SoC 不同板子外设不同），不像 x86 有 ACPI/BIOS 统一枚举。设备树让同一份内核镜像适配不同板子，避免硬编码。 追问： 和 的区别？ ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/08/06/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E8%BF%9B%E9%98%B6)/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/">#驱动开发</a>
+      
+        <a href="/tags/Linux/">#Linux</a>
+      
+        <a href="/tags/BSP/">#BSP</a>
+      
+        <a href="/tags/%E9%9D%A2%E8%AF%95/">#面试</a>
+      
+        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/">Linux BSP 面试题总结（基础篇）</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-08-04T22:55:10.000Z">2026-08-05</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E9%9D%A2%E8%AF%95/">面试</a><span class="separator">/</span><a href="/categories/%E9%9D%A2%E8%AF%95/%E5%9F%BA%E7%A1%80/">基础</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>答：volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中. 典型反例（不加 volatile 的后果）：. 进程间通信（IPC）方式：. 内核中的线程：. / ：创建内核线程 内核线程没有独立的地址空间（mm = NULL），共享内核地址空间 内核线程不可切换到用户态. 答： ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/">Read More &rarr;</a>
+  
+    <div class="post-card-tags">
+      
+        <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/">#驱动开发</a>
+      
+        <a href="/tags/Linux/">#Linux</a>
+      
+        <a href="/tags/BSP/">#BSP</a>
+      
+        <a href="/tags/%E9%9D%A2%E8%AF%95/">#面试</a>
+      
+        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>
+      
+    </div>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
+    <a href="/2026/06/12/Interview/">Interview</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-06-12T10:27:58.000Z">2026-06-12</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/%E9%9D%A2%E8%AF%95/">面试</a><span class="separator">/</span><a href="/categories/%E9%9D%A2%E8%AF%95/%E7%BB%BC%E5%90%88/">综合</a>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      嵌入式 Linux 驱动开发面试笔记，涵盖基础知识（编译流程、OSI七层模型、IIC/SPI/UART总线、中断、DMA、IPC）、工业协议（CANopen、EtherCAT）、ROS2、U-Boot 启动流程、CPU 调度与实时补丁、DRM 显示框架、USB 设备枚举、以及一个实际 G-Sensor 驱动问题调试案例。
+    
+  </div>
+  <a class="read-more" href="/2026/06/12/Interview/">Read More &rarr;</a>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
     <a href="/2026/06/11/suspend-resume/">suspend-resume</a>
   </h2>
   <div class="post-card-meta">
     <time datetime="2026-06-11T06:19:55.000Z">2026-06-11</time>
+    
+      <span class="separator">&middot;</span>
+      <a href="/categories/Linux%E5%86%85%E6%A0%B8/">Linux内核</a><span class="separator">/</span><a href="/categories/Linux%E5%86%85%E6%A0%B8/%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86/">电源管理</a>
     
   </div>
   <div class="post-card-excerpt">
@@ -211,12 +467,37 @@ mjx-container[display="true"] + br {
       <p>&copy; 2026 Welodi</p>
     
     <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
   </div>
 </footer>
 
   </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
   
 <script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
 
 </body>
 </html>

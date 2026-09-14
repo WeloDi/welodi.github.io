@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT7925 驱动学习 08：调试与问题定位（debugfs、固件日志、coredump、故障树） | Welodi</title>
+  <meta name="description" content="文档概述前面七篇讲了结构，这篇讲怎么查。MT7925 的可观测性分四类：内核日志（dmesg）、debugfs、固件自身（日志 + coredump）、以及系统层（iw&#x2F;ethtool&#x2F;ftrace）。本文给出每类工具的入口、读法和一套按现象分诊的故障树。  一、先确认环境1234567891011121314151617# 模块与依赖（mt7925e 依赖 mt7925-common &#x2F; mt7">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MT7925 驱动学习 08：调试与问题定位（debugfs、固件日志、coredump、故障树）">
+<meta property="og:url" content="http://example.com/2026/09/13/mt7925-08-debugging/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="文档概述前面七篇讲了结构，这篇讲怎么查。MT7925 的可观测性分四类：内核日志（dmesg）、debugfs、固件自身（日志 + coredump）、以及系统层（iw&#x2F;ethtool&#x2F;ftrace）。本文给出每类工具的入口、读法和一套按现象分诊的故障树。  一、先确认环境1234567891011121314151617# 模块与依赖（mt7925e 依赖 mt7925-common &#x2F; mt7">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-09-13T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-13T09:17:36.635Z">
+<meta property="article:author" content="Welodi">
+<meta property="article:tag" content="MT7925">
+<meta property="article:tag" content="调试">
+<meta property="article:tag" content="debugfs">
+<meta name="twitter:card" content="summary">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+        <a class="nav-link" href="/">Home</a>
+      
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">MT7925 驱动学习 08：调试与问题定位（debugfs、固件日志、coredump、故障树）</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-13T08:00:00.000Z">2026-09-13</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>前面七篇讲了结构，这篇讲<strong>怎么查</strong>。MT7925 的可观测性分四类：内核日志（dmesg）、debugfs、固件自身（日志 + coredump）、以及系统层（iw/ethtool/ftrace）。本文给出每类工具的入口、读法和一套按现象分诊的故障树。</p>
+<hr>
+<h2 id="一、先确认环境"><a href="#一、先确认环境" class="headerlink" title="一、先确认环境"></a>一、先确认环境</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 模块与依赖（mt7925e 依赖 mt7925-common / mt792x-lib / mt76）</span></span><br><span class="line">lsmod | grep -E <span class="string">"mt7925|mt792x|mt76"</span></span><br><span class="line">modinfo mt7925e | <span class="built_in">head</span> -20        <span class="comment"># 可看到 MODULE_FIRMWARE 列表</span></span><br><span class="line">modinfo mt76 | grep -i parm       <span class="comment"># 模块参数（disable_runtime_pm 等在 mt76 层）</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 固件是否存在（注意 mt7925 子目录）</span></span><br><span class="line"><span class="built_in">ls</span> -l /lib/firmware/mediatek/mt7925/</span><br><span class="line"><span class="comment">#   WIFI_MT7925_PATCH_MCU_1_1_hdr.bin</span></span><br><span class="line"><span class="comment">#   WIFI_RAM_CODE_MT7925_1_1.bin</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设备是否被识别</span></span><br><span class="line">lspci -nnk | grep -A3 -i mediatek      <span class="comment"># PCIe：14c3:7925 / 14c3:0717</span></span><br><span class="line">lsusb | grep -i mediatek               <span class="comment"># USB：0e8d:7925</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 注册结果</span></span><br><span class="line">iw dev</span><br><span class="line">iw phy | <span class="built_in">head</span> -40</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二、内核日志（dmesg）：按关键字定位到源码行"><a href="#二、内核日志（dmesg）：按关键字定位到源码行" class="headerlink" title="二、内核日志（dmesg）：按关键字定位到源码行"></a>二、内核日志（dmesg）：按关键字定位到源码行</h2><p>MT7925 的日志关键字基本可以直接映射到前几篇讲过的函数：</p>
+<table>
+<thead>
+<tr>
+<th>dmesg 关键字</th>
+<th>源码位置</th>
+<th>含义 / 下一步</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ASIC revision: %04x</code></td>
+<td><code>pci.c</code> / <code>usb.c</code> probe</td>
+<td>芯片版本。读到 <code>0000</code> 说明总线访问失败（链路/供电/ASPM）</td>
+</tr>
+<tr>
+<td><code>direct firmware load for mediatek/mt7925/... failed</code></td>
+<td><code>request_firmware()</code></td>
+<td>固件缺失或路径不对</td>
+</tr>
+<tr>
+<td><code>Timeout for initializing firmware</code></td>
+<td><code>mt792x_load_firmware()</code></td>
+<td><code>MT_TOP_MISC2_FW_N9_RDY</code> 未置位，patch/RAM 下载后固件没起</td>
+</tr>
+<tr>
+<td><code>hardware init failed</code></td>
+<td><code>mt7925_init_hardware()</code> 重试 10 次后</td>
+<td>固件下载/MCU 初始化反复失败</td>
+</tr>
+<tr>
+<td><code>WTBL update timeout</code></td>
+<td><code>mt7925_mac_wtbl_update()</code></td>
+<td>WTBL 操作 500ms 未完成（复位/PM 打断时序）</td>
+</tr>
+<tr>
+<td><code>Message %08x (seq %d) timeout</code></td>
+<td><code>mt7925_mcu_parse_response()</code></td>
+<td>**一次 MCU 超时 = 随后触发 <code>mt792x_reset()</code>**，看它前面最后一条命令的 cid</td>
+</tr>
+<tr>
+<td><code>MT_TXFREE1_VER</code> 相关 WARN</td>
+<td><code>mt7925_mac_tx_free()</code></td>
+<td>固件与驱动的 TX_FREE 格式不匹配（版本不配套）</td>
+</tr>
+<tr>
+<td><code>tx blocked</code> / 长时间无 TX</td>
+<td><code>mt76_token_*</code> + <code>MT76_TX_BLOCKED</code></td>
+<td>token 耗尽，见第 6 篇</td>
+</tr>
+<tr>
+<td><code>Firmware coredump</code> / <code>devcd</code></td>
+<td><code>mt76_connac_mcu_coredump_event()</code></td>
+<td>固件崩溃，抓 <code>/sys/class/devcoredump/</code></td>
+</tr>
+</tbody></table>
+<p>打开更细的日志：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># dynamic debug：打印驱动的 dev_dbg（含 MCU 消息收发等）</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'module mt7925e +p; module mt7925-common +p; module mt792x-lib +p; module mt76 +p'</span> \</span><br><span class="line">  &gt; /sys/kernel/debug/dynamic_debug/control</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者启动参数</span></span><br><span class="line"><span class="comment">#   loglevel=8 dyndbg="module mt7925e +p"</span></span><br><span class="line">dmesg -w</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、debugfs：驱动暴露的运行时窗口"><a href="#三、debugfs：驱动暴露的运行时窗口" class="headerlink" title="三、debugfs：驱动暴露的运行时窗口"></a>三、debugfs：驱动暴露的运行时窗口</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l /sys/kernel/debug/ieee80211/phy0/mt76/</span><br></pre></td></tr></table></figure>
+
+<p>条目由 <code>mt7925/debugfs.c</code> 与 <code>mt792x_debugfs.c</code>（公共项）共同创建，<strong>名字以实际 <code>ls</code> 结果为准</strong>，常用的几类：</p>
+<table>
+<thead>
+<tr>
+<th>条目</th>
+<th>归属</th>
+<th>读/写</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>regval</code></td>
+<td>mt7925</td>
+<td>读</td>
+<td>经 <strong>MCU 代理</strong>读寄存器（<code>mt7925_mcu_regval()</code>），只能在固件允许的地址范围内用</td>
+</tr>
+<tr>
+<td><code>fw_debug</code></td>
+<td>mt7925</td>
+<td>写</td>
+<td>打开/关闭固件日志上报（<code>mt7925_mcu_fw_log_2_host(dev, 1/0)</code>），看 MCU 内部在做什么</td>
+</tr>
+<tr>
+<td><code>chip_reset</code></td>
+<td>mt792x/mt7925</td>
+<td>写</td>
+<td>触发软件复位，用来复现”复位路径”相关的问题（如复位后能否恢复）</td>
+</tr>
+<tr>
+<td><code>runtime-pm</code> / <code>deep-sleep</code></td>
+<td>mt792x</td>
+<td>写</td>
+<td>运行时开关省电与深睡（USB 上深睡无效），见第 7 篇</td>
+</tr>
+<tr>
+<td><code>idle-timeout</code></td>
+<td>mt792x</td>
+<td>写</td>
+<td>空闲超时（毫秒），调大更”不容易睡着”</td>
+</tr>
+<tr>
+<td><code>xmit-...</code> / 队列相关</td>
+<td>mt76</td>
+<td>写</td>
+<td>触发队列 dump，看 DMA ring 与 skb 占用</td>
+</tr>
+<tr>
+<td>stations 相关</td>
+<td>mt792x</td>
+<td>读</td>
+<td>每 STA 的速率、airtime、ACK 信号（<code>sta_statistics</code> 的数据源）</td>
+</tr>
+</tbody></table>
+<p>典型用法：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">D=/sys/kernel/debug/ieee80211/phy0/mt76</span><br><span class="line"><span class="built_in">cat</span>  <span class="variable">$D</span>/regval            <span class="comment"># 读寄存器（十六进制）</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; <span class="variable">$D</span>/fw_debug      <span class="comment"># 打开固件日志</span></span><br><span class="line"><span class="built_in">echo</span> 0 &gt; <span class="variable">$D</span>/runtime-pm    <span class="comment"># 先关省电，排除 PM 干扰（联调第一步）</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; <span class="variable">$D</span>/chip_reset    <span class="comment"># 手动触发一次复位，验证恢复路径</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>两条铁律</strong>：</p>
+<ol>
+<li><code>regval</code> 走 MCU 而不是 mmio，<strong>和驱动内部的 <code>mt76_rr()</code> 结果不一定一致</strong>，不要互相”对答案”。</li>
+<li>debugfs 里的<strong>写操作几乎都会影响在线连接</strong>（尤其 <code>chip_reset</code>），别在有业务流量时做。</li>
+</ol>
+<hr>
+<h2 id="四、固件日志与-coredump"><a href="#四、固件日志与-coredump" class="headerlink" title="四、固件日志与 coredump"></a>四、固件日志与 coredump</h2><h3 id="4-1-固件日志"><a href="#4-1-固件日志" class="headerlink" title="4.1 固件日志"></a>4.1 固件日志</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/ieee80211/phy0/mt76/fw_debug</span><br><span class="line">dmesg -w | grep -i mt7925</span><br></pre></td></tr></table></figure>
+
+<p>固件日志通过 <code>MCU_UNI_EVENT_FW_LOG_2_HOST</code> 事件上报，由 <code>mt7925_mcu_uni_debug_msg_event()</code> 解析后打印。它的价值在于：<strong>关联失败、扫描异常、速率不升这类”驱动看起来没错”的问题，答案常常在固件侧</strong>。</p>
+<h3 id="4-2-coredump"><a href="#4-2-coredump" class="headerlink" title="4.2 coredump"></a>4.2 coredump</h3><p>固件崩溃时会发生一条链式的处理：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">固件异常</span><br><span class="line">  → MCU_UNI_EVENT_COREDUMP 事件</span><br><span class="line">       ├─ dev-&gt;fw_assert = true</span><br><span class="line">       └─ mt76_connac_mcu_coredump_event(&amp;dev-&gt;mt76, skb, &amp;dev-&gt;coredump)</span><br><span class="line">            → 挂到 dev-&gt;coredump（连接层公共结构）</span><br><span class="line">                 → dump_work = mt7925_coredump_work()</span><br><span class="line">                      → dev_coredumpm() → /sys/class/devcoredump/devcdN/data</span><br></pre></td></tr></table></figure>
+
+<p>取证方法：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 崩溃后（或主动触发一次复位复现）</span></span><br><span class="line"><span class="built_in">ls</span> /sys/class/devcoredump/</span><br><span class="line"><span class="built_in">cat</span> /sys/class/devcoredump/devcd0/data &gt; mtwifi-coredump.bin</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/class/devcoredump/devcd0/data   <span class="comment"># dump 完必须写一次，释放资源</span></span><br></pre></td></tr></table></figure>
+
+<p>注意 <code>dev-&gt;fw_assert</code> 置位后驱动会走异常处理路径（复位重建），所以<strong>看到 coredump 就说明问题在固件侧</strong>，下一步是拿这份 dump 给原厂或对照固件版本。</p>
+<hr>
+<h2 id="五、系统层工具"><a href="#五、系统层工具" class="headerlink" title="五、系统层工具"></a>五、系统层工具</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 能力与监管域（MLO 是否生效、6GHz 是否可用）</span></span><br><span class="line">iw phy | grep -E <span class="string">"Band|Supported Channel|valid interface|MLD|EML|WoWLAN"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 链路质量</span></span><br><span class="line">iw dev wlan0 <span class="built_in">link</span></span><br><span class="line">iw dev wlan0 station dump          <span class="comment"># 速率、重传、信号、airtime</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 统计（mt792x_get_et_stats 的数据）</span></span><br><span class="line">ethtool -S wlan0</span><br><span class="line"></span><br><span class="line"><span class="comment"># tracepoint（mt76 自定义事件）</span></span><br><span class="line">grep -i mt76 /sys/kernel/debug/tracing/available_events</span><br><span class="line"><span class="comment">#  然后按需打开：echo 1 &gt; .../events/mt76/xxx/enable &amp;&amp; cat .../trace_pipe</span></span><br></pre></td></tr></table></figure>
+
+<p><code>iw</code> 能直接反映很多”能力位没填”的问题：</p>
+<ul>
+<li><code>iw phy</code> 里<strong>没有</strong> MLO/MLD 相关项 → 回到第 4 篇 <code>mt7925_init_mlo_caps()</code> + <code>chip_cap</code>（静默跳过，不报错）。</li>
+<li><strong>没有 6GHz Band</strong> → EEPROM/监管域/CLC 问题（<code>alpha2</code>、CLC region）。</li>
+<li><strong>没有 WoWLAN 段落</strong> → 固件没加载成功（<code>wiphy-&gt;wowlan</code> 未挂）。</li>
+<li>支持的接口类型缺失（如 <code>monitor</code>）→ 与 <code>mt7925_add_interface()</code> 的判断和固件能力有关。</li>
+</ul>
+<p>抓包定位（前提是能起 monitor 接口）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">iw phy phy0 info | grep -A2 <span class="string">"Supported interface modes"</span></span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> wlan0 down</span><br><span class="line">iw dev wlan0 <span class="built_in">set</span> monitor control</span><br><span class="line">ip <span class="built_in">link</span> <span class="built_in">set</span> wlan0 up</span><br><span class="line">tcpdump -i wlan0 -e -y IEEE802_11_RADIO</span><br></pre></td></tr></table></figure>
+
+<p>驱动侧对应的是 MCU 的 <code>SNIFFER</code> 命令族（<code>MCU_UNI_CMD(SNIFFER)</code>），需要固件配合。</p>
+<hr>
+<h2 id="六、故障树：按现象分诊"><a href="#六、故障树：按现象分诊" class="headerlink" title="六、故障树：按现象分诊"></a>六、故障树：按现象分诊</h2><h3 id="6-1-完全看不到设备-probe-失败"><a href="#6-1-完全看不到设备-probe-失败" class="headerlink" title="6.1 完全看不到设备 / probe 失败"></a>6.1 完全看不到设备 / probe 失败</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">lspci/lsusb 有设备？</span><br><span class="line">  ├─ 否 → 平台/供电/BIOS（PCIe 端口没起来、USB 端口无电）</span><br><span class="line">  └─ 是 → dmesg 看 mt7925e 的 probe 日志</span><br><span class="line">        ├─ 没有 ASIC revision 打印 → 寄存器访问失败（PCIe 链路/ASPM；试 disable_aspm=1）</span><br><span class="line">        ├─ ASIC revision: 0000 → 同上，或设备已被其它驱动/固件占用</span><br><span class="line">        └─ 固件加载报错 → 检查 /lib/firmware/mediatek/mt7925/ 两份文件</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-起来了但完全连不上"><a href="#6-2-起来了但完全连不上" class="headerlink" title="6.2 起来了但完全连不上"></a>6.2 起来了但完全连不上</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">iw dev 有接口？ → 没有：mt7925_add_interface / add_chanctx 失败（看 dmesg）</span><br><span class="line">有接口但 scan 无结果？</span><br><span class="line">  ├─ 6GHz 无结果 → 监管域/CLC（iw phy 看 band、iw reg get）</span><br><span class="line">  ├─ 完全无结果 → MCU SCAN 命令超时（"Message ... timeout"）→ 通常伴随复位循环</span><br><span class="line">  └─ 有结果但关联失败</span><br><span class="line">        ├─ 认证/关联帧在错误信道 → ROC 相关（mgd_prepare_tx / remain_on_channel）</span><br><span class="line">        └─ 关联被拒/超时 → 打开 fw_debug 看固件侧原因（密钥、速率、EDCA 配置）</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-连上了但传不动"><a href="#6-3-连上了但传不动" class="headerlink" title="6.3 连上了但传不动"></a>6.3 连上了但传不动</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ping 不通 / 吞吐极低</span><br><span class="line">  ├─ 是否 tx blocked（token 耗尽）→ 看 TX_FREE 是否到达、队列是否卡住（第 6 篇）</span><br><span class="line">  ├─ 是否刚连上就进省电 → 关 runtime-pm / 调 idle-timeout（第 7 篇）</span><br><span class="line">  ├─ 是否只有一条链路有流量（MLO）→ TXWI 的 omac/band 用了默认链路</span><br><span class="line">  └─ 速率不升（一直 1Mbps）→ TXS/TXS 统计是否正常、BA 是否建立（ampdu_action）</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-4-用着用着断了"><a href="#6-4-用着用着断了" class="headerlink" title="6.4 用着用着断了"></a>6.4 用着用着断了</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">dmesg 时间线（按顺序读！）</span><br><span class="line">  ├─ 先出现 "Message %08x (seq %d) timeout"</span><br><span class="line">  │    → 某条 MCU 命令超时（记下 cid，对照第 5 篇的命令族）</span><br><span class="line">  │    → 随后必然出现 mt792x_reset() 相关日志</span><br><span class="line">  ├─ 出现 coredump 相关日志</span><br><span class="line">  │    → 固件崩溃（抓 /sys/class/devcoredump）</span><br><span class="line">  ├─ 出现 WTBL update timeout</span><br><span class="line">  │    → 复位/PM 与 WTBL 操作冲突（并发时序）</span><br><span class="line">  └─ 什么都不打，只是静默断</span><br><span class="line">       → 打开 fw_debug，并检查是否睡眠/唤醒路径（第 7 篇）</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-5-休眠唤醒后异常"><a href="#6-5-休眠唤醒后异常" class="headerlink" title="6.5 休眠唤醒后异常"></a>6.5 休眠唤醒后异常</h3><p>按第 7 篇的分层排查：先 <code>disable_runtime_pm=1</code> 区分”是省电还是 suspend”；再看 resume 后是否重新下发密钥/PS 配置；最后确认固件是否还在（是否需要复位重建）。</p>
+<h3 id="6-6-MLO-相关"><a href="#6-6-MLO-相关" class="headerlink" title="6.6 MLO 相关"></a>6.6 MLO 相关</h3><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>检查点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>iw phy</code> 无 MLO/EML 能力</td>
+<td><code>chip_cap &amp; MT792x_CHIP_CAP_MLO_EVT_EN</code>（第 4 篇，静默跳过）</td>
+</tr>
+<tr>
+<td>能建 MLD 但只有一条链路有流量</td>
+<td><code>change_sta_links</code> / <code>change_vif_links</code> 里链路对象与 WTBL 是否正确创建</td>
+</tr>
+<tr>
+<td>MLD 关联失败</td>
+<td><code>STA_REC_MLD</code> / <code>STA_REC_EHT_MLD</code> TLV 是否下发；ROC（多链路驻留）是否成功</td>
+</tr>
+<tr>
+<td>唤醒后 MLD 降级为单链路</td>
+<td>唤醒路径未恢复全部链路配置</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="七、调试三步法"><a href="#七、调试三步法" class="headerlink" title="七、调试三步法"></a>七、调试三步法</h2><ol>
+<li><strong>先排除电源干扰</strong>：<code>disable_runtime_pm=1</code>、必要时 <code>disable_aspm=1</code>。省电时序是这类设备最常见的”假故障”来源。</li>
+<li><strong>按时间线读 dmesg</strong>：<code>Timeout for initializing firmware</code>（固件没起）→ <code>Message ... timeout</code> + <code>mt792x_reset</code>（命令超时 + 复位）→ coredump（固件崩）。<strong>日志的顺序比内容更重要</strong>。</li>
+<li>**区分”驱动错”和”固件错”**：<code>iw phy</code> 能力项 + <code>fw_debug</code> 日志 + coredump，三者能把绝大多数问题定位到具体一层。</li>
+</ol>
+<hr>
+<h2 id="八、小结"><a href="#八、小结" class="headerlink" title="八、小结"></a>八、小结</h2><table>
+<thead>
+<tr>
+<th>工具</th>
+<th>解决什么问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>dmesg（+ dynamic debug）</td>
+<td>初始化失败、MCU 超时、复位、WTBL 超时</td>
+</tr>
+<tr>
+<td>debugfs（<code>regval</code>/<code>fw_debug</code>/<code>chip_reset</code>/<code>runtime-pm</code>/<code>idle-timeout</code>）</td>
+<td>运行时寄存器、固件日志、省电开关、复位复现</td>
+</tr>
+<tr>
+<td>coredump（<code>/sys/class/devcoredump/</code>）</td>
+<td>固件崩溃取证</td>
+</tr>
+<tr>
+<td>iw / ethtool</td>
+<td>能力（MLO、6GHz、WoWLAN）、链路质量、统计</td>
+</tr>
+<tr>
+<td>tracepoint</td>
+<td>时序问题（发包/收包/队列）</td>
+</tr>
+</tbody></table>
+<p>MT7925 这类”驱动薄、固件厚”的设备，定位思路可以概括成一句话：<strong>先用 <code>iw phy</code> 看固件上报了什么能力，再用 <code>dmesg</code> 看哪条命令/哪个位没到位，最后用 <code>fw_debug</code> 和 coredump 把问题交回固件侧。</strong></p>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E7%A1%AE%E8%AE%A4%E7%8E%AF%E5%A2%83"><span class="toc-text">一、先确认环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%86%85%E6%A0%B8%E6%97%A5%E5%BF%97%EF%BC%88dmesg%EF%BC%89%EF%BC%9A%E6%8C%89%E5%85%B3%E9%94%AE%E5%AD%97%E5%AE%9A%E4%BD%8D%E5%88%B0%E6%BA%90%E7%A0%81%E8%A1%8C"><span class="toc-text">二、内核日志（dmesg）：按关键字定位到源码行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81debugfs%EF%BC%9A%E9%A9%B1%E5%8A%A8%E6%9A%B4%E9%9C%B2%E7%9A%84%E8%BF%90%E8%A1%8C%E6%97%B6%E7%AA%97%E5%8F%A3"><span class="toc-text">三、debugfs：驱动暴露的运行时窗口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%9B%BA%E4%BB%B6%E6%97%A5%E5%BF%97%E4%B8%8E-coredump"><span class="toc-text">四、固件日志与 coredump</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%9B%BA%E4%BB%B6%E6%97%A5%E5%BF%97"><span class="toc-text">4.1 固件日志</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-coredump"><span class="toc-text">4.2 coredump</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E7%B3%BB%E7%BB%9F%E5%B1%82%E5%B7%A5%E5%85%B7"><span class="toc-text">五、系统层工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%95%85%E9%9A%9C%E6%A0%91%EF%BC%9A%E6%8C%89%E7%8E%B0%E8%B1%A1%E5%88%86%E8%AF%8A"><span class="toc-text">六、故障树：按现象分诊</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E5%AE%8C%E5%85%A8%E7%9C%8B%E4%B8%8D%E5%88%B0%E8%AE%BE%E5%A4%87-probe-%E5%A4%B1%E8%B4%A5"><span class="toc-text">6.1 完全看不到设备 &#x2F; probe 失败</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E8%B5%B7%E6%9D%A5%E4%BA%86%E4%BD%86%E5%AE%8C%E5%85%A8%E8%BF%9E%E4%B8%8D%E4%B8%8A"><span class="toc-text">6.2 起来了但完全连不上</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E8%BF%9E%E4%B8%8A%E4%BA%86%E4%BD%86%E4%BC%A0%E4%B8%8D%E5%8A%A8"><span class="toc-text">6.3 连上了但传不动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-%E7%94%A8%E7%9D%80%E7%94%A8%E7%9D%80%E6%96%AD%E4%BA%86"><span class="toc-text">6.4 用着用着断了</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-5-%E4%BC%91%E7%9C%A0%E5%94%A4%E9%86%92%E5%90%8E%E5%BC%82%E5%B8%B8"><span class="toc-text">6.5 休眠唤醒后异常</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-6-MLO-%E7%9B%B8%E5%85%B3"><span class="toc-text">6.6 MLO 相关</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%B0%83%E8%AF%95%E4%B8%89%E6%AD%A5%E6%B3%95"><span class="toc-text">七、调试三步法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-text">八、小结</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+      <div class="post-tags">
+        
+          <a href="/tags/MT7925/">#MT7925</a>
+        
+          <a href="/tags/%E8%B0%83%E8%AF%95/">#调试</a>
+        
+          <a href="/tags/debugfs/">#debugfs</a>
+        
+      </div>
+    
+    <nav class="post-nav">
+      
+        <a class="prev" href="/2026/09/13/mt7925-07-power-management/">&laquo; MT7925 驱动学习 07：电源管理（runtime PM、深度睡眠、系统休眠与 WoWLAN）</a>
+      
+      
+        <a class="next" href="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/">DRM显示驱动框架 &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+</body>
+</html>

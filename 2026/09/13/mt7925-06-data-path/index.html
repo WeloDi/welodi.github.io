@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT7925 驱动学习 06：数据通路（TX/RX 队列、TXWI/RXD、token 与 TX_FREE） | Welodi</title>
+  <meta name="description" content="文档概述本文梳理 MT7925 收发包的完整软件路径：队列划分与尺寸、TX 侧 TXWI 构造与 token 生命周期、RX 侧从 DMA ring 到 mt76_rx() 的解析流程，以及 MLO 在数据通路上的体现（per-link wcid &#x2F; WTBL）。  一、队列与描述符总览   队列 编号 尺寸 用途    MT7925_TXQ_BAND0 0 MT7925_TX_RING_SIZE">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MT7925 驱动学习 06：数据通路（TX&#x2F;RX 队列、TXWI&#x2F;RXD、token 与 TX_FREE）">
+<meta property="og:url" content="http://example.com/2026/09/13/mt7925-06-data-path/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="文档概述本文梳理 MT7925 收发包的完整软件路径：队列划分与尺寸、TX 侧 TXWI 构造与 token 生命周期、RX 侧从 DMA ring 到 mt76_rx() 的解析流程，以及 MLO 在数据通路上的体现（per-link wcid &#x2F; WTBL）。  一、队列与描述符总览   队列 编号 尺寸 用途    MT7925_TXQ_BAND0 0 MT7925_TX_RING_SIZE">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-09-13T10:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-13T09:16:49.765Z">
+<meta property="article:author" content="Welodi">
+<meta property="article:tag" content="MT7925">
+<meta property="article:tag" content="DMA">
+<meta property="article:tag" content="数据通路">
+<meta name="twitter:card" content="summary">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+        <a class="nav-link" href="/">Home</a>
+      
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">MT7925 驱动学习 06：数据通路（TX/RX 队列、TXWI/RXD、token 与 TX_FREE）</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-13T10:00:00.000Z">2026-09-13</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>本文梳理 MT7925 收发包的完整软件路径：队列划分与尺寸、TX 侧 TXWI 构造与 token 生命周期、RX 侧从 DMA ring 到 <code>mt76_rx()</code> 的解析流程，以及 MLO 在数据通路上的体现（per-link wcid / WTBL）。</p>
+<hr>
+<h2 id="一、队列与描述符总览"><a href="#一、队列与描述符总览" class="headerlink" title="一、队列与描述符总览"></a>一、队列与描述符总览</h2><table>
+<thead>
+<tr>
+<th>队列</th>
+<th>编号</th>
+<th>尺寸</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MT7925_TXQ_BAND0</code></td>
+<td>0</td>
+<td><code>MT7925_TX_RING_SIZE = 2048</code></td>
+<td>数据帧（AC 队列映射到此）</td>
+</tr>
+<tr>
+<td><code>MT7925_TXQ_MCU_WM</code></td>
+<td>15</td>
+<td><code>MT7925_TX_MCU_RING_SIZE = 256</code></td>
+<td>MCU 命令</td>
+</tr>
+<tr>
+<td><code>MT7925_TXQ_FWDL</code></td>
+<td>16</td>
+<td><code>MT7925_TX_FWDL_RING_SIZE = 128</code></td>
+<td>固件下载（<code>MCU_CMD(FW_SCATTER)</code>）</td>
+</tr>
+<tr>
+<td><code>MT7925_RXQ_MCU_WM</code></td>
+<td>0</td>
+<td><code>MT7925_RX_MCU_RING_SIZE = 512</code></td>
+<td>MCU 事件 + TXS</td>
+</tr>
+<tr>
+<td><code>MT7925_RXQ_BAND0</code></td>
+<td>2</td>
+<td><code>MT7925_RX_RING_SIZE = 1536</code></td>
+<td>数据帧</td>
+</tr>
+<tr>
+<td><code>MT7925_TOKEN_SIZE</code></td>
+<td>—</td>
+<td>8192</td>
+<td>在飞 MSDU 的硬件 token 池</td>
+</tr>
+</tbody></table>
+<p>TXWI 组成：<code>MT_TXD_SIZE + sizeof(struct mt76_connac_hw_txp)</code>（<code>drv_ops.txwi_size</code>）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> skb headroom                        payload</span><br><span class="line">┌──────────────┬──────────────┬────────────────────┐</span><br><span class="line">│  MT_TXD      │  HW TXP      │ 802.11 / 802.3 数据 │</span><br><span class="line">│ (MAC 控制信息)│ (DMA 描述)   │                    │</span><br><span class="line">└──────────────┴──────────────┴────────────────────┘</span><br><span class="line">       ↑ txwi_size 由 drv_ops.txwi_size 决定，USB 侧换成 MT_SDIO_TXD_SIZE</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二、RX-路径：从-DMA-ring-到-mac80211"><a href="#二、RX-路径：从-DMA-ring-到-mac80211" class="headerlink" title="二、RX 路径：从 DMA ring 到 mac80211"></a>二、RX 路径：从 DMA ring 到 mac80211</h2><h3 id="2-1-分流第一层：mt7925-rx-check"><a href="#2-1-分流第一层：mt7925-rx-check" class="headerlink" title="2.1 分流第一层：mt7925_rx_check()"></a>2.1 分流第一层：<code>mt7925_rx_check()</code></h3><p>NAPI 轮询时 mt76 框架先调 <code>rx_check()</code> 判断”这一批要不要交给 <code>rx_skb()</code>“；MT7925 借它顺手把两类不需要 skb 的<strong>回收信息</strong>处理掉：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (type) {</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_TXRX_NOTIFY:</span><br><span class="line">	<span class="comment">/* PKT_TYPE_TXRX_NOTIFY can be received only by mmio devices */</span></span><br><span class="line">	<span class="title function_">mt7925_mac_tx_free</span>(dev, data, len); <span class="comment">/* mmio */</span></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_TXS:</span><br><span class="line">	<span class="keyword">for</span> (rxd += <span class="number">4</span>; rxd + <span class="number">12</span> &lt;= end; rxd += <span class="number">12</span>)</span><br><span class="line">		<span class="title function_">mt7925_mac_add_txs</span>(dev, rxd);</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>PKT_TYPE_TXRX_NOTIFY</code>（TX 完成）与 <code>PKT_TYPE_TXS</code>（每帧发送状态）<strong>只在 mmio 设备（PCIe）上出现</strong>，USB 走的是 <code>mt7925_usb_sdio_tx_status_data</code> 回调。</li>
+<li>返回 <code>false</code> 表示”这一批我已经处理完了，别再建 skb”，是省内存的关键优化。</li>
+</ul>
+<h3 id="2-2-分流第二层：mt7925-queue-rx-skb"><a href="#2-2-分流第二层：mt7925-queue-rx-skb" class="headerlink" title="2.2 分流第二层：mt7925_queue_rx_skb()"></a>2.2 分流第二层：<code>mt7925_queue_rx_skb()</code></h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (type) {</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_TXRX_NOTIFY:</span><br><span class="line">	<span class="title function_">mt7925_mac_tx_free</span>(dev, skb-&gt;data, skb-&gt;len);</span><br><span class="line">	<span class="title function_">napi_consume_skb</span>(skb, <span class="number">1</span>);</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_RX_EVENT:</span><br><span class="line">	<span class="title function_">mt7925_mcu_rx_event</span>(dev, skb);</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_TXS:</span><br><span class="line">	<span class="keyword">for</span> (rxd += <span class="number">2</span>; rxd + <span class="number">8</span> &lt;= end; rxd += <span class="number">8</span>)</span><br><span class="line">		<span class="title function_">mt7925_mac_add_txs</span>(dev, rxd);</span><br><span class="line">	<span class="title function_">dev_kfree_skb</span>(skb);</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_NORMAL_MCU:</span><br><span class="line"><span class="keyword">case</span> PKT_TYPE_NORMAL:</span><br><span class="line">	<span class="keyword">if</span> (!<span class="title function_">mt7925_mac_fill_rx</span>(dev, skb)) {</span><br><span class="line">		<span class="title function_">mt76_rx</span>(&amp;dev-&gt;mt76, q, skb);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	}</span><br><span class="line">	fallthrough;</span><br><span class="line"><span class="keyword">default</span>:</span><br><span class="line">	<span class="title function_">dev_kfree_skb</span>(skb);</span><br><span class="line">	<span class="keyword">break</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>四条路径对应四种”包”：</p>
+<table>
+<thead>
+<tr>
+<th>PKT_TYPE</th>
+<th>含义</th>
+<th>去向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NORMAL</code> / <code>NORMAL_MCU</code></td>
+<td>真正的 802.11 数据帧</td>
+<td><code>mt7925_mac_fill_rx()</code> → <code>mt76_rx()</code> → mac80211</td>
+</tr>
+<tr>
+<td><code>RX_EVENT</code></td>
+<td>MCU 事件</td>
+<td><code>mt7925_mcu_rx_event()</code></td>
+</tr>
+<tr>
+<td><code>TXS</code></td>
+<td>每个 MSDU 的发送状态（速率/重传/ACK RSSI）</td>
+<td><code>mt7925_mac_add_txs()</code> → 统计</td>
+</tr>
+<tr>
+<td><code>TXRX_NOTIFY</code></td>
+<td>TX 完成 + token 释放信息</td>
+<td><code>mt7925_mac_tx_free()</code></td>
+</tr>
+</tbody></table>
+<p><strong>skb 所有权约定</strong>：只有 <code>NORMAL*</code> 成功后 skb 被交给 mac80211（<code>return</code>，不再释放），其余分支都在这里释放。<code>RX_EVENT</code> 比较特殊——释放与否由 <code>mt7925_mcu_uni_rx_unsolicited_event()</code> 内部决定。</p>
+<h3 id="2-3-RXD-解析：mt7925-mac-fill-rx"><a href="#2-3-RXD-解析：mt7925-mac-fill-rx" class="headerlink" title="2.3 RXD 解析：mt7925_mac_fill_rx()"></a>2.3 RXD 解析：<code>mt7925_mac_fill_rx()</code></h3><p>MT7925 的 RX 头<strong>没有 C 结构体</strong>，就是裸的 32bit 字 + 位域宏：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">__le32 *rxd = (__le32 *)skb-&gt;data;</span><br><span class="line"><span class="comment">/* 通过 MT_RXD0_* / MT_RXD1_* / MT_RXD2_* 宏取字段 */</span></span><br></pre></td></tr></table></figure>
+
+<p><code>mt7925_mac_fill_rx()</code> 负责把硬件头部翻译成 mac80211 能懂的信息，主要工作：</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>取长度/类型</td>
+<td><code>MT_RXD0_LENGTH</code>、<code>MT_RXD2_NORMAL_...</code> 判断 frame control / 帧类型</td>
+</tr>
+<tr>
+<td>找 wcid</td>
+<td><code>MT_RXD1_NORMAL_WLAN_IDX</code> → <code>mt76_rx_status.wcid</code>；MLO 下还要取 link id 找到正确的 <code>mlink</code></td>
+</tr>
+<tr>
+<td>802.3 转换</td>
+<td>若硬件做了 <code>hdr_trans</code>（把 802.11 头转成 802.3），调用 <code>mt7925_reverse_frag0_hdr_trans()</code> 之类做还原</td>
+</tr>
+<tr>
+<td>加解密状态</td>
+<td>从 RXD 的 PN/IV 字段填 <code>status-&gt;flag</code>（<code>RX_FLAG_DECRYPTED</code>）、<code>status-&gt;pn</code>，交给 mac80211 的 <code>ieee80211_rx()</code> 做重放检查</td>
+</tr>
+<tr>
+<td>速率信息</td>
+<td><code>mt7925_mac_fill_rx_rate()</code> 从 RXD 的 RXV 里算 <code>rate-&gt;mcs/nss/bw/he/eht</code>，转成 mac80211 的 <code>ieee80211_rx_status</code></td>
+</tr>
+<tr>
+<td>质量信息</td>
+<td>RSSI/SNR、<code>signal</code>、<code>chains</code>，来自 RXD 的 P-RXV 字段</td>
+</tr>
+<tr>
+<td>AMSDU</td>
+<td>因为开了 <code>MT_MDP_DCR0_DAMSDU_EN</code>，硬件已去聚合，驱动直接按 MSDU 处理</td>
+</tr>
+</tbody></table>
+<p>最后 <code>mt76_rx()</code> 统一走一遍 BA 会话检查（<code>mt76_rx_aggr_check</code>）、<code>ieee80211_rx_*</code> 上报，并把 airtime 累计到 survey。</p>
+<hr>
+<h2 id="三、TX-路径：从-mac80211-到-DMA"><a href="#三、TX-路径：从-mac80211-到-DMA" class="headerlink" title="三、TX 路径：从 mac80211 到 DMA"></a>三、TX 路径：从 mac80211 到 DMA</h2><h3 id="3-1-上半段（公共）"><a href="#3-1-上半段（公共）" class="headerlink" title="3.1 上半段（公共）"></a>3.1 上半段（公共）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mac80211 (选取 sta/rate，做聚合与 BA 决策)</span><br><span class="line">   → ops-&gt;tx = mt792x_tx()</span><br><span class="line">        ├─ 选 wcid（mlink-&gt;wcid），MLO 下由 mac80211 指定 link</span><br><span class="line">        ├─ 分配 TXWI（token 机制：mt76_token_get()）</span><br><span class="line">        ├─ drv_ops.tx_prepare_skb()        ★ 芯片差异点</span><br><span class="line">        └─ mt76_txq_schedule() → 填 DMA 描述符提交</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-tx-prepare-skb：PCIe-与-USB-分道"><a href="#3-2-tx-prepare-skb：PCIe-与-USB-分道" class="headerlink" title="3.2 tx_prepare_skb：PCIe 与 USB 分道"></a>3.2 <code>tx_prepare_skb</code>：PCIe 与 USB 分道</h3><table>
+<thead>
+<tr>
+<th>版本</th>
+<th>函数</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PCIe</td>
+<td><code>mt7925e_tx_prepare_skb()</code>（<code>pci_mac.c</code>）</td>
+<td>把 TXWI <strong>写进 DMA 缓冲</strong>（<code>mt76_dma_tx_queue_skb</code> 的 txwi 位置），无需额外拷贝</td>
+</tr>
+<tr>
+<td>USB</td>
+<td><code>mt7925_usb_sdio_tx_prepare_skb()</code>（<code>mac.c</code>）</td>
+<td>因为 USB 要自带 802.3/802.11 头与 SDIO 头部，用 <code>mt7925_usb_sdio_write_txwi()</code> 组包</td>
+</tr>
+<tr>
+<td>完成回调</td>
+<td>PCIe：<code>mt76_connac_tx_complete_skb</code>；USB：<code>mt7925_usb_sdio_tx_complete_skb</code></td>
+<td>回收 skb/urb</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-mt7925-mac-write-txwi-：真正写-TXWI"><a href="#3-3-mt7925-mac-write-txwi-：真正写-TXWI" class="headerlink" title="3.3 mt7925_mac_write_txwi()：真正写 TXWI"></a>3.3 <code>mt7925_mac_write_txwi()</code>：真正写 TXWI</h3><p><code>mac.c</code> 里按协议头分两个函数，再由 <code>mt7925_mac_write_txwi()</code> 统一：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mt7925_mac_write_txwi_8023()    /* WDS/以太网封装（AP 模式发往客户端） */</span><br><span class="line">mt7925_mac_write_txwi_80211()   /* 原生 802.11 帧（管理帧、EAPOL 等） */</span><br><span class="line">        ↘            ↙</span><br><span class="line">      mt7925_mac_write_txwi()</span><br></pre></td></tr></table></figure>
+
+<p>写进去的关键字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>来源</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TX_BYTES</code></td>
+<td>skb-&gt;len</td>
+<td>帧长</td>
+</tr>
+<tr>
+<td><code>PKT_FMT</code> / <code>HDR_FORMAT</code></td>
+<td>帧类型</td>
+<td>802.11 / 802.3 / CMD</td>
+</tr>
+<tr>
+<td><code>WLAN_IDX</code></td>
+<td><code>wcid-&gt;idx</code></td>
+<td><strong>WTBL 索引</strong>，硬件靠它找 STA 的密钥/BA/速率</td>
+</tr>
+<tr>
+<td><code>OMAC</code> / <code>BAND</code> / <code>WMM</code></td>
+<td><code>mt792x_bss_conf.mt76</code></td>
+<td>来自 <code>link_id</code> 对应的链路配置</td>
+</tr>
+<tr>
+<td><code>Q_IDX</code></td>
+<td>AC 队列</td>
+<td>与 WMM AC 的 EDCA 参数对应</td>
+</tr>
+<tr>
+<td>加密相关</td>
+<td><code>wcid</code> 的 key</td>
+<td>硬件加密时置对应位</td>
+</tr>
+<tr>
+<td>MLO 相关</td>
+<td><code>mlink</code> / <code>mconf</code></td>
+<td>MLO 下必须用<strong>链路</strong>的 omac/band 而不是默认链路</td>
+</tr>
+</tbody></table>
+<p>写完 TXWI 后 <code>mt7925_tx_check_aggr()</code> 会检查是否需要建立/维护 BA 聚合相关信息（如 tid 与 wcid 的对应）。</p>
+<h3 id="3-4-TX-完成：mt7925-mac-tx-free"><a href="#3-4-TX-完成：mt7925-mac-tx-free" class="headerlink" title="3.4 TX 完成：mt7925_mac_tx_free()"></a>3.4 TX 完成：<code>mt7925_mac_tx_free()</code></h3><p>这是数据通路里最值得逐行读的函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">mt7925_mac_tx_free</span><span class="params">(<span class="keyword">struct</span> mt792x_dev *dev, <span class="type">void</span> *data, <span class="type">int</span> len)</span></span><br><span class="line">{</span><br><span class="line">	<span class="comment">/* clean DMA queues and unmap buffers first */</span></span><br><span class="line">	<span class="title function_">mt76_queue_tx_cleanup</span>(dev, dev-&gt;mphy.q_tx[MT_TXQ_PSD], <span class="literal">false</span>);</span><br><span class="line">	<span class="title function_">mt76_queue_tx_cleanup</span>(dev, dev-&gt;mphy.q_tx[MT_TXQ_BE], <span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="title function_">WARN_ON_ONCE</span>(<span class="title function_">le32_get_bits</span>(tx_free[<span class="number">1</span>], MT_TXFREE1_VER) &lt; <span class="number">4</span>))</span><br><span class="line">		<span class="keyword">return</span>;                        <span class="comment">/* ① 版本检查 */</span></span><br><span class="line"></span><br><span class="line">	total = <span class="title function_">le32_get_bits</span>(tx_free[<span class="number">0</span>], MT_TXFREE0_MSDU_CNT);</span><br><span class="line">	<span class="keyword">for</span> (cur_info = &amp;tx_free[<span class="number">2</span>]; count &lt; total; cur_info++) {</span><br><span class="line">		info = <span class="title function_">le32_to_cpu</span>(*cur_info);</span><br><span class="line">		<span class="keyword">if</span> (info &amp; MT_TXFREE_INFO_PAIR) {   <span class="comment">/* ② 新的 wcid 对 */</span></span><br><span class="line">			idx = <span class="title function_">FIELD_GET</span>(MT_TXFREE_INFO_WLAN_ID, info);</span><br><span class="line">			wcid = <span class="title function_">rcu_dereference</span>(dev-&gt;mt76.wcid[idx]);</span><br><span class="line">			sta = <span class="title function_">wcid_to_sta</span>(wcid);</span><br><span class="line">			<span class="keyword">if</span> (!sta)</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">			mlink = <span class="title function_">container_of</span>(wcid, <span class="keyword">struct</span> mt792x_link_sta, wcid);</span><br><span class="line">			<span class="title function_">spin_lock_bh</span>(&amp;mdev-&gt;sta_poll_lock);</span><br><span class="line">			<span class="keyword">if</span> (<span class="title function_">list_empty</span>(&amp;mlink-&gt;wcid.poll_list))</span><br><span class="line">				<span class="title function_">list_add_tail</span>(&amp;mlink-&gt;wcid.poll_list, &amp;mdev-&gt;sta_poll_list);</span><br><span class="line">			<span class="title function_">spin_unlock_bh</span>(&amp;mdev-&gt;sta_poll_lock);</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (info &amp; MT_TXFREE_INFO_HEADER) {  <span class="comment">/* ③ 重传/失败计数 */</span></span><br><span class="line">			wcid-&gt;stats.tx_retries += <span class="title function_">FIELD_GET</span>(MT_TXFREE_INFO_COUNT, info) - <span class="number">1</span>;</span><br><span class="line">			wcid-&gt;stats.tx_failed  += !!<span class="title function_">FIELD_GET</span>(MT_TXFREE_INFO_STAT, info);</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		}</span><br><span class="line"></span><br><span class="line">		<span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">2</span>; i++) {            <span class="comment">/* ④ 一个 32bit 里塞两个 MSDU id */</span></span><br><span class="line">			msdu = (info &gt;&gt; (<span class="number">15</span> * i)) &amp; MT_TXFREE_INFO_MSDU_ID;</span><br><span class="line">			<span class="keyword">if</span> (msdu == MT_TXFREE_INFO_MSDU_ID)</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			count++;</span><br><span class="line">			txwi = <span class="title function_">mt76_token_release</span>(mdev, msdu, &amp;wake);</span><br><span class="line">			<span class="keyword">if</span> (!txwi)</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			<span class="title function_">mt7925_txwi_free</span>(dev, txwi, sta, wcid, &amp;free_list);</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="title function_">mt7925_mac_sta_poll</span>(dev);                <span class="comment">/* ⑤ 更新每 STA 的速率/airtime */</span></span><br><span class="line">	<span class="keyword">if</span> (wake)</span><br><span class="line">		<span class="title function_">mt76_set_tx_blocked</span>(&amp;dev-&gt;mt76, <span class="literal">false</span>);</span><br><span class="line">	<span class="title function_">mt76_worker_schedule</span>(&amp;dev-&gt;mt76.tx_worker);</span><br><span class="line">	<span class="title function_">list_for_each_entry_safe</span>(skb, tmp, &amp;free_list, <span class="built_in">list</span>) {</span><br><span class="line">		<span class="title function_">skb_list_del_init</span>(skb);</span><br><span class="line">		<span class="title function_">napi_consume_skb</span>(skb, <span class="number">1</span>);</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>五个要点：</p>
+<ol>
+<li><strong>先清 DMA 队列</strong>（PSD/BE）：TX_FREE 事件到达时，硬件已完成 DMA，驱动要先把 ring 上的描述符回收，才能安全释放 skb。</li>
+<li><strong><code>MT_TXFREE1_VER &lt; 4</code> 直接返回</strong>：硬件格式版本校验，不匹配说明固件/驱动不配套（会 <code>WARN_ON_ONCE</code> 一次）。</li>
+<li><strong>压缩编码</strong>：<code>MT_TXFREE_INFO_*</code> 是一套”变长记录”：带 <code>PAIR</code> 位的记录给出一个新的 wcid，后续记录沿用这个 wcid；带 <code>HEADER</code> 位的是重传/失败统计；其余记录每个 32bit 打包 2 个 MSDU id（每个 15bit）。</li>
+<li><strong><code>container_of(wcid, struct mt792x_link_sta, wcid)</code><strong>：因为 <code>wcid</code> 是 <code>mt792x_link_sta</code> 的首成员，所以从 wcid 指针能一步拿到链路对象，再挂到 <code>sta_poll_list</code> 供后续统一 poll。</strong>MLO 下”每个链路一个 wcid”，这条路径天然按链路统计。</strong></li>
+<li><strong><code>mt76_token_release()</code> 是”发得出去”的开关</strong>：token 用满时 <code>mt792x_tx()</code> 会置 <code>MT76_TX_BLOCKED</code>，只有 TX_FREE 归还 token 并 <code>mt76_set_tx_blocked(false)</code> 后才恢复发包。<strong>现象是”能连上但传不动”，通常就是 token 泄漏或 TX_FREE 没被处理。</strong></li>
+</ol>
+<h3 id="3-5-TXS：每帧发送结果"><a href="#3-5-TXS：每帧发送结果" class="headerlink" title="3.5 TXS：每帧发送结果"></a>3.5 TXS：每帧发送结果</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">mt7925_mac_add_txs</span>(dev, rxd)   <span class="comment">/* 解析一条 TXS 记录 */</span></span><br><span class="line">    → <span class="title function_">mt7925_mac_add_txs_skb</span>(dev, wcid, pid, ...)</span><br><span class="line">         ├─ 取 ack 信号（ack_signal）、速率、重传次数、airtime</span><br><span class="line">         ├─ ewma 平滑：dev-&gt;mphy.avg_ack_signal / mlink-&gt;avg_ack_signal</span><br><span class="line">         └─ 供 rate 上报（mac80211 的 TX 状态上报）</span><br></pre></td></tr></table></figure>
+
+<p><code>mt7925_mac_sta_poll()</code> 则把这些按 STA 累计起来（<code>airtime_ac</code>、<code>tx_retries</code>…），最终喂给 <code>get_survey</code>、<code>sta_statistics</code> 与 <code>mt792x_get_et_stats</code>。</p>
+<hr>
+<h2 id="四、MLO-在数据通路上的体现"><a href="#四、MLO-在数据通路上的体现" class="headerlink" title="四、MLO 在数据通路上的体现"></a>四、MLO 在数据通路上的体现</h2><table>
+<thead>
+<tr>
+<th>环节</th>
+<th>具体表现</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>wcid</td>
+<td><strong>每条链路一个 wcid</strong>（<code>mt792x_link_sta.wcid</code>），<code>wcid-&gt;link_id</code> 标明属于哪条链路</td>
+</tr>
+<tr>
+<td>WTBL</td>
+<td>每个 wcid 对应一个 WTBL 表项，硬件按 <code>WLAN_IDX</code> 找地址/密钥/BA</td>
+</tr>
+<tr>
+<td>TXWI</td>
+<td><code>OMAC</code>/<code>BAND</code>/<code>WMM</code> 取自 <code>link_id</code> 对应的 <code>mt792x_bss_conf</code>，而不是默认链路</td>
+</tr>
+<tr>
+<td>RX</td>
+<td>RXD 里的 wlan idx + link 信息定位到具体链路的 <code>mlink</code>，再做 PN/BA 检查</td>
+</tr>
+<tr>
+<td>统计</td>
+<td>TX_FREE/TXS 是按 wcid 归集的，因此 MLO 的每链路统计是天然分开的</td>
+</tr>
+<tr>
+<td>排序</td>
+<td>硬件不做重排序（AMPDU Reordering 仍在 mac80211 的 BA 会话里），MLO 的乱序由 mac80211 统一处理</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="五、通路全景"><a href="#五、通路全景" class="headerlink" title="五、通路全景"></a>五、通路全景</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">发包</span><br><span class="line">  mac80211 ──► mt792x_tx ──► token 分配 ──► tx_prepare_skb ──► write_txwi ──► DMA ring</span><br><span class="line">                                                                                 │</span><br><span class="line">                                                       ┌─────────────────────────┘</span><br><span class="line">                                                       ▼</span><br><span class="line">                                            TX_FREE 事件（TXRX_NOTIFY）</span><br><span class="line">                                                       ├─ mt76_queue_tx_cleanup(PSD/BE)</span><br><span class="line">                                                       ├─ token release</span><br><span class="line">                                                       └─ mt7925_txwi_free → napi_consume_skb</span><br><span class="line">收包</span><br><span class="line">  DMA ring ──► mt7925_rx_check（分流 TXS/TX_FREE）</span><br><span class="line">                  └─► mt7925_queue_rx_skb</span><br><span class="line">                         ├─ NORMAL*  ──► mt7925_mac_fill_rx ──► mt76_rx ──► mac80211</span><br><span class="line">                         ├─ RX_EVENT ──► mt7925_mcu_rx_event</span><br><span class="line">                         ├─ TXS      ──► mt7925_mac_add_txs（速率/ACK 信号）</span><br><span class="line">                         └─ TXRX_NOTIFY ──► mt7925_mac_tx_free（token 回收）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、问题排查速查"><a href="#六、问题排查速查" class="headerlink" title="六、问题排查速查"></a>六、问题排查速查</h2><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>落点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>能关联但吞吐为 0 / 很快卡住</td>
+<td><code>mt76_token_release()</code> + <code>MT76_TX_BLOCKED</code></td>
+<td>token 被耗尽没回收（TX_FREE 丢失、队列清理异常）</td>
+</tr>
+<tr>
+<td><code>WARN_ON_ONCE(MT_TXFREE1_VER &lt; 4)</code></td>
+<td><code>mt7925_mac_tx_free()</code></td>
+<td>固件与驱动版本不匹配（TX_FREE 格式变了）</td>
+</tr>
+<tr>
+<td>速率/信号强度显示不对</td>
+<td><code>mt7925_mac_fill_rx_rate()</code> / <code>mt7925_mac_add_txs()</code></td>
+<td>RXD/TXS 解析与 <code>mt792x</code> 转换链；先确认 TXS 是否到达</td>
+</tr>
+<tr>
+<td>收包但上层收不到</td>
+<td><code>mt7925_mac_fill_rx()</code> 返回非 0</td>
+<td>wcid 查不到（WTBL 未建）、PN 校验失败、hdr_trans 转换异常</td>
+</tr>
+<tr>
+<td>skb 泄漏（<code>slabinfo</code> 里 skb 一直涨）</td>
+<td><code>mt7925_queue_rx_skb()</code> / <code>mt7925_mcu_uni_rx_unsolicited_event()</code></td>
+<td>skb 所有权分支写错，尤其是 <code>RX_EVENT</code> 与 <code>SCAN_DONE</code>/<code>COREDUMP</code></td>
+</tr>
+<tr>
+<td>只有一条链路有流量</td>
+<td>TXWI 的 omac/band</td>
+<td>用了默认链路而不是 <code>link_id</code> 指定的链路</td>
+</tr>
+</tbody></table>
+<p>配套命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 看每 STA 的速率/airtime（mt792x 公共 debugfs）</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/ieee80211/&lt;phy&gt;/netdev:&lt;dev&gt;/stations 2&gt;/dev/null</span><br><span class="line"><span class="comment"># 队列与 token 情况（mt76 debugfs）</span></span><br><span class="line"><span class="built_in">ls</span> /sys/kernel/debug/ieee80211/&lt;phy&gt;/mt76/</span><br><span class="line"><span class="comment"># 是否出现 TX 阻塞</span></span><br><span class="line">dmesg | grep -i -E <span class="string">"tx blocked|tx free|token"</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、小结"><a href="#七、小结" class="headerlink" title="七、小结"></a>七、小结</h2><ol>
+<li>TX/RX 各只有一条主数据通路（<code>TXQ_BAND0=0</code> / <code>RXQ_BAND0=2</code>），再加 MCU 与 FWDL 两条辅助队列。</li>
+<li>分流发生在 <code>mt7925_rx_check()</code> 与 <code>mt7925_queue_rx_skb()</code> 两层，<code>PKT_TYPE_*</code> 决定 skb 的归属；<code>TXRX_NOTIFY</code> 只出现在 PCIe。</li>
+<li><strong>TX 的生命线是 token</strong>：<code>mt76_token_get/release</code> 与 <code>MT76_TX_BLOCKED</code> 是”发不出去”类问题的第一现场。</li>
+<li><strong>RX 的解析是位域级的</strong>：MT7925 的 RXD 是裸 32bit 字 + <code>MT_RXD*</code> 宏，没有结构体；速率/RSSI/加密状态都在 <code>mt7925_mac_fill_rx()</code> 里翻译。</li>
+<li>MLO 在数据通路的落点就是”每条链路一个 wcid + WTBL 表项”，因此 TXWI 构造和 TX 统计都必须按 <code>link_id</code> 走。</li>
+</ol>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%98%9F%E5%88%97%E4%B8%8E%E6%8F%8F%E8%BF%B0%E7%AC%A6%E6%80%BB%E8%A7%88"><span class="toc-text">一、队列与描述符总览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81RX-%E8%B7%AF%E5%BE%84%EF%BC%9A%E4%BB%8E-DMA-ring-%E5%88%B0-mac80211"><span class="toc-text">二、RX 路径：从 DMA ring 到 mac80211</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E5%88%86%E6%B5%81%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%9Amt7925-rx-check"><span class="toc-text">2.1 分流第一层：mt7925_rx_check()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E5%88%86%E6%B5%81%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9Amt7925-queue-rx-skb"><span class="toc-text">2.2 分流第二层：mt7925_queue_rx_skb()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-RXD-%E8%A7%A3%E6%9E%90%EF%BC%9Amt7925-mac-fill-rx"><span class="toc-text">2.3 RXD 解析：mt7925_mac_fill_rx()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81TX-%E8%B7%AF%E5%BE%84%EF%BC%9A%E4%BB%8E-mac80211-%E5%88%B0-DMA"><span class="toc-text">三、TX 路径：从 mac80211 到 DMA</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E4%B8%8A%E5%8D%8A%E6%AE%B5%EF%BC%88%E5%85%AC%E5%85%B1%EF%BC%89"><span class="toc-text">3.1 上半段（公共）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-tx-prepare-skb%EF%BC%9APCIe-%E4%B8%8E-USB-%E5%88%86%E9%81%93"><span class="toc-text">3.2 tx_prepare_skb：PCIe 与 USB 分道</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-mt7925-mac-write-txwi-%EF%BC%9A%E7%9C%9F%E6%AD%A3%E5%86%99-TXWI"><span class="toc-text">3.3 mt7925_mac_write_txwi()：真正写 TXWI</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-TX-%E5%AE%8C%E6%88%90%EF%BC%9Amt7925-mac-tx-free"><span class="toc-text">3.4 TX 完成：mt7925_mac_tx_free()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-TXS%EF%BC%9A%E6%AF%8F%E5%B8%A7%E5%8F%91%E9%80%81%E7%BB%93%E6%9E%9C"><span class="toc-text">3.5 TXS：每帧发送结果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81MLO-%E5%9C%A8%E6%95%B0%E6%8D%AE%E9%80%9A%E8%B7%AF%E4%B8%8A%E7%9A%84%E4%BD%93%E7%8E%B0"><span class="toc-text">四、MLO 在数据通路上的体现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E9%80%9A%E8%B7%AF%E5%85%A8%E6%99%AF"><span class="toc-text">五、通路全景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E9%80%9F%E6%9F%A5"><span class="toc-text">六、问题排查速查</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-text">七、小结</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+      <div class="post-tags">
+        
+          <a href="/tags/MT7925/">#MT7925</a>
+        
+          <a href="/tags/DMA/">#DMA</a>
+        
+          <a href="/tags/%E6%95%B0%E6%8D%AE%E9%80%9A%E8%B7%AF/">#数据通路</a>
+        
+      </div>
+    
+    <nav class="post-nav">
+      
+        <a class="prev" href="/2026/09/13/mt7925-05-mac80211/">&laquo; MT7925 驱动学习 05：mac80211 集成（ops 回调、扫描/认证/关联、MLO 链路）</a>
+      
+      
+        <a class="next" href="/2026/09/13/mt7925-07-power-management/">MT7925 驱动学习 07：电源管理（runtime PM、深度睡眠、系统休眠与 WoWLAN） &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+</body>
+</html>

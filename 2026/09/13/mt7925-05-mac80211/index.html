@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MT7925 驱动学习 05：mac80211 集成（ops 回调、扫描/认证/关联、MLO 链路） | Welodi</title>
+  <meta name="description" content="文档概述mac80211 与驱动的接口就是一张 struct ieee80211_ops。本文把 MT7925 的这张表按功能拆开讲清楚：哪些回调是 MT7925 自己的、哪些直接复用 mt792x&#x2F;mt76 的公共实现，以及 MLO（多链路）如何在 mac80211 的链路模型上与驱动对接。  一、mt7925_ops 全表123456789101112131415161718192021222">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MT7925 驱动学习 05：mac80211 集成（ops 回调、扫描&#x2F;认证&#x2F;关联、MLO 链路）">
+<meta property="og:url" content="http://example.com/2026/09/13/mt7925-05-mac80211/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="文档概述mac80211 与驱动的接口就是一张 struct ieee80211_ops。本文把 MT7925 的这张表按功能拆开讲清楚：哪些回调是 MT7925 自己的、哪些直接复用 mt792x&#x2F;mt76 的公共实现，以及 MLO（多链路）如何在 mac80211 的链路模型上与驱动对接。  一、mt7925_ops 全表123456789101112131415161718192021222">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-09-13T11:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-13T09:16:26.905Z">
+<meta property="article:author" content="Welodi">
+<meta property="article:tag" content="MT7925">
+<meta property="article:tag" content="mac80211">
+<meta property="article:tag" content="MLO">
+<meta name="twitter:card" content="summary">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+        <a class="nav-link" href="/">Home</a>
+      
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">MT7925 驱动学习 05：mac80211 集成（ops 回调、扫描/认证/关联、MLO 链路）</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-13T11:00:00.000Z">2026-09-13</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/">无线网络</a><span class="separator">/</span><a href="/categories/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C/WiFi/">WiFi</a>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>mac80211 与驱动的接口就是一张 <code>struct ieee80211_ops</code>。本文把 MT7925 的这张表按功能拆开讲清楚：哪些回调是 MT7925 自己的、哪些直接复用 mt792x/mt76 的公共实现，以及 <strong>MLO（多链路）如何在 mac80211 的链路模型上与驱动对接</strong>。</p>
+<hr>
+<h2 id="一、mt7925-ops-全表"><a href="#一、mt7925-ops-全表" class="headerlink" title="一、mt7925_ops 全表"></a>一、<code>mt7925_ops</code> 全表</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">ieee80211_ops</span> <span class="title">mt7925_ops</span> =</span> {</span><br><span class="line">	<span class="attr">.tx</span> = <span class="title function_">mt792x_tx</span>,</span><br><span class="line">	<span class="attr">.start</span> = <span class="title function_">mt7925_start</span>,</span><br><span class="line">	<span class="attr">.stop</span> = <span class="title function_">mt792x_stop</span>,</span><br><span class="line">	<span class="attr">.add_interface</span> = <span class="title function_">mt7925_add_interface</span>,</span><br><span class="line">	<span class="attr">.remove_interface</span> = <span class="title function_">mt792x_remove_interface</span>,</span><br><span class="line">	<span class="attr">.config</span> = <span class="title function_">mt7925_config</span>,</span><br><span class="line">	<span class="attr">.conf_tx</span> = <span class="title function_">mt7925_conf_tx</span>,</span><br><span class="line">	<span class="attr">.configure_filter</span> = <span class="title function_">mt7925_configure_filter</span>,</span><br><span class="line">	<span class="attr">.start_ap</span> = <span class="title function_">mt7925_start_ap</span>,</span><br><span class="line">	<span class="attr">.stop_ap</span> = <span class="title function_">mt7925_stop_ap</span>,</span><br><span class="line">	<span class="attr">.sta_state</span> = <span class="title function_">mt76_sta_state</span>,</span><br><span class="line">	<span class="attr">.sta_pre_rcu_remove</span> = <span class="title function_">mt76_sta_pre_rcu_remove</span>,</span><br><span class="line">	<span class="attr">.set_key</span> = <span class="title function_">mt7925_set_key</span>,</span><br><span class="line">	<span class="attr">.sta_set_decap_offload</span> = <span class="title function_">mt7925_sta_set_decap_offload</span>,</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> IS_ENABLED(CONFIG_IPV6)</span></span><br><span class="line">	<span class="attr">.ipv6_addr_change</span> = <span class="title function_">mt7925_ipv6_addr_change</span>,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_IPV6 */</span></span></span><br><span class="line">	<span class="attr">.ampdu_action</span> = <span class="title function_">mt7925_ampdu_action</span>,</span><br><span class="line">	<span class="attr">.set_rts_threshold</span> = <span class="title function_">mt7925_set_rts_threshold</span>,</span><br><span class="line">	<span class="attr">.wake_tx_queue</span> = <span class="title function_">mt76_wake_tx_queue</span>,</span><br><span class="line">	<span class="attr">.release_buffered_frames</span> = <span class="title function_">mt76_release_buffered_frames</span>,</span><br><span class="line">	<span class="attr">.channel_switch_beacon</span> = <span class="title function_">mt7925_channel_switch_beacon</span>,</span><br><span class="line">	<span class="attr">.get_txpower</span> = <span class="title function_">mt76_get_txpower</span>,</span><br><span class="line">	<span class="attr">.get_stats</span> = <span class="title function_">mt792x_get_stats</span>,</span><br><span class="line">	<span class="attr">.get_et_sset_count</span> = <span class="title function_">mt792x_get_et_sset_count</span>,</span><br><span class="line">	<span class="attr">.get_et_strings</span> = <span class="title function_">mt792x_get_et_strings</span>,</span><br><span class="line">	<span class="attr">.get_et_stats</span> = <span class="title function_">mt792x_get_et_stats</span>,</span><br><span class="line">	<span class="attr">.get_tsf</span> = <span class="title function_">mt792x_get_tsf</span>,</span><br><span class="line">	<span class="attr">.set_tsf</span> = <span class="title function_">mt792x_set_tsf</span>,</span><br><span class="line">	<span class="attr">.get_survey</span> = <span class="title function_">mt76_get_survey</span>,</span><br><span class="line">	<span class="attr">.get_antenna</span> = <span class="title function_">mt76_get_antenna</span>,</span><br><span class="line">	<span class="attr">.set_antenna</span> = <span class="title function_">mt7925_set_antenna</span>,</span><br><span class="line">	<span class="attr">.set_coverage_class</span> = <span class="title function_">mt792x_set_coverage_class</span>,</span><br><span class="line">	<span class="attr">.hw_scan</span> = <span class="title function_">mt7925_hw_scan</span>,</span><br><span class="line">	<span class="attr">.cancel_hw_scan</span> = <span class="title function_">mt7925_cancel_hw_scan</span>,</span><br><span class="line">	<span class="attr">.sta_statistics</span> = <span class="title function_">mt792x_sta_statistics</span>,</span><br><span class="line">	<span class="attr">.sched_scan_start</span> = <span class="title function_">mt7925_start_sched_scan</span>,</span><br><span class="line">	<span class="attr">.sched_scan_stop</span> = <span class="title function_">mt7925_stop_sched_scan</span>,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_PM</span></span><br><span class="line">	<span class="attr">.suspend</span> = <span class="title function_">mt7925_suspend</span>,</span><br><span class="line">	<span class="attr">.resume</span> = <span class="title function_">mt7925_resume</span>,</span><br><span class="line">	<span class="attr">.set_wakeup</span> = <span class="title function_">mt792x_set_wakeup</span>,</span><br><span class="line">	<span class="attr">.set_rekey_data</span> = <span class="title function_">mt7925_set_rekey_data</span>,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_PM */</span></span></span><br><span class="line">	<span class="attr">.flush</span> = <span class="title function_">mt792x_flush</span>,</span><br><span class="line">	<span class="attr">.set_sar_specs</span> = <span class="title function_">mt7925_set_sar_specs</span>,</span><br><span class="line">	<span class="attr">.remain_on_channel</span> = <span class="title function_">mt7925_remain_on_channel</span>,</span><br><span class="line">	<span class="attr">.cancel_remain_on_channel</span> = <span class="title function_">mt7925_cancel_remain_on_channel</span>,</span><br><span class="line">	<span class="attr">.add_chanctx</span> = <span class="title function_">mt7925_add_chanctx</span>,</span><br><span class="line">	<span class="attr">.remove_chanctx</span> = <span class="title function_">mt7925_remove_chanctx</span>,</span><br><span class="line">	<span class="attr">.change_chanctx</span> = <span class="title function_">mt7925_change_chanctx</span>,</span><br><span class="line">	<span class="attr">.assign_vif_chanctx</span> = <span class="title function_">mt7925_assign_vif_chanctx</span>,</span><br><span class="line">	<span class="attr">.unassign_vif_chanctx</span> = <span class="title function_">mt7925_unassign_vif_chanctx</span>,</span><br><span class="line">	<span class="attr">.mgd_prepare_tx</span> = <span class="title function_">mt7925_mgd_prepare_tx</span>,</span><br><span class="line">	<span class="attr">.mgd_complete_tx</span> = <span class="title function_">mt7925_mgd_complete_tx</span>,</span><br><span class="line">	<span class="attr">.vif_cfg_changed</span> = <span class="title function_">mt7925_vif_cfg_changed</span>,</span><br><span class="line">	<span class="attr">.link_info_changed</span> = <span class="title function_">mt7925_link_info_changed</span>,</span><br><span class="line">	<span class="attr">.change_vif_links</span> = <span class="title function_">mt7925_change_vif_links</span>,</span><br><span class="line">	<span class="attr">.change_sta_links</span> = <span class="title function_">mt7925_change_sta_links</span>,</span><br><span class="line">};</span><br><span class="line"><span class="title function_">EXPORT_SYMBOL_GPL</span>(mt7925_ops);</span><br></pre></td></tr></table></figure>
+
+<p>注意最后一行：<strong>它不是 <code>static const</code>，而是 <code>EXPORT_SYMBOL_GPL</code><strong>。原因是 <code>mt792x_get_mac80211_ops()</code> 会</strong>复制一份并打补丁</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ops = <span class="title function_">mt792x_get_mac80211_ops</span>(&amp;pdev-&gt;dev, &amp;mt7925_ops, (<span class="type">void</span> *)id-&gt;driver_data, &amp;features);</span><br></pre></td></tr></table></figure>
+
+<p>同一个 <code>mt7925_ops</code> 被 PCIe/USB、不同 capability 的板子共用，靠这个辅助函数生成”每设备一份”的副本再注册。所以**不要去改全局 <code>mt7925_ops</code>**，运行期改的是副本。</p>
+<hr>
+<h2 id="二、按功能分类"><a href="#二、按功能分类" class="headerlink" title="二、按功能分类"></a>二、按功能分类</h2><table>
+<thead>
+<tr>
+<th>分类</th>
+<th>回调</th>
+<th>实现来源</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>生命周期</td>
+<td><code>start</code>、<code>add_interface</code>、<code>config</code></td>
+<td>MT7925 自己（<code>mt7925/mac.c</code>/<code>main.c</code>）</td>
+</tr>
+<tr>
+<td></td>
+<td><code>stop</code>、<code>remove_interface</code>、<code>flush</code></td>
+<td>mt792x 公共</td>
+</tr>
+<tr>
+<td>数据面</td>
+<td><code>tx</code></td>
+<td><code>mt792x_tx</code>（公共）</td>
+</tr>
+<tr>
+<td></td>
+<td><code>wake_tx_queue</code>、<code>release_buffered_frames</code></td>
+<td>mt76 框架</td>
+</tr>
+<tr>
+<td>管理帧</td>
+<td><code>mgd_prepare_tx</code>、<code>mgd_complete_tx</code>、<code>start_ap</code>、<code>stop_ap</code>、<code>channel_switch_beacon</code></td>
+<td>MT7925 自己</td>
+</tr>
+<tr>
+<td>STA</td>
+<td><code>sta_state</code>（<code>mt76_sta_state</code>）、<code>sta_pre_rcu_remove</code></td>
+<td>mt76 框架 → 转调 <code>drv_ops.sta_add/sta_event/sta_remove</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>set_key</code>、<code>sta_set_decap_offload</code>、<code>ampdu_action</code>、<code>sta_statistics</code></td>
+<td>MT7925 自己 + mt792x</td>
+</tr>
+<tr>
+<td>扫描</td>
+<td><code>hw_scan</code>、<code>cancel_hw_scan</code>、<code>sched_scan_start/stop</code></td>
+<td>MT7925 自己</td>
+</tr>
+<tr>
+<td>信道上下文</td>
+<td><code>add/remove/change_chanctx</code>、<code>assign/unassign_vif_chanctx</code></td>
+<td>MT7925 自己</td>
+</tr>
+<tr>
+<td>驻留信道</td>
+<td><code>remain_on_channel</code>、<code>cancel_remain_on_channel</code></td>
+<td>MT7925 自己</td>
+</tr>
+<tr>
+<td>统计/ethtool</td>
+<td><code>get_stats</code>、<code>get_et_*</code>、<code>get_survey</code>、<code>get_txpower</code></td>
+<td>mt792x/mt76</td>
+</tr>
+<tr>
+<td>时间同步</td>
+<td><code>get_tsf</code>、<code>set_tsf</code></td>
+<td>mt792x</td>
+</tr>
+<tr>
+<td>省电/休眠</td>
+<td><code>suspend</code>、<code>resume</code>、<code>set_wakeup</code>、<code>set_rekey_data</code></td>
+<td>MT7925 + mt792x</td>
+</tr>
+<tr>
+<td>MLO</td>
+<td><code>vif_cfg_changed</code>、<code>link_info_changed</code>、<code>change_vif_links</code>、<code>change_sta_links</code></td>
+<td>MT7925 自己</td>
+</tr>
+</tbody></table>
+<p>一眼能看出的结论：<strong>mt792x/mt76 已经把”通用无线设备”的部分做完了</strong>，MT7925 的 <code>main.c</code> 主要写三块：接口/管理帧、扫描与驻留、以及 MLO。</p>
+<hr>
+<h2 id="三、STA-的添加不是在-sta-state-里做的"><a href="#三、STA-的添加不是在-sta-state-里做的" class="headerlink" title="三、STA 的添加不是在 sta_state 里做的"></a>三、STA 的添加不是在 <code>sta_state</code> 里做的</h2><p>这是读 mac80211 驱动最容易踩的坑：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">.sta_state</span> = <span class="title function_">mt76_sta_state</span>,     <span class="comment">/* ❌ 这里看不到芯片代码 */</span></span><br></pre></td></tr></table></figure>
+
+<p><code>mt76_sta_state()</code> 是框架函数，真正的芯片动作通过 <code>mt76_driver_ops</code> 转发：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt76_driver_ops</span> <span class="title">drv_ops</span> =</span> {</span><br><span class="line">	<span class="attr">.sta_add</span>   = <span class="title function_">mt7925_mac_sta_add</span>,</span><br><span class="line">	<span class="attr">.sta_event</span> = <span class="title function_">mt7925_mac_sta_event</span>,</span><br><span class="line">	<span class="attr">.sta_remove</span> = <span class="title function_">mt7925_mac_sta_remove</span>,</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+
+<p>调用链：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mac80211 (关联完成/删除 STA)</span><br><span class="line">    → ops-&gt;sta_state = mt76_sta_state()</span><br><span class="line">         → drv_ops.sta_add / sta_event / sta_remove</span><br><span class="line">              → mt7925_mac_sta_add()</span><br><span class="line">                   ├─ mt76_wcid_alloc()              分一个 wcid（对应 WTBL 表项）</span><br><span class="line">                   ├─ mt792x_vif_to_bss_conf()       拿链路配置</span><br><span class="line">                   ├─ mlink = container_of(wcid, struct mt792x_link_sta, wcid)</span><br><span class="line">                   ├─ mt76_connac_mcu_uni_add_dev()  通知固件"新设备"</span><br><span class="line">                   └─ mt7925_mcu_add_sta()           MCU STA_REC_UPDATE（含 EHT/MLD TLV）</span><br></pre></td></tr></table></figure>
+
+<p><code>sta_event</code> 处理的是”STA 状态变化”（authorized / associated 等），<code>sta_remove</code> 负责回收 wcid 与 MCU 记录。<strong>MLO 的每个链路各有一个 wcid</strong>，所以这三个回调里到处是 <code>link_id</code> 与 <code>valid_links</code> 判断。</p>
+<hr>
+<h2 id="四、vif-cfg-changed-与-link-info-changed-的分工"><a href="#四、vif-cfg-changed-与-link-info-changed-的分工" class="headerlink" title="四、vif_cfg_changed 与 link_info_changed 的分工"></a>四、<code>vif_cfg_changed</code> 与 <code>link_info_changed</code> 的分工</h2><p>mac80211 的 MLO 支持把”VIF 级”和”链路级”的变化拆成两个回调——这是新旧驱动的分水岭（老驱动只有 <code>bss_info_changed</code>）：</p>
+<table>
+<thead>
+<tr>
+<th>回调</th>
+<th>承载的变化</th>
+<th>MT7925 的动作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mt7925_vif_cfg_changed</code></td>
+<td>VIF 级：关联/去关联（<code>BSS_CHANGED_ASSOC</code>）、IPv6 NS offload、ARP 过滤、PS 使能（<code>BSS_CHANGED_PS</code>）、4addr/beacon 变更等</td>
+<td>走 <code>BSS_INFO_UPDATE</code> 类的 MCU 命令，作用于整个 MLD</td>
+</tr>
+<tr>
+<td><code>mt7925_link_info_changed</code></td>
+<td>链路级：<code>BSS_CHANGED_ERP_SLOT</code>、<code>BSS_CHANGED_BASIC_RATES</code>、<code>BSS_CHANGED_QOS</code>、<code>BSS_CHANGED_BEACON</code>/<code>BEACON_ENABLE</code>、<code>BSS_CHANGED_MCAST_RATE</code>、带宽/信道上下文变化（<code>BSS_CHANGED_*MW</code>）等</td>
+<td>需要知道 <code>link_id</code> 才能定位具体链路，因此从 <code>info-&gt;link_id</code> 取</td>
+</tr>
+</tbody></table>
+<p>写代码时的直接后果：**”改一个链路的东西”绝不能写进 VIF 级回调**，否则 MLO 场景下会把两条链路一起改掉。反过来，PS / ARP 这类”整个 MLD 一份”的配置调 VIF 级即可。</p>
+<hr>
+<h2 id="五、扫描：hw-scan-→-MCU，结果由事件送回"><a href="#五、扫描：hw-scan-→-MCU，结果由事件送回" class="headerlink" title="五、扫描：hw_scan → MCU，结果由事件送回"></a>五、扫描：<code>hw_scan</code> → MCU，结果由事件送回</h2><p>扫描在 MT7925 上是<strong>固件做的事</strong>，驱动只是搬运参数与结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mac80211: ieee80211_scan 请求</span><br><span class="line">   → ops-&gt;hw_scan = mt7925_hw_scan()</span><br><span class="line">        ├─ 检查状态（是否已扫描/是否在 ROC/是否 MLD 关联中）</span><br><span class="line">        ├─ mt792x_mutex_acquire()         取 MT76_STATE_MCU_RUNNING 与总线</span><br><span class="line">        ├─ 组装 MCU UNI_CMD(SCAN_REQ) TLV（SSID、信道列表、扫描类型、随机 MAC 等）</span><br><span class="line">        └─ mt7925_mcu_send(...)</span><br><span class="line">               ↓ 等待（或异步）</span><br><span class="line">固件扫描完成</span><br><span class="line">   → RX 事件 MCU_UNI_EVENT_SCAN_DONE</span><br><span class="line">        → mt7925_mcu_scan_event()          解析 TLV，挂到 dev-&gt;scan_event_list</span><br><span class="line">             → mt7925_scan_work（workqueue）</span><br><span class="line">                  ├─ 解析每条 TLV：基本信息 / 每信道信息 / NLO（sched scan）</span><br><span class="line">                  ├─ ieee80211_scan_completed() 或 ieee80211_sched_scan_results()</span><br><span class="line">                  └─ 释放 skb</span><br></pre></td></tr></table></figure>
+
+<p><code>sched_scan</code>（PNO）走同样的事件通道，只是没有 <code>scan_completed</code>，改为每次命中都上报结果：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">.sched_scan_start</span> = <span class="title function_">mt7925_start_sched_scan</span>,</span><br><span class="line"><span class="attr">.sched_scan_stop</span>  = <span class="title function_">mt7925_stop_sched_scan</span>,</span><br></pre></td></tr></table></figure>
+
+<p>关键细节：<strong>扫描事件在 MCU 事件分发里是 <code>return</code>（skb 不释放）</strong>——因为 skb 会被挂进 <code>scan_event_list</code> 交给 work 处理（见第 3 篇的 <code>mt7925_mcu_uni_rx_unsolicited_event()</code>）。这是这块代码最容易出泄漏的地方。</p>
+<hr>
+<h2 id="六、信道上下文与-chanctx"><a href="#六、信道上下文与-chanctx" class="headerlink" title="六、信道上下文与 chanctx"></a>六、信道上下文与 <code>chanctx</code></h2><p>MT7925 完整实现了两种信道上下文模型，所以既支持”单信道多接口”，也支持 MLO（多条链路同时占用不同信道）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">.add_chanctx</span>        = <span class="title function_">mt7925_add_chanctx</span>,</span><br><span class="line"><span class="attr">.remove_chanctx</span>     = <span class="title function_">mt7925_remove_chanctx</span>,</span><br><span class="line"><span class="attr">.change_chanctx</span>     = <span class="title function_">mt7925_change_chanctx</span>,</span><br><span class="line"><span class="attr">.assign_vif_chanctx</span> = <span class="title function_">mt7925_assign_vif_chanctx</span>,</span><br><span class="line"><span class="attr">.unassign_vif_chanctx</span> = <span class="title function_">mt7925_unassign_vif_chanctx</span>,</span><br></pre></td></tr></table></figure>
+
+<p><code>struct mt792x_chanctx</code> 里保存 <code>hw_value</code> / <code>mt76_chanctx</code> 等，<code>mt792x_assign_vif_chanctx</code> 之类的公共实现负责把 chanctx 与 vif（链路）绑定。MLO 下 mac80211 会为每条链路分配 chanctx，驱动需要保证 <code>band_idx</code> 与信道的对应关系，这也是”MLO 只能 2.4G + 5G 或 5G + 6G 组合”之类限制的实现位置。</p>
+<h3 id="驻留信道（ROC）"><a href="#驻留信道（ROC）" class="headerlink" title="驻留信道（ROC）"></a>驻留信道（ROC）</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">.remain_on_channel</span>        = <span class="title function_">mt7925_remain_on_channel</span>,</span><br><span class="line"><span class="attr">.cancel_remain_on_channel</span> = <span class="title function_">mt7925_cancel_remain_on_channel</span>,</span><br></pre></td></tr></table></figure>
+
+<p>ROC 在 MT7925 上由固件支持（<code>MCU_UNI_CMD(ROC)</code> + <code>MCU_UNI_EVENT_ROC</code>）：</p>
+<ul>
+<li><code>mt7925_remain_on_channel()</code> 下发 ROC 命令，并启动 <code>dev-&gt;phy.roc_timer</code>；</li>
+<li>固件在驻留结束/被抢占时通过 <code>MCU_UNI_EVENT_ROC</code> 报告，<code>mt7925_mcu_uni_roc_event()</code> → <code>mt7925_roc_work</code> 完成收尾；</li>
+<li><strong>MLO 场景有独立的 ROC 逻辑</strong>（需要同时把多条链路的驻留安排好），代码里能看到 MLD 判断的分支。</li>
+</ul>
+<p>这也解释了为什么”关联/认证时射频必须切到目标信道”这件事是必要的：<code>mgd_prepare_tx</code> / <code>mgd_complete_tx</code> 与 ROC 配合，保证 offchannel 的管理帧能在正确信道上收发。</p>
+<hr>
+<h2 id="七、MLO-的两个”链路变更”回调"><a href="#七、MLO-的两个”链路变更”回调" class="headerlink" title="七、MLO 的两个”链路变更”回调"></a>七、MLO 的两个”链路变更”回调</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">.change_vif_links</span> = <span class="title function_">mt7925_change_vif_links</span>,   <span class="comment">/* vif 增加/删除链路 */</span></span><br><span class="line"><span class="attr">.change_sta_links</span> = <span class="title function_">mt7925_change_sta_links</span>,   <span class="comment">/* sta 增加/删除链路 */</span></span><br></pre></td></tr></table></figure>
+
+<p>语义（mac80211 侧）：</p>
+<table>
+<thead>
+<tr>
+<th>回调</th>
+<th>触发时机</th>
+<th>驱动要做的事</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>change_vif_links</code></td>
+<td>协商出新的 MLD 链路组合、某条链路被激活/去激活</td>
+<td>为每条链路分配 <code>struct mt792x_bss_conf</code>（<code>mt792x_vif_to_link()</code> 懒分配）、维护 <code>valid_links</code>、下发 <code>BSS_INFO_UPDATE</code></td>
+</tr>
+<tr>
+<td><code>change_sta_links</code></td>
+<td>对端 STA 在 MLD 上增删链路</td>
+<td>为每个链路分配 <code>struct mt792x_link_sta</code>（含 wcid）、更新 WTBL 与 <code>STA_REC_UPDATE</code>（MLD TLV）</td>
+</tr>
+</tbody></table>
+<p>配套的”链路 → 数据结构”映射函数是这一层的核心 API：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mlink = <span class="title function_">mt792x_vif_to_link</span>(mvif, link_id);      <span class="comment">/* → struct mt792x_link_sta */</span></span><br><span class="line">mconf = <span class="title function_">mt792x_vif_to_bss_conf</span>(vif, link_id);   <span class="comment">/* → struct mt792x_bss_conf */</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>所有链路相关的回调都必须先做这一步转换</strong>，拿不到就直接返回错误。MLO 相关的典型 bug 都是”改了默认链路而不是 <code>link_id</code> 指定的那条”。</p>
+<hr>
+<h2 id="八、小结"><a href="#八、小结" class="headerlink" title="八、小结"></a>八、小结</h2><ol>
+<li><code>mt7925_ops</code> 是<strong>被复制后使用</strong>的全局表（<code>EXPORT_SYMBOL_GPL</code>），改它没用，要看 <code>mt792x_get_mac80211_ops()</code> 生成的副本。</li>
+<li>一半回调是 mt792x/mt76 的公共实现；MT7925 专属逻辑集中在<strong>接口/管理帧、扫描与 ROC、MLO</strong> 三块。</li>
+<li><strong>STA 的芯片动作不在 <code>sta_state</code> 里</strong>，它在 <code>mt76_sta_state()</code> → <code>drv_ops.sta_add/sta_event/sta_remove</code> → <code>mt7925_mac_sta_*</code>。</li>
+<li>MLO 拆成两级回调（<code>vif_cfg_changed</code> / <code>link_info_changed</code>）与两个链路变更回调（<code>change_vif_links</code> / <code>change_sta_links</code>），驱动侧一律用 <code>link_id</code> 索引 <code>mt792x_bss_conf</code> / <code>mt792x_link_sta</code>。</li>
+<li>扫描/ROC 的结果都来自 MCU 事件，事件 skb 的所有权在 <code>mt7925_mcu_uni_rx_unsolicited_event()</code> 里决定——这是排查内存问题的高发区。</li>
+</ol>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81mt7925-ops-%E5%85%A8%E8%A1%A8"><span class="toc-text">一、mt7925_ops 全表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%8C%89%E5%8A%9F%E8%83%BD%E5%88%86%E7%B1%BB"><span class="toc-text">二、按功能分类</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81STA-%E7%9A%84%E6%B7%BB%E5%8A%A0%E4%B8%8D%E6%98%AF%E5%9C%A8-sta-state-%E9%87%8C%E5%81%9A%E7%9A%84"><span class="toc-text">三、STA 的添加不是在 sta_state 里做的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81vif-cfg-changed-%E4%B8%8E-link-info-changed-%E7%9A%84%E5%88%86%E5%B7%A5"><span class="toc-text">四、vif_cfg_changed 与 link_info_changed 的分工</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%89%AB%E6%8F%8F%EF%BC%9Ahw-scan-%E2%86%92-MCU%EF%BC%8C%E7%BB%93%E6%9E%9C%E7%94%B1%E4%BA%8B%E4%BB%B6%E9%80%81%E5%9B%9E"><span class="toc-text">五、扫描：hw_scan → MCU，结果由事件送回</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E4%BF%A1%E9%81%93%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8E-chanctx"><span class="toc-text">六、信道上下文与 chanctx</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A9%BB%E7%95%99%E4%BF%A1%E9%81%93%EF%BC%88ROC%EF%BC%89"><span class="toc-text">驻留信道（ROC）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81MLO-%E7%9A%84%E4%B8%A4%E4%B8%AA%E2%80%9D%E9%93%BE%E8%B7%AF%E5%8F%98%E6%9B%B4%E2%80%9D%E5%9B%9E%E8%B0%83"><span class="toc-text">七、MLO 的两个”链路变更”回调</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-text">八、小结</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+      <div class="post-tags">
+        
+          <a href="/tags/MT7925/">#MT7925</a>
+        
+          <a href="/tags/mac80211/">#mac80211</a>
+        
+          <a href="/tags/MLO/">#MLO</a>
+        
+      </div>
+    
+    <nav class="post-nav">
+      
+        <a class="prev" href="/2026/09/13/mt7925-04-mac-init/">&laquo; MT7925 驱动学习 04：MAC 初始化与硬件寄存器配置</a>
+      
+      
+        <a class="next" href="/2026/09/13/mt7925-06-data-path/">MT7925 驱动学习 06：数据通路（TX/RX 队列、TXWI/RXD、token 与 TX_FREE） &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+</body>
+</html>
