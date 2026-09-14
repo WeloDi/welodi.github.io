@@ -246,6 +246,20 @@ img {
   color: var(--color-accent);
 }
 
+.nav-link.active {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.nav-link.active::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin-top: 2px;
+  border-radius: 1px;
+  background: var(--color-accent);
+}
+
 /* --- Hamburger Toggle (hidden on desktop) --- */
 .nav-toggle {
   display: none;
@@ -1150,6 +1164,17 @@ figure.highlight .token.deleted { color: #dc322f; background: rgba(220,50,47,0.1
   font-weight: 700;
   margin-bottom: 1.5rem;
   text-align: center;
+}
+
+/* About 页面：背景沿用站点网格背景，正文一句话居中 */
+.about-intro {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  line-height: 2;
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: transparent;
+  padding: 1rem 0;
 }
 
 /* --- Archive --- */

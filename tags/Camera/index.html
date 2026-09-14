@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
-  <link rel="stylesheet" href="/css/style.css?v=6490cf99">
+  <link rel="stylesheet" href="/css/style.css?v=7ef16e4b">
   
   <script>
     (function () {
@@ -151,12 +151,17 @@ mjx-container[display="true"] + br {
     </button>
     <nav class="site-nav">
       
+      
+        
         <a class="nav-link" href="/">Home</a>
       
+        
         <a class="nav-link" href="/categories">Categories</a>
       
-        <a class="nav-link" href="/tags">Tags</a>
+        
+        <a class="nav-link active" href="/tags" aria-current="page">Tags</a>
       
+        
         <a class="nav-link" href="/about">About</a>
       
       <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
@@ -216,6 +221,25 @@ mjx-container[display="true"] + br {
       <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
     </div>
     <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+</body>
+</html>
+ss="search-meta" id="search-meta"></div>
     <div class="search-results" id="search-results" role="listbox"></div>
     <div class="search-hint">
       <span><kbd>/</kbd> 唤起</span>
