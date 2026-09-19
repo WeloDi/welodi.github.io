@@ -244,7 +244,7 @@ mjx-container[display="true"] + br {
   
     <article class="post-card">
   <h2 class="post-card-title">
-    <a href="/2026/09/13/mt7925-02-pcie-bus/">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe / 中断 / DMA / 电源 / 卸载）</a>
+    <a href="/2026/09/13/mt7925-02-pcie-bus/">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法</a>
   </h2>
   <div class="post-card-meta">
     <time datetime="2026-09-13T14:00:00.000Z">2026-09-13</time>
@@ -256,7 +256,7 @@ mjx-container[display="true"] + br {
   <div class="post-card-excerpt">
     
       
-      <p>本文只讲 PCIe：以 MT7925E（）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：. 涉及的源文件：. USB 分支只在倒数第二节做对照，不展开。. 一个 PCIe 驱动的最小骨架就这几件事，每一项 mt7925 都做到了，可以直接当模板抄：. 值得学（和吐槽）的细节：. 塞固件名字符串。 的 是 ，这里直接放 常量。理由：0x7925 和 0x0717 两种 ...</p>
+      <p>本文只讲 PCIe：以 MT7925E（）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：. 涉及的源文件：. USB 分支只在倒数第二节做对照，不展开。. 一个 PCIe 驱动的最小骨架就这几件事：. 几乎所有 PCIe 驱动的 probe 都是这套动作，顺序基本固定（获取 → 使能 → 映射 → DMA 能力 → 中断 → 软件对象 → 向子系统注册）：. ...</p>
     
   </div>
   <a class="read-more" href="/2026/09/13/mt7925-02-pcie-bus/">Read More &rarr;</a>

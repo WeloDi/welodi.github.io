@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe / 中断 / DMA / 电源 / 卸载） | Welodi</title>
-  <meta name="description" content="文档概述本文只讲 PCIe：以 MT7925E（mt7925e）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：  ① 标准 PCIe 驱动该怎么写 → ② mt7925 实际怎么写的 → ③ 由此产生的坑 &#x2F; 调试提示  涉及的源文件：    文件 本文引用它的哪部分    mt76&#x2F;mt7925&#x2F;pci.c pci_driver 注册、probe&#x2F;remove&#x2F;su">
+  <title>MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法 | Welodi</title>
+  <meta name="description" content="参考：Linux PCI驱动框架分析（一）Linux PCI驱动框架分析（二）Linux PCI驱动框架分析（三）  文档概述本文只讲 PCIe：以 MT7925E（mt7925e）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：  ① 标准 PCIe 驱动该怎么写 → ② mt7925 实际怎么写的 → ③ 由此产生的坑 &#x2F; 调试提示  涉及的源文件：    文件">
 <meta property="og:type" content="article">
-<meta property="og:title" content="MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe &#x2F; 中断 &#x2F; DMA &#x2F; 电源 &#x2F; 卸载）">
+<meta property="og:title" content="MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法">
 <meta property="og:url" content="http://example.com/2026/09/13/mt7925-02-pcie-bus/index.html">
 <meta property="og:site_name" content="Welodi">
-<meta property="og:description" content="文档概述本文只讲 PCIe：以 MT7925E（mt7925e）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：  ① 标准 PCIe 驱动该怎么写 → ② mt7925 实际怎么写的 → ③ 由此产生的坑 &#x2F; 调试提示  涉及的源文件：    文件 本文引用它的哪部分    mt76&#x2F;mt7925&#x2F;pci.c pci_driver 注册、probe&#x2F;remove&#x2F;su">
+<meta property="og:description" content="参考：Linux PCI驱动框架分析（一）Linux PCI驱动框架分析（二）Linux PCI驱动框架分析（三）  文档概述本文只讲 PCIe：以 MT7925E（mt7925e）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：  ① 标准 PCIe 驱动该怎么写 → ② mt7925 实际怎么写的 → ③ 由此产生的坑 &#x2F; 调试提示  涉及的源文件：    文件">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2026-09-13T14:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-14T14:04:12.597Z">
+<meta property="article:modified_time" content="2026-09-18T10:25:44.427Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="MT7925">
 <meta property="article:tag" content="PCIe">
@@ -194,7 +194,7 @@ mjx-container[display="true"] + br {
     <main class="main-content">
       <article class="post">
   <header class="post-header">
-    <h1 class="post-title">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe / 中断 / DMA / 电源 / 卸载）</h1>
+    <h1 class="post-title">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法</h1>
     <div class="post-meta">
       <time datetime="2026-09-13T14:00:00.000Z">2026-09-13</time>
       
@@ -206,7 +206,10 @@ mjx-container[display="true"] + br {
 
   <div class="post-body-wrapper">
     <div class="post-content">
-      <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>本文只讲 <strong>PCIe</strong>：以 MT7925E（<code>mt7925e</code>）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：</p>
+      <blockquote>
+<p>参考：<br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/LoyenWang/p/14165852.html">Linux PCI驱动框架分析（一）</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/LoyenWang/p/14209318.html">Linux PCI驱动框架分析（二）</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/LoyenWang/p/14255906.html">Linux PCI驱动框架分析（三）</a></p>
+</blockquote>
+<h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>本文只讲 <strong>PCIe</strong>：以 MT7925E（<code>mt7925e</code>）为样本，把它当成一份”能跑的 PCIe 驱动范例”来拆。每条内容按三层组织：</p>
 <blockquote>
 <p><strong>① 标准 PCIe 驱动该怎么写</strong> → <strong>② mt7925 实际怎么写的</strong> → <strong>③ 由此产生的坑 / 调试提示</strong></p>
 </blockquote>
@@ -253,285 +256,21 @@ mjx-container[display="true"] + br {
 </tbody></table>
 <p>USB 分支只在倒数第二节做对照，不展开。</p>
 <hr>
-<h2 id="一、驱动骨架：pci-driver-与设备匹配"><a href="#一、驱动骨架：pci-driver-与设备匹配" class="headerlink" title="一、驱动骨架：pci_driver 与设备匹配"></a>一、驱动骨架：<code>pci_driver</code> 与设备匹配</h2><h3 id="1-1-标准写法-checklist"><a href="#1-1-标准写法-checklist" class="headerlink" title="1.1 标准写法 checklist"></a>1.1 标准写法 checklist</h3><p>一个 PCIe 驱动的最小骨架就这几件事，<strong>每一项 mt7925 都做到了</strong>，可以直接当模板抄：</p>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>标准要求</th>
-<th>mt7925 实现</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>1</td>
-<td><code>struct pci_device_id[]</code> + 结尾空项 <code>{ }</code></td>
-<td><code>mt7925_pci_device_table[]</code></td>
-</tr>
-<tr>
-<td>2</td>
-<td><code>MODULE_DEVICE_TABLE(pci, table)</code> 生成模块别名</td>
-<td>有</td>
-</tr>
-<tr>
-<td>3</td>
-<td><code>struct pci_driver</code> 挂 <code>.probe/.remove</code></td>
-<td>有，还多挂了 <code>.shutdown</code></td>
-</tr>
-<tr>
-<td>4</td>
-<td>用 <code>module_pci_driver()</code> 生成 init/exit</td>
-<td><code>module_pci_driver(mt7925_pci_driver)</code></td>
-</tr>
-<tr>
-<td>5</td>
-<td>挂起/关机要处理 → <code>.driver.pm</code> 与 <code>.shutdown</code></td>
-<td><code>pm_sleep_ptr(&amp;mt7925_pm_ops)</code>；<code>shutdown</code> 直接复用 remove</td>
-</tr>
-<tr>
-<td>6</td>
-<td>依赖固件 → <code>MODULE_FIRMWARE()</code> 让 initramfs 打包</td>
-<td><code>MODULE_FIRMWARE(MT7925_FIRMWARE_WM/ROM_PATCH)</code></td>
-</tr>
-</tbody></table>
-<h3 id="1-2-mt7925-的实现"><a href="#1-2-mt7925-的实现" class="headerlink" title="1.2 mt7925 的实现"></a>1.2 mt7925 的实现</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">pci_device_id</span> <span class="title">mt7925_pci_device_table</span>[] =</span> {</span><br><span class="line">	{ <span class="title function_">PCI_DEVICE</span>(PCI_VENDOR_ID_MEDIATEK, <span class="number">0x7925</span>),</span><br><span class="line">	  <span class="attr">.driver_data</span> = (<span class="type">kernel_ulong_t</span>)MT7925_FIRMWARE_WM },</span><br><span class="line">	{ <span class="title function_">PCI_DEVICE</span>(PCI_VENDOR_ID_MEDIATEK, <span class="number">0x0717</span>),</span><br><span class="line">	  <span class="attr">.driver_data</span> = (<span class="type">kernel_ulong_t</span>)MT7925_FIRMWARE_WM },</span><br><span class="line">	{ },</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">pci_driver</span> <span class="title">mt7925_pci_driver</span> =</span> {</span><br><span class="line">	<span class="attr">.name</span> = KBUILD_MODNAME,</span><br><span class="line">	<span class="attr">.id_table</span> = <span class="title function_">mt7925_pci_device_table</span>,</span><br><span class="line">	<span class="attr">.probe</span> = <span class="title function_">mt7925_pci_probe</span>,</span><br><span class="line">	<span class="attr">.remove</span> = <span class="title function_">mt7925_pci_remove</span>,</span><br><span class="line">	<span class="attr">.shutdown</span> = <span class="title function_">mt7925_pci_shutdown</span>,</span><br><span class="line">	.driver<span class="attr">.pm</span> = <span class="title function_">pm_sleep_ptr</span>(&amp;mt7925_pm_ops),</span><br><span class="line">};</span><br><span class="line"><span class="title function_">module_pci_driver</span>(mt7925_pci_driver);</span><br><span class="line"></span><br><span class="line"><span class="title function_">MODULE_DEVICE_TABLE</span>(pci, mt7925_pci_device_table);</span><br><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(MT7925_FIRMWARE_WM);</span><br><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(MT7925_ROM_PATCH);</span><br></pre></td></tr></table></figure>
+<h2 id="一、驱动骨架：pci-driver-与设备匹配"><a href="#一、驱动骨架：pci-driver-与设备匹配" class="headerlink" title="一、驱动骨架：pci_driver 与设备匹配"></a>一、驱动骨架：<code>pci_driver</code> 与设备匹配</h2><h3 id="1-1-标准写法-checklist"><a href="#1-1-标准写法-checklist" class="headerlink" title="1.1 标准写法 checklist"></a>1.1 标准写法 checklist</h3><p>一个 PCIe 驱动的最小骨架就这几件事：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* ========== 标准 PCIe 驱动骨架 ========== */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* ① 设备匹配表：PCI 核心逐项比对 VID:deviceID，命中才调 probe；末尾 { } 是哨兵，不能省 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">pci_device_id</span> <span class="title">my_drv_id_table</span>[] =</span> {</span><br><span class="line">    { <span class="title function_">PCI_DEVICE</span>(MY_VENDOR, MY_DEVICE) },</span><br><span class="line">    { },</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">/* ② probe / remove 必须配对；shutdown 通常直接复用 remove（无线设备的标准做法） */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span>  <span class="title function_">my_drv_probe</span>   <span class="params">(<span class="keyword">struct</span> pci_dev *pdev, <span class="type">const</span> <span class="keyword">struct</span> pci_device_id *id)</span> { ... }</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">my_drv_remove</span>  <span class="params">(<span class="keyword">struct</span> pci_dev *pdev)</span> { ... }</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">my_drv_shutdown</span><span class="params">(<span class="keyword">struct</span> pci_dev *pdev)</span> { <span class="title function_">my_drv_remove</span>(pdev); }</span><br><span class="line"></span><br><span class="line"><span class="comment">/* ③ 电源管理 ops：suspend / resume 挂在 SIMPLE_DEV_PM_OPS 里 */</span></span><br><span class="line"><span class="type">static</span> <span class="title function_">SIMPLE_DEV_PM_OPS</span><span class="params">(my_drv_pm_ops, my_drv_suspend, my_drv_resume)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* ④ pci_driver 结构：把 id_table / probe / remove / shutdown / pm 全部挂上 */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">pci_driver</span> <span class="title">my_drv_driver</span> =</span> {</span><br><span class="line">    <span class="attr">.name</span>      = KBUILD_MODNAME,</span><br><span class="line">    <span class="attr">.id_table</span>  = <span class="title function_">my_drv_id_table</span>,</span><br><span class="line">    <span class="attr">.probe</span>     = <span class="title function_">my_drv_probe</span>,</span><br><span class="line">    <span class="attr">.remove</span>    = <span class="title function_">my_drv_remove</span>,</span><br><span class="line">    <span class="attr">.shutdown</span>  = <span class="title function_">my_drv_shutdown</span>,</span><br><span class="line">    .driver<span class="attr">.pm</span> = <span class="title function_">pm_sleep_ptr</span>(&amp;my_drv_pm_ops),</span><br><span class="line">};</span><br><span class="line"><span class="title function_">module_pci_driver</span>(my_drv_driver);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* ⑤ 模块元数据：</span></span><br><span class="line"><span class="comment"> *    MODULE_DEVICE_TABLE  → modinfo 生成 alias:pci:v...，udev 热插拔时自动 modprobe</span></span><br><span class="line"><span class="comment"> *    MODULE_FIRMWARE      → 声明依赖的固件，打包 initramfs 时带上（根分区未挂就要加载）</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="title function_">MODULE_DEVICE_TABLE</span>(pci, my_drv_id_table);</span><br><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(<span class="string">"my_drv_fw.bin"</span>);</span><br></pre></td></tr></table></figure>
 
-<p>值得学（和吐槽）的细节：</p>
-<ul>
-<li><p><strong><code>driver_data</code> 塞固件名字符串</strong>。<code>PCI_DEVICE</code> 的 <code>driver_data</code> 是 <code>unsigned long</code>，这里直接放 <code>char *</code> 常量。理由：0x7925 和 0x0717 两种 ID 在 Linux 侧能力一样，只有固件文件可能不同，这样某个 ID 换固件时只改表里一行，probe 里不需要任何 switch-case。代价是把指针藏进整数类型，取用时必须 <code>(void *)id-&gt;driver_data</code> 显式转换。</p>
-</li>
-<li><p>**<code>.shutdown</code> 直接调 <code>.remove</code>**：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">mt7925_pci_shutdown</span><span class="params">(<span class="keyword">struct</span> pci_dev *pdev)</span></span><br><span class="line">{</span><br><span class="line">	<span class="title function_">mt7925_pci_remove</span>(pdev);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+<h3 id="1-2-mt7925-的实现"><a href="#1-2-mt7925-的实现" class="headerlink" title="1.2 mt7925 的实现"></a>1.2 mt7925 的实现</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">pci_device_id</span> <span class="title">mt7925_pci_device_table</span>[] =</span> {</span><br><span class="line">	<span class="comment">/* PCI_DEVICE：设备匹配表，PCI 核心枚举总线时逐项比对 VID:deviceID，</span></span><br><span class="line"><span class="comment">	   命中才会调用 mt7925_pci_probe()。*/</span></span><br><span class="line">	{ <span class="title function_">PCI_DEVICE</span>(PCI_VENDOR_ID_MEDIATEK, <span class="number">0x7925</span>),  </span><br><span class="line">	  <span class="comment">/* driver_data：匹配成功后随 pci_dev 带进 probe 的私有参数。</span></span><br><span class="line"><span class="comment">	     类型是 unsigned long，这里直接塞 char * 固件名。*/</span></span><br><span class="line">	  <span class="attr">.driver_data</span> = (<span class="type">kernel_ulong_t</span>)MT7925_FIRMWARE_WM },</span><br><span class="line">	{ <span class="title function_">PCI_DEVICE</span>(PCI_VENDOR_ID_MEDIATEK, <span class="number">0x0717</span>),</span><br><span class="line">	  <span class="attr">.driver_data</span> = (<span class="type">kernel_ulong_t</span>)MT7925_FIRMWARE_WM },</span><br><span class="line">	{ }, </span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">pci_driver</span> <span class="title">mt7925_pci_driver</span> =</span> {</span><br><span class="line">	<span class="attr">.name</span> = KBUILD_MODNAME,</span><br><span class="line">	<span class="attr">.id_table</span> = <span class="title function_">mt7925_pci_device_table</span>,</span><br><span class="line">	<span class="attr">.probe</span> = <span class="title function_">mt7925_pci_probe</span>,</span><br><span class="line">	<span class="attr">.remove</span> = <span class="title function_">mt7925_pci_remove</span>,</span><br><span class="line">	<span class="attr">.shutdown</span> = <span class="title function_">mt7925_pci_shutdown</span>,</span><br><span class="line">	.driver<span class="attr">.pm</span> = <span class="title function_">pm_sleep_ptr</span>(&amp;mt7925_pm_ops),</span><br><span class="line">};</span><br><span class="line"><span class="title function_">module_pci_driver</span>(mt7925_pci_driver);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="title function_">MODULE_DEVICE_TABLE</span>(pci, mt7925_pci_device_table);</span><br><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(MT7925_FIRMWARE_WM);</span><br><span class="line"><span class="title function_">MODULE_FIRMWARE</span>(MT7925_ROM_PATCH);</span><br></pre></td></tr></table></figure>
 
-<p>这是无线设备常见做法——关机时不希望网卡继续 DMA / 发帧（会污染唤醒源、会在 kexec 后撞到同一个正在跑 DMA 的硬件），所以按”卸载”处理最保险。很多 PCIe 驱动这里只做 <code>pci_disable_device()</code> 或者干脆不实现。</p>
-</li>
-<li><p><strong>唯一的模块参数</strong>是给调试留的逃生口：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">bool</span> mt7925_disable_aspm;</span><br><span class="line"><span class="title function_">module_param_named</span>(disable_aspm, mt7925_disable_aspm, <span class="type">bool</span>, <span class="number">0644</span>);</span><br></pre></td></tr></table></figure>
-
-<p>“加一个模块参数以便现场验证疑似平台兼容性问题”是很常规的操作，见第六节 ASPM。</p>
-</li>
-</ul>
 <hr>
 <h2 id="二、probe：资源获取顺序"><a href="#二、probe：资源获取顺序" class="headerlink" title="二、probe：资源获取顺序"></a>二、probe：资源获取顺序</h2><h3 id="2-1-通用-PCIe-probe-模板"><a href="#2-1-通用-PCIe-probe-模板" class="headerlink" title="2.1 通用 PCIe probe 模板"></a>2.1 通用 PCIe probe 模板</h3><p>几乎所有 PCIe 驱动的 probe 都是这套动作，顺序基本固定（<strong>获取 → 使能 → 映射 → DMA 能力 → 中断 → 软件对象 → 向子系统注册</strong>）：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">pci_enable_device()        唤醒设备、分配资源</span><br><span class="line">pci_request_regions()      声明 BAR 归属（或 pcim_iomap_regions 一步到位）</span><br><span class="line">pci_set_master()           允许设备做 DMA master</span><br><span class="line">dma_set_mask()             声明可寻址范围</span><br><span class="line">pci_alloc_irq_vectors()    MSI/MSI-X 优先，退回 legacy INTx</span><br><span class="line">ioremap(BAR)               拿到寄存器虚拟地址</span><br><span class="line">&lt;分配私有对象 / 初始化硬件 / 申请 DMA 缓冲&gt;</span><br><span class="line">request_irq()              中断必须在硬件就绪之后再注册</span><br><span class="line">&lt;向子系统注册 netdev / wiphy / drm_device ...&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">pci_enable_device</span>()        <span class="comment">//唤醒设备、分配资源</span></span><br><span class="line"><span class="title function_">pci_request_regions</span>()      <span class="comment">//声明 BAR 归属（或 pcim_iomap_regions 一步到位）</span></span><br><span class="line"><span class="title function_">pci_set_master</span>()           <span class="comment">//允许设备做 DMA master</span></span><br><span class="line"><span class="title function_">dma_set_mask</span>()             <span class="comment">//声明可寻址范围</span></span><br><span class="line"><span class="title function_">pci_alloc_irq_vectors</span>()    <span class="comment">//MSI/MSI-X 优先，退回 legacy INTx</span></span><br><span class="line"><span class="title function_">ioremap</span>(BAR)               <span class="comment">//拿到寄存器虚拟地址</span></span><br><span class="line">&lt;分配私有对象 / 初始化硬件 / 申请 DMA 缓冲&gt;</span><br><span class="line"><span class="title function_">request_irq</span>()              <span class="comment">//中断必须在硬件就绪之后再注册</span></span><br><span class="line">&lt;向子系统注册 netdev / wiphy / drm_device ...&gt;</span><br></pre></td></tr></table></figure>
 
-<p>错误路径要<strong>逆序回滚</strong>，且用 <code>goto</code> 标签而不是到处 <code>return</code>。</p>
-<h3 id="2-2-mt7925-的-probe：mt7925-pci-probe"><a href="#2-2-mt7925-的-probe：mt7925-pci-probe" class="headerlink" title="2.2 mt7925 的 probe：mt7925_pci_probe()"></a>2.2 mt7925 的 probe：<code>mt7925_pci_probe()</code></h3><p>源码完整 25 步（”性质”列是本文加的：<strong>通用</strong> = 任何 PCIe 驱动都得干，<strong>特有</strong> = 只有这颗芯片需要）：</p>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>调用</th>
-<th>性质</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>1</td>
-<td><code>pcim_enable_device(pdev)</code></td>
-<td>通用</td>
-<td>devres 版，remove 时自动 disable</td>
-</tr>
-<tr>
-<td>2</td>
-<td><code>pcim_iomap_regions(pdev, BIT(0), pci_name(pdev))</code></td>
-<td>通用</td>
-<td>申请 + 映射 <strong>BAR0</strong>，两步合一</td>
-</tr>
-<tr>
-<td>3</td>
-<td>读写 <code>PCI_COMMAND</code> 补 <code>PCI_COMMAND_MEMORY</code></td>
-<td>特有关照</td>
-<td>有些固件起来时 MEM 空间 decoding 没开，这里手动兜底</td>
-</tr>
-<tr>
-<td>4</td>
-<td><code>pci_set_master(pdev)</code></td>
-<td>通用</td>
-<td>允许做 DMA master</td>
-</tr>
-<tr>
-<td>5</td>
-<td><code>pci_alloc_irq_vectors(pdev, 1, 1, PCI_IRQ_ALL_TYPES)</code></td>
-<td>通用</td>
-<td><strong>只要 1 个向量</strong>，见第四节</td>
-</tr>
-<tr>
-<td>6</td>
-<td><code>dma_set_mask(&amp;pdev-&gt;dev, DMA_BIT_MASK(32))</code></td>
-<td>关键</td>
-<td>硬件只寻址低 4G，必须显式声明；失败跳 <code>err_free_pci_vec</code></td>
-</tr>
-<tr>
-<td>7</td>
-<td><code>mt76_pci_disable_aspm(pdev)</code>（仅 <code>disable_aspm=1</code>）</td>
-<td>特有关照</td>
-<td>见第六节</td>
-</tr>
-<tr>
-<td>8</td>
-<td><code>mt792x_get_mac80211_ops(...)</code></td>
-<td>特有</td>
-<td>读固件头里的 capability，裁剪 <code>ieee80211_ops</code></td>
-</tr>
-<tr>
-<td>9</td>
-<td><code>mt76_alloc_device(...)</code></td>
-<td>特有</td>
-<td>分配 <code>mt792x_dev</code>（内嵌 <code>mt76_dev</code>）</td>
-</tr>
-<tr>
-<td>10</td>
-<td><code>pci_set_drvdata()</code> + <code>container_of()</code></td>
-<td>通用</td>
-<td>drvdata ↔ 私有对象互达的标准手法</td>
-</tr>
-<tr>
-<td>11</td>
-<td>填 <code>fw_features</code> / <code>hif_ops</code> / <code>irq_map</code></td>
-<td>特有</td>
-<td><strong>总线差异注入点</strong>，见 2.3</td>
-</tr>
-<tr>
-<td>12</td>
-<td><code>mt76_mmio_init(&amp;dev-&gt;mt76, pcim_iomap_table(pdev)[0])</code></td>
-<td>通用</td>
-<td>把 BAR0 虚拟地址接到 mmio 后端</td>
-</tr>
-<tr>
-<td>13</td>
-<td><code>tasklet_init(&amp;mdev-&gt;irq_tasklet, mt792x_irq_tasklet, ...)</code></td>
-<td>通用</td>
-<td>中断下半部，见第四节</td>
-</tr>
-<tr>
-<td>14</td>
-<td><code>dev-&gt;phy.dev</code> / <code>phy.mt76</code> / <code>mt76.phy.priv</code> 互绑</td>
-<td>特有</td>
-<td>PHY 三层互指</td>
-</tr>
-<tr>
-<td>15</td>
-<td><code>devm_kmemdup()</code> 复制 <code>bus_ops</code> 并替换 <code>rr/wr/rmw</code></td>
-<td>关键</td>
-<td><strong>寄存器访问钩子</strong>，见第三节</td>
-</tr>
-<tr>
-<td>16</td>
-<td><code>dev-&gt;aspm_supported = mt76_pci_aspm_supported(pdev)</code></td>
-<td>特有关照</td>
-<td>后面 drv_own 握手的等待时间依赖它</td>
-</tr>
-<tr>
-<td>17</td>
-<td><code>__mt792x_mcu_fw_pmctrl(dev)</code></td>
-<td>特有</td>
-<td>让固件先放手，电源握手第 1 步</td>
-</tr>
-<tr>
-<td>18</td>
-<td><code>__mt792xe_mcu_drv_pmctrl(dev)</code></td>
-<td>特有</td>
-<td>驱动取得芯片控制权，第 2 步</td>
-</tr>
-<tr>
-<td>19</td>
-<td>读 <code>MT_HW_CHIPID</code> / <code>MT_HW_REV</code> → <code>ASIC revision: %04x</code></td>
-<td>通用套路</td>
-<td><strong>第一次硅片级自检</strong>，全 0 就说明链路没起来</td>
-</tr>
-<tr>
-<td>20</td>
-<td><code>mt76_rmw_field(dev, MT_HW_EMI_CTL, MT_HW_EMI_CTL_SLPPROT_EN, 1)</code></td>
-<td>特有</td>
-<td>关 EMI 休眠保护</td>
-</tr>
-<tr>
-<td>21</td>
-<td><code>mt792x_wfsys_reset(dev)</code></td>
-<td>特有</td>
-<td>复位 WiFi 子系统</td>
-</tr>
-<tr>
-<td>22</td>
-<td>先 <code>mt76_wr(host_irq_enable, 0)</code>、<code>mt76_wr(MT_PCIE_MAC_INT_ENABLE, 0xff)</code></td>
-<td>通用原则</td>
-<td><strong>注册 ISR 之前先把设备侧中断屏蔽干净</strong></td>
-</tr>
-<tr>
-<td>23</td>
-<td><code>devm_request_irq(..., mt792x_irq_handler, IRQF_SHARED, KBUILD_MODNAME, dev)</code></td>
-<td>通用</td>
-<td>共享 IRQ</td>
-</tr>
-<tr>
-<td>24</td>
-<td><code>mt7925_dma_init(dev)</code></td>
-<td>特有</td>
-<td>建 DMA ring，见第五节</td>
-</tr>
-<tr>
-<td>25</td>
-<td><code>mt7925_register_device(dev)</code></td>
-<td>特有</td>
-<td>交给 <code>init.c</code>：软资源 + 异步 <code>init_work</code>（固件/MAC/wiphy）</td>
-</tr>
-</tbody></table>
+
+<h3 id="2-2-mt7925-的-probe：mt7925-pci-probe"><a href="#2-2-mt7925-的-probe：mt7925-pci-probe" class="headerlink" title="2.2 mt7925 的 probe：mt7925_pci_probe()"></a>2.2 mt7925 的 probe：<code>mt7925_pci_probe()</code></h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">mt7925_pci_probe</span><span class="params">(<span class="keyword">struct</span> pci_dev *pdev, <span class="type">const</span> <span class="keyword">struct</span> pci_device_id *id)</span></span><br><span class="line">{</span><br><span class="line">	<span class="comment">/* [1] 启用设备：电源状态拉到D0，打开 BAR 的 MEM/IO 解码 */</span></span><br><span class="line">	<span class="title function_">pcim_enable_device</span>(pdev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [2] 申请 + 映射 BAR0，后续所有 mt76_rr()/mt76_wr() 读写都落在这个映射上 */</span></span><br><span class="line">	<span class="title function_">pcim_iomap_regions</span>(pdev, <span class="title function_">BIT</span>(<span class="number">0</span>), <span class="title function_">pci_name</span>(pdev));</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [3]从设备配置空间 0x04 读取当前 PCI_COMMAND 寄存器，确保 PCI_COMMAND_MEMORY 位打开*/</span></span><br><span class="line">	<span class="title function_">pci_read_config_word</span>(pdev, PCI_COMMAND, &amp;cmd);</span><br><span class="line">	<span class="keyword">if</span> (!(cmd &amp; PCI_COMMAND_MEMORY))</span><br><span class="line">		<span class="title function_">pci_write_config_word</span>(pdev, PCI_COMMAND, cmd | PCI_COMMAND_MEMORY);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [4] 允许设备做 DMA master */</span></span><br><span class="line">	<span class="title function_">pci_set_master</span>(pdev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [5] 申请 1 个中断向量（MSI/MSI-X 优先，退回 legacy INTx），见第四节 */</span></span><br><span class="line">	<span class="title function_">pci_alloc_irq_vectors</span>(pdev, <span class="number">1</span>, <span class="number">1</span>, PCI_IRQ_ALL_TYPES);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [6][关键] 声明 DMA引擎只能寻址 4 GB 物理地址空间（32 位总线地址），并让内核验证这个约束 */</span></span><br><span class="line">	<span class="title function_">dma_set_mask</span>(&amp;pdev-&gt;dev, <span class="title function_">DMA_BIT_MASK</span>(<span class="number">32</span>));</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [7][特有关照] 平台疑似 ASPM 兼容性问题时，按需关闭这条 PCIe 链路的 ASPM */</span></span><br><span class="line">	<span class="keyword">if</span> (mt7925_disable_aspm)</span><br><span class="line">		<span class="title function_">mt76_pci_disable_aspm</span>(pdev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [8][特有] 复制一份mt7925_ops，并读取固件能力，根据固件能力裁剪出一份 ieee80211_ops，见 2.3 */</span></span><br><span class="line">	ops = <span class="title function_">mt792x_get_mac80211_ops</span>(&amp;pdev-&gt;dev, &amp;mt7925_ops,</span><br><span class="line">				      (<span class="type">void</span> *)id-&gt;driver_data, &amp;features);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [9][特有] 分配私有对象 mt792x_dev，并挂上ieee80211_ops 和 mt76_driver_ops */</span></span><br><span class="line">	dev = <span class="title function_">mt76_alloc_device</span>(&amp;pdev-&gt;dev, <span class="keyword">sizeof</span>(*dev), ops, &amp;drv_ops);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [10] drvdata ↔ 私有对象互达的标准手法 */</span></span><br><span class="line">	<span class="title function_">pci_set_drvdata</span>(pdev, dev);</span><br><span class="line">	mdev = &amp;dev-&gt;mt76;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [11][特有] 总线差异注入点：填 fw_features / hif_ops / irq_map，见 2.3 */</span></span><br><span class="line">	dev-&gt;fw_features = features;</span><br><span class="line">	dev-&gt;hif_ops = &amp;mt7925_pcie_ops;</span><br><span class="line">	dev-&gt;irq_map = &amp;irq_map;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [12] 把「BAR0 的虚拟地址」和「mt76_bus_ops 」一起装进 mt76_dev */</span></span><br><span class="line">	<span class="title function_">mt76_mmio_init</span>(&amp;dev-&gt;mt76, <span class="title function_">pcim_iomap_table</span>(pdev)[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [13] 初始化 tasklet，见第四节 */</span></span><br><span class="line">	<span class="title function_">tasklet_init</span>(&amp;mdev-&gt;irq_tasklet, mt792x_irq_tasklet, (<span class="type">unsigned</span> <span class="type">long</span>)dev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [14][特有] PHY 三层互指 */</span></span><br><span class="line">	dev-&gt;phy<span class="attr">.dev</span> = dev;  dev-&gt;phy<span class="attr">.mt76</span> = &amp;dev-&gt;mt76;  dev-&gt;mt76.phy<span class="attr">.priv</span> = &amp;dev-&gt;phy;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [15][关键] 复制一份mt76核心的bus_ops，并替换为7925的 rr/wr/rmw */</span></span><br><span class="line">	bus_ops = <span class="title function_">devm_kmemdup</span>(&amp;pdev-&gt;dev, dev-&gt;mt76.bus, <span class="keyword">sizeof</span>(*bus_ops), GFP_KERNEL);</span><br><span class="line">	bus_ops-&gt;rr = mt7925_rr;</span><br><span class="line">	bus_ops-&gt;wr = mt7925_wr;</span><br><span class="line">	bus_ops-&gt;rmw = mt7925_rmw;</span><br><span class="line">	dev-&gt;mt76<span class="attr">.bus</span> = bus_ops;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [16][特有关照] drv_own 握手的等待时间依赖它（ASPM 开着时链路要更久才醒） */</span></span><br><span class="line">	dev-&gt;aspm_supported = <span class="title function_">mt76_pci_aspm_supported</span>(pdev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [17][特有] 电源握手第 1 步：把芯片控制权交还给固件 */</span></span><br><span class="line">	<span class="title function_">__mt792x_mcu_fw_pmctrl</span>(dev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [18][特有] 电源握手第 2 步：把芯片控制权从固件手里收回到驱动 */</span></span><br><span class="line">	<span class="title function_">__mt792xe_mcu_drv_pmctrl</span>(dev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [19] 第一次硅片级自检：读 CHIPID / REV，全 0 就说明链路没起来 */</span></span><br><span class="line">	<span class="title function_">dev_info</span>(&amp;pdev-&gt;dev, <span class="string">"ASIC revision: %04x\n"</span>, <span class="title function_">mt76_rr</span>(dev, MT_HW_REV));</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [20][特有] 使能 EMI 休眠保护 */</span></span><br><span class="line">	<span class="title function_">mt76_rmw_field</span>(dev, MT_HW_EMI_CTL, MT_HW_EMI_CTL_SLPPROT_EN, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [21][特有] 复位 WiFi 子系统 </span></span><br><span class="line"><span class="comment">	   WFSYS是MTK connac 系列芯片内部的Wi-Fi 硬件子系统:一个独立的电源域/时钟域/复位域，它包含 Wi-Fi 侧的全部硬件：Wi-Fi MCU（N9/WM）、LMAC/UMAC（MAC 硬件）、WFDMA、WTBL、PLE/PSE 等 */</span></span><br><span class="line">	<span class="title function_">mt792x_wfsys_reset</span>(dev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [22] 注册 ISR 之前先把设备侧中断屏蔽干净 */</span></span><br><span class="line">	<span class="title function_">mt76_wr</span>(dev, dev-&gt;irq_map-&gt;host_irq_enable, <span class="number">0</span>); <span class="comment">//关掉 WFDMA 的主机中断：此时中断 handler 还没注册，不能开</span></span><br><span class="line">	<span class="title function_">mt76_wr</span>(dev, MT_PCIE_MAC_INT_ENABLE, <span class="number">0xff</span>);     <span class="comment">//打开 PCIe MAC 中断总开关，管的是 PCIe 链路/MAC 侧的硬件事件，可以开</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [23] 注册共享中断 */</span></span><br><span class="line">	<span class="title function_">devm_request_irq</span>(&amp;pdev-&gt;dev, pdev-&gt;irq, mt792x_irq_handler,</span><br><span class="line">			 IRQF_SHARED, KBUILD_MODNAME, dev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [24][特有] DMA初始化：建 DMA ring（TX / RX / MCU 队列 + NAPI），见第五节 */</span></span><br><span class="line">	<span class="title function_">mt7925_dma_init</span>(dev);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* [25][特有] 交给 init.c：软资源 + 异步 init_work（固件 / MAC / wiphy） */</span></span><br><span class="line">	<span class="keyword">return</span> <span class="title function_">mt7925_register_device</span>(dev);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
 <h3 id="2-3-三条表：drv-ops-hif-ops-irq-map"><a href="#2-3-三条表：drv-ops-hif-ops-irq-map" class="headerlink" title="2.3 三条表：drv_ops / hif_ops / irq_map"></a>2.3 三条表：<code>drv_ops</code> / <code>hif_ops</code> / <code>irq_map</code></h3><p>probe 里内联定义，是理解”PCIe 层到底注入了什么”的关键：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt76_driver_ops</span> <span class="title">drv_ops</span> =</span> {</span><br><span class="line">	<span class="comment">/* txwi_size = txd size + txp size */</span></span><br><span class="line">	<span class="attr">.txwi_size</span> = MT_TXD_SIZE + <span class="keyword">sizeof</span>(<span class="keyword">struct</span> mt76_connac_hw_txp),</span><br><span class="line">	<span class="attr">.drv_flags</span> = MT_DRV_TXWI_NO_FREE | MT_DRV_HW_MGMT_TXQ | MT_DRV_AMSDU_OFFLOAD,</span><br><span class="line">	<span class="attr">.token_size</span> = MT7925_TOKEN_SIZE,               <span class="comment">/* 8192 */</span></span><br><span class="line">	<span class="attr">.tx_prepare_skb</span> = <span class="title function_">mt7925e_tx_prepare_skb</span>,      <span class="comment">/* PCIe 专属：TXWI 写在 DMA 缓冲里 */</span></span><br><span class="line">	<span class="attr">.tx_complete_skb</span> = <span class="title function_">mt76_connac_tx_complete_skb</span>,</span><br><span class="line">	<span class="attr">.rx_check</span> = <span class="title function_">mt7925_rx_check</span>,</span><br><span class="line">	<span class="attr">.rx_skb</span> = <span class="title function_">mt7925_queue_rx_skb</span>,</span><br><span class="line">	<span class="attr">.rx_poll_complete</span> = <span class="title function_">mt792x_rx_poll_complete</span>,</span><br><span class="line">	<span class="attr">.sta_add</span> = <span class="title function_">mt7925_mac_sta_add</span>,</span><br><span class="line">	<span class="attr">.sta_event</span> = <span class="title function_">mt7925_mac_sta_event</span>,</span><br><span class="line">	<span class="attr">.sta_remove</span> = <span class="title function_">mt7925_mac_sta_remove</span>,</span><br><span class="line">	<span class="attr">.update_survey</span> = <span class="title function_">mt792x_update_channel</span>,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt792x_hif_ops</span> <span class="title">mt7925_pcie_ops</span> =</span> {</span><br><span class="line">	<span class="attr">.init_reset</span> = <span class="title function_">mt7925e_init_reset</span>,      <span class="comment">/* = mt792x_wpdma_reset(dev, true) */</span></span><br><span class="line">	<span class="attr">.reset</span> = <span class="title function_">mt7925e_mac_reset</span>,</span><br><span class="line">	<span class="attr">.mcu_init</span> = <span class="title function_">mt7925e_mcu_init</span>,</span><br><span class="line">	<span class="attr">.drv_own</span> = <span class="title function_">mt792xe_mcu_drv_pmctrl</span>,     <span class="comment">/* 驱动向固件要控制权 */</span></span><br><span class="line">	<span class="attr">.fw_own</span> = <span class="title function_">mt792xe_mcu_fw_pmctrl</span>,       <span class="comment">/* 用完还回去 */</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt792x_irq_map</span> <span class="title">irq_map</span> =</span> {</span><br><span class="line">	<span class="attr">.host_irq_enable</span> = MT_WFDMA0_HOST_INT_ENA,</span><br><span class="line">	<span class="attr">.tx</span> = {</span><br><span class="line">		<span class="attr">.all_complete_mask</span> = MT_INT_TX_DONE_ALL,</span><br><span class="line">		<span class="attr">.mcu_complete_mask</span> = MT_INT_TX_DONE_MCU,</span><br><span class="line">	},</span><br><span class="line">	<span class="attr">.rx</span> = {</span><br><span class="line">		<span class="attr">.data_complete_mask</span> = HOST_RX_DONE_INT_ENA2,   <span class="comment">/* MT_RXQ_MAIN（数据帧） */</span></span><br><span class="line">		<span class="attr">.wm_complete_mask</span>   = HOST_RX_DONE_INT_ENA0,   <span class="comment">/* MT_RXQ_MCU（MCU 事件） */</span></span><br><span class="line">	},</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 硬件能力描述（TXWI 尺寸、offload 能力、token 数） */</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt76_driver_ops</span> <span class="title">drv_ops</span> =</span> {</span><br><span class="line">	<span class="comment">/* txwi_size = txd size + txp size */</span></span><br><span class="line">	<span class="attr">.txwi_size</span> = MT_TXD_SIZE + <span class="keyword">sizeof</span>(<span class="keyword">struct</span> mt76_connac_hw_txp),</span><br><span class="line">	<span class="attr">.drv_flags</span> = MT_DRV_TXWI_NO_FREE | MT_DRV_HW_MGMT_TXQ | MT_DRV_AMSDU_OFFLOAD,</span><br><span class="line">	<span class="attr">.token_size</span> = MT7925_TOKEN_SIZE,               <span class="comment">/* 8192 */</span></span><br><span class="line">	<span class="attr">.tx_prepare_skb</span> = <span class="title function_">mt7925e_tx_prepare_skb</span>,      <span class="comment">/* PCIe 专属：TXWI 写在 DMA 缓冲里 */</span></span><br><span class="line">	<span class="attr">.tx_complete_skb</span> = <span class="title function_">mt76_connac_tx_complete_skb</span>,</span><br><span class="line">	<span class="attr">.rx_check</span> = <span class="title function_">mt7925_rx_check</span>,</span><br><span class="line">	<span class="attr">.rx_skb</span> = <span class="title function_">mt7925_queue_rx_skb</span>,</span><br><span class="line">	<span class="attr">.rx_poll_complete</span> = <span class="title function_">mt792x_rx_poll_complete</span>,</span><br><span class="line">	<span class="attr">.sta_add</span> = <span class="title function_">mt7925_mac_sta_add</span>,</span><br><span class="line">	<span class="attr">.sta_event</span> = <span class="title function_">mt7925_mac_sta_event</span>,</span><br><span class="line">	<span class="attr">.sta_remove</span> = <span class="title function_">mt7925_mac_sta_remove</span>,</span><br><span class="line">	<span class="attr">.update_survey</span> = <span class="title function_">mt792x_update_channel</span>,</span><br><span class="line">};</span><br><span class="line"><span class="comment">/* 总线操作 + MCU 生命周期 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt792x_hif_ops</span> <span class="title">mt7925_pcie_ops</span> =</span> {</span><br><span class="line">	<span class="attr">.init_reset</span> = <span class="title function_">mt7925e_init_reset</span>,      <span class="comment">/* = mt792x_wpdma_reset(dev, true) */</span></span><br><span class="line">	<span class="attr">.reset</span> = <span class="title function_">mt7925e_mac_reset</span>,</span><br><span class="line">	<span class="attr">.mcu_init</span> = <span class="title function_">mt7925e_mcu_init</span>,</span><br><span class="line">	<span class="attr">.drv_own</span> = <span class="title function_">mt792xe_mcu_drv_pmctrl</span>,     <span class="comment">/* 驱动向固件要控制权 */</span></span><br><span class="line">	<span class="attr">.fw_own</span> = <span class="title function_">mt792xe_mcu_fw_pmctrl</span>,       <span class="comment">/* 用完还回去 */</span></span><br><span class="line">};</span><br><span class="line"><span class="comment">/* 把"逻辑中断"翻译成这颗芯片的寄存器位 */</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">mt792x_irq_map</span> <span class="title">irq_map</span> =</span> {</span><br><span class="line">	<span class="attr">.host_irq_enable</span> = MT_WFDMA0_HOST_INT_ENA,</span><br><span class="line">	<span class="attr">.tx</span> = {</span><br><span class="line">		<span class="attr">.all_complete_mask</span> = MT_INT_TX_DONE_ALL,</span><br><span class="line">		<span class="attr">.mcu_complete_mask</span> = MT_INT_TX_DONE_MCU,</span><br><span class="line">	},</span><br><span class="line">	<span class="attr">.rx</span> = {</span><br><span class="line">		<span class="attr">.data_complete_mask</span> = HOST_RX_DONE_INT_ENA2,   <span class="comment">/* MT_RXQ_MAIN（数据帧） */</span></span><br><span class="line">		<span class="attr">.wm_complete_mask</span>   = HOST_RX_DONE_INT_ENA0,   <span class="comment">/* MT_RXQ_MCU（MCU 事件） */</span></span><br><span class="line">	},</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
-<p>一句话区分：<code>drv_ops</code> = <strong>硬件能力描述</strong>（TXWI 尺寸、offload 能力、token 数），<code>hif_ops</code> = <strong>总线操作 + MCU 生命周期</strong>，<code>irq_map</code> = <strong>把”逻辑中断”翻译成这颗芯片的寄存器位</strong>。上层 <code>main.c/init.c/mac.c/mcu.c</code> 完全共用，PCIe/USB/SDIO 只换这三张表。</p>
-<blockquote>
-<p>注意 <code>irq_map</code> **没有设置 <code>.rx.wm2_complete_mask</code>**（MT7925 里为 0），所以共享层 <code>mt792x_irq_tasklet</code> 里 <code>napi_schedule(&amp;dev-&gt;mt76.napi[MT_RXQ_MCU_WA])</code> 那一支不会命中。这是”共享层照顾 MT7921、MT7925 用不上”的例子，看代码时别被带偏。</p>
-</blockquote>
-<h3 id="2-4-错误处理：devres-边界"><a href="#2-4-错误处理：devres-边界" class="headerlink" title="2.4 错误处理：devres 边界"></a>2.4 错误处理：devres 边界</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">err_free_irq:</span><br><span class="line">	<span class="title function_">devm_free_irq</span>(&amp;pdev-&gt;dev, pdev-&gt;irq, dev);   <span class="comment">/* 手动：IRQ 已注册成功则不属自动回收 */</span></span><br><span class="line">err_free_dev:</span><br><span class="line">	<span class="title function_">mt76_free_device</span>(&amp;dev-&gt;mt76);                <span class="comment">/* 手动：mt76 自己的对象/wq/napi */</span></span><br><span class="line">err_free_pci_vec:</span><br><span class="line">	<span class="title function_">pci_free_irq_vectors</span>(pdev);                  <span class="comment">/* 手动：非 devres API */</span></span><br><span class="line">	<span class="keyword">return</span> ret;</span><br></pre></td></tr></table></figure>
-
-<table>
-<thead>
-<tr>
-<th>资源</th>
-<th>获取</th>
-<th>释放</th>
-<th>归属</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>PCI 使能 + BAR 映射</td>
-<td><code>pcim_enable_device</code> / <code>pcim_iomap_regions</code></td>
-<td>自动</td>
-<td>devres</td>
-</tr>
-<tr>
-<td>IRQ</td>
-<td><code>devm_request_irq</code></td>
-<td>probe 失败路径手动释放</td>
-<td>devres</td>
-</tr>
-<tr>
-<td><code>bus_ops</code> 副本</td>
-<td><code>devm_kmemdup</code></td>
-<td>自动</td>
-<td>devres</td>
-</tr>
-<tr>
-<td>MSI/legacy 向量</td>
-<td><code>pci_alloc_irq_vectors</code></td>
-<td><code>pci_free_irq_vectors</code></td>
-<td><strong>手动</strong></td>
-</tr>
-<tr>
-<td>mt76 设备对象、page pool、worker</td>
-<td><code>mt76_alloc_device</code> 等</td>
-<td><code>mt76_free_device</code></td>
-<td><strong>手动</strong></td>
-</tr>
-<tr>
-<td>DMA ring 描述符内存</td>
-<td><code>dmam_alloc_coherent</code>（在 <code>mt76_dma_alloc_queue</code> 内）</td>
-<td>自动</td>
-<td>devres</td>
-</tr>
-</tbody></table>
-<p>一句话经验：<strong>PCI core 的 <code>pcim_*</code> / <code>devm_*</code> 包住的资源不用管，<code>pci_alloc_irq_vectors()</code> 和驱动自己的私有对象必须自己还。</strong> 漏 <code>pci_free_irq_vectors()</code> 是 PCIe 驱动 probe 失败路径里的经典 bug。</p>
 <hr>
 <h2 id="三、BAR-与寄存器访问"><a href="#三、BAR-与寄存器访问" class="headerlink" title="三、BAR 与寄存器访问"></a>三、BAR 与寄存器访问</h2><h3 id="3-1-标准做法-vs-mt7925"><a href="#3-1-标准做法-vs-mt7925" class="headerlink" title="3.1 标准做法 vs mt7925"></a>3.1 标准做法 vs mt7925</h3><p>标准做法：<code>pcim_iomap_regions()</code> → <code>pcim_iomap_table(pdev)[0]</code> → 用 <code>readl/writel</code> 直接访问。</p>
 <p>mt7925 多一层：它的寄存器空间<strong>不是平坦的</strong>，所以不能让上层直接 mmio，于是把 mt76 的 <code>bus_ops-&gt;rr/wr/rmw</code> 三个钩子换成自己的：</p>
@@ -927,7 +666,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A9%B1%E5%8A%A8%E9%AA%A8%E6%9E%B6%EF%BC%9Apci-driver-%E4%B8%8E%E8%AE%BE%E5%A4%87%E5%8C%B9%E9%85%8D"><span class="toc-text">一、驱动骨架：pci_driver 与设备匹配</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%A0%87%E5%87%86%E5%86%99%E6%B3%95-checklist"><span class="toc-text">1.1 标准写法 checklist</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-mt7925-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-text">1.2 mt7925 的实现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81probe%EF%BC%9A%E8%B5%84%E6%BA%90%E8%8E%B7%E5%8F%96%E9%A1%BA%E5%BA%8F"><span class="toc-text">二、probe：资源获取顺序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E9%80%9A%E7%94%A8-PCIe-probe-%E6%A8%A1%E6%9D%BF"><span class="toc-text">2.1 通用 PCIe probe 模板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-mt7925-%E7%9A%84-probe%EF%BC%9Amt7925-pci-probe"><span class="toc-text">2.2 mt7925 的 probe：mt7925_pci_probe()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E4%B8%89%E6%9D%A1%E8%A1%A8%EF%BC%9Adrv-ops-hif-ops-irq-map"><span class="toc-text">2.3 三条表：drv_ops &#x2F; hif_ops &#x2F; irq_map</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-4-%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%EF%BC%9Adevres-%E8%BE%B9%E7%95%8C"><span class="toc-text">2.4 错误处理：devres 边界</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81BAR-%E4%B8%8E%E5%AF%84%E5%AD%98%E5%99%A8%E8%AE%BF%E9%97%AE"><span class="toc-text">三、BAR 与寄存器访问</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%A0%87%E5%87%86%E5%81%9A%E6%B3%95-vs-mt7925"><span class="toc-text">3.1 标准做法 vs mt7925</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-L1-L2-%E9%87%8D%E6%98%A0%E5%B0%84%EF%BC%9AMT7925-%E7%9A%84-BAR-%E7%AA%97%E5%8F%A3"><span class="toc-text">3.2 L1&#x2F;L2 重映射：MT7925 的 BAR 窗口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E4%B8%AD%E6%96%AD%EF%BC%9A%E4%B8%8A%E5%8D%8A%E9%83%A8-%E2%86%92-tasklet-%E2%86%92-NAPI-%E2%86%92-%E9%87%8D%E6%96%B0%E5%BC%80%E4%B8%AD%E6%96%AD"><span class="toc-text">四、中断：上半部 → tasklet → NAPI → 重新开中断</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8F%AA%E6%9C%89-1-%E4%B8%AA%E4%B8%AD%E6%96%AD%E5%90%91%E9%87%8F"><span class="toc-text">4.1 为什么只有 1 个中断向量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E4%B8%89%E5%B1%82%E7%BB%93%E6%9E%84%E6%80%BB%E8%A7%88"><span class="toc-text">4.2 三层结构总览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E4%B8%8A%E5%8D%8A%E9%83%A8%EF%BC%9Amt792x-irq-handler"><span class="toc-text">4.3 上半部：mt792x_irq_handler()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E4%B8%8B%E5%8D%8A%E9%83%A8%EF%BC%88tasklet%EF%BC%89%EF%BC%9A%E5%88%86%E6%B5%81%E5%88%B0-NAPI"><span class="toc-text">4.4 下半部（tasklet）：分流到 NAPI</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-NAPI-poll-%E4%B8%8E%E2%80%9D%E9%87%8D%E6%96%B0%E5%BC%80%E4%B8%AD%E6%96%AD%E2%80%9D"><span class="toc-text">4.5 NAPI poll 与”重新开中断”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-6-%E5%AF%B9%E7%85%A7%E6%80%BB%E7%BB%93%EF%BC%9APCIe-%E4%B8%AD%E6%96%AD%E5%86%99%E6%B3%95-checklist"><span class="toc-text">4.6 对照总结：PCIe 中断写法 checklist</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81DMA%EF%BC%9Aring-%E5%BB%BA%E7%AB%8B%E4%B8%8E%E4%B8%80%E6%AC%A1%E7%9C%9F%E5%AE%9E%E7%9A%84%E6%94%B6%E5%8F%91"><span class="toc-text">五、DMA：ring 建立与一次真实的收发</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-ring-%E7%9A%84%E5%BB%BA%E7%AB%8B%EF%BC%9Amt7925-dma-init"><span class="toc-text">5.1 ring 的建立：mt7925_dma_init()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E6%8F%8F%E8%BF%B0%E7%AC%A6%EF%BC%9A%E5%87%A0%E4%B8%AA-32-%E4%BD%8D%E5%AD%97%E5%B0%B1%E6%98%AF%E5%85%A8%E9%83%A8"><span class="toc-text">5.2 描述符：几个 32 位字就是全部</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-ring-%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E4%B8%89%E4%BB%B6%E5%A5%97%E4%B8%8E-kick"><span class="toc-text">5.3 ring 的寄存器三件套与 kick</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%B8%80%E6%AC%A1-TX%EF%BC%9A%E4%BB%8E-skb-%E5%88%B0%E2%80%9D%E5%86%99-cpu-idx%E2%80%9D"><span class="toc-text">5.4 一次 TX：从 skb 到”写 cpu_idx”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-%E4%B8%80%E6%AC%A1-RX%EF%BC%9A%E9%A2%84%E5%A1%AB%E5%85%85-%E2%86%92-%E5%9B%9E%E5%A1%AB-DONE-%E2%86%92-napi-build-skb"><span class="toc-text">5.5 一次 RX：预填充 → 回填 DONE → napi_build_skb</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-6-TX-%E5%AE%8C%E6%88%90%E5%9B%9E%E6%94%B6%EF%BC%9Amt792x-poll-tx"><span class="toc-text">5.6 TX 完成回收：mt792x_poll_tx()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81PCIe-%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86%EF%BC%9Aownership-%E6%8F%A1%E6%89%8B%E3%80%81ASPM%E3%80%81suspend-resume"><span class="toc-text">六、PCIe 电源管理：ownership 握手、ASPM、suspend&#x2F;resume</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-drv-own-fw-own%EF%BC%9A%E8%B0%81%E6%8A%B1%E7%9D%80%E8%BF%99%E5%9D%97%E8%8A%AF%E7%89%87"><span class="toc-text">6.1 drv_own &#x2F; fw_own：谁抱着这块芯片</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-ASPM%EF%BC%9A%E6%A0%87%E5%87%86%E5%81%9A%E6%B3%95-vs-mt7925"><span class="toc-text">6.2 ASPM：标准做法 vs mt7925</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-suspend-resume%EF%BC%9A%E9%A1%BA%E5%BA%8F%E4%B8%8D%E8%83%BD%E4%B9%B1"><span class="toc-text">6.3 suspend &#x2F; resume：顺序不能乱</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%8D%B8%E8%BD%BD%EF%BC%9Aremove-shutdown-%E4%B8%8E-devres-%E8%BE%B9%E7%95%8C"><span class="toc-text">七、卸载：remove &#x2F; shutdown 与 devres 边界</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81USB-%E5%AF%B9%E7%85%A7%EF%BC%88%E7%AE%80%E7%89%88%EF%BC%89"><span class="toc-text">八、USB 对照（简版）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81PCIe-%E7%9B%B8%E5%85%B3%E6%95%85%E9%9A%9C%E5%AE%9A%E4%BD%8D"><span class="toc-text">九、PCIe 相关故障定位</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%B0%8F%E7%BB%93%EF%BC%9A%E4%B8%80%E4%BB%BD%E5%8F%AF%E8%BF%81%E7%A7%BB%E7%9A%84-PCIe-%E9%A9%B1%E5%8A%A8-checklist"><span class="toc-text">十、小结：一份可迁移的 PCIe 驱动 checklist</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E6%A1%A3%E6%A6%82%E8%BF%B0"><span class="toc-text">文档概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A9%B1%E5%8A%A8%E9%AA%A8%E6%9E%B6%EF%BC%9Apci-driver-%E4%B8%8E%E8%AE%BE%E5%A4%87%E5%8C%B9%E9%85%8D"><span class="toc-text">一、驱动骨架：pci_driver 与设备匹配</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E6%A0%87%E5%87%86%E5%86%99%E6%B3%95-checklist"><span class="toc-text">1.1 标准写法 checklist</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-mt7925-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-text">1.2 mt7925 的实现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81probe%EF%BC%9A%E8%B5%84%E6%BA%90%E8%8E%B7%E5%8F%96%E9%A1%BA%E5%BA%8F"><span class="toc-text">二、probe：资源获取顺序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E9%80%9A%E7%94%A8-PCIe-probe-%E6%A8%A1%E6%9D%BF"><span class="toc-text">2.1 通用 PCIe probe 模板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-mt7925-%E7%9A%84-probe%EF%BC%9Amt7925-pci-probe"><span class="toc-text">2.2 mt7925 的 probe：mt7925_pci_probe()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E4%B8%89%E6%9D%A1%E8%A1%A8%EF%BC%9Adrv-ops-hif-ops-irq-map"><span class="toc-text">2.3 三条表：drv_ops &#x2F; hif_ops &#x2F; irq_map</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81BAR-%E4%B8%8E%E5%AF%84%E5%AD%98%E5%99%A8%E8%AE%BF%E9%97%AE"><span class="toc-text">三、BAR 与寄存器访问</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%A0%87%E5%87%86%E5%81%9A%E6%B3%95-vs-mt7925"><span class="toc-text">3.1 标准做法 vs mt7925</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-L1-L2-%E9%87%8D%E6%98%A0%E5%B0%84%EF%BC%9AMT7925-%E7%9A%84-BAR-%E7%AA%97%E5%8F%A3"><span class="toc-text">3.2 L1&#x2F;L2 重映射：MT7925 的 BAR 窗口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E4%B8%AD%E6%96%AD%EF%BC%9A%E4%B8%8A%E5%8D%8A%E9%83%A8-%E2%86%92-tasklet-%E2%86%92-NAPI-%E2%86%92-%E9%87%8D%E6%96%B0%E5%BC%80%E4%B8%AD%E6%96%AD"><span class="toc-text">四、中断：上半部 → tasklet → NAPI → 重新开中断</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8F%AA%E6%9C%89-1-%E4%B8%AA%E4%B8%AD%E6%96%AD%E5%90%91%E9%87%8F"><span class="toc-text">4.1 为什么只有 1 个中断向量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E4%B8%89%E5%B1%82%E7%BB%93%E6%9E%84%E6%80%BB%E8%A7%88"><span class="toc-text">4.2 三层结构总览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E4%B8%8A%E5%8D%8A%E9%83%A8%EF%BC%9Amt792x-irq-handler"><span class="toc-text">4.3 上半部：mt792x_irq_handler()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E4%B8%8B%E5%8D%8A%E9%83%A8%EF%BC%88tasklet%EF%BC%89%EF%BC%9A%E5%88%86%E6%B5%81%E5%88%B0-NAPI"><span class="toc-text">4.4 下半部（tasklet）：分流到 NAPI</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-NAPI-poll-%E4%B8%8E%E2%80%9D%E9%87%8D%E6%96%B0%E5%BC%80%E4%B8%AD%E6%96%AD%E2%80%9D"><span class="toc-text">4.5 NAPI poll 与”重新开中断”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-6-%E5%AF%B9%E7%85%A7%E6%80%BB%E7%BB%93%EF%BC%9APCIe-%E4%B8%AD%E6%96%AD%E5%86%99%E6%B3%95-checklist"><span class="toc-text">4.6 对照总结：PCIe 中断写法 checklist</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81DMA%EF%BC%9Aring-%E5%BB%BA%E7%AB%8B%E4%B8%8E%E4%B8%80%E6%AC%A1%E7%9C%9F%E5%AE%9E%E7%9A%84%E6%94%B6%E5%8F%91"><span class="toc-text">五、DMA：ring 建立与一次真实的收发</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-ring-%E7%9A%84%E5%BB%BA%E7%AB%8B%EF%BC%9Amt7925-dma-init"><span class="toc-text">5.1 ring 的建立：mt7925_dma_init()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E6%8F%8F%E8%BF%B0%E7%AC%A6%EF%BC%9A%E5%87%A0%E4%B8%AA-32-%E4%BD%8D%E5%AD%97%E5%B0%B1%E6%98%AF%E5%85%A8%E9%83%A8"><span class="toc-text">5.2 描述符：几个 32 位字就是全部</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-ring-%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E4%B8%89%E4%BB%B6%E5%A5%97%E4%B8%8E-kick"><span class="toc-text">5.3 ring 的寄存器三件套与 kick</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%B8%80%E6%AC%A1-TX%EF%BC%9A%E4%BB%8E-skb-%E5%88%B0%E2%80%9D%E5%86%99-cpu-idx%E2%80%9D"><span class="toc-text">5.4 一次 TX：从 skb 到”写 cpu_idx”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-%E4%B8%80%E6%AC%A1-RX%EF%BC%9A%E9%A2%84%E5%A1%AB%E5%85%85-%E2%86%92-%E5%9B%9E%E5%A1%AB-DONE-%E2%86%92-napi-build-skb"><span class="toc-text">5.5 一次 RX：预填充 → 回填 DONE → napi_build_skb</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-6-TX-%E5%AE%8C%E6%88%90%E5%9B%9E%E6%94%B6%EF%BC%9Amt792x-poll-tx"><span class="toc-text">5.6 TX 完成回收：mt792x_poll_tx()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81PCIe-%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86%EF%BC%9Aownership-%E6%8F%A1%E6%89%8B%E3%80%81ASPM%E3%80%81suspend-resume"><span class="toc-text">六、PCIe 电源管理：ownership 握手、ASPM、suspend&#x2F;resume</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-drv-own-fw-own%EF%BC%9A%E8%B0%81%E6%8A%B1%E7%9D%80%E8%BF%99%E5%9D%97%E8%8A%AF%E7%89%87"><span class="toc-text">6.1 drv_own &#x2F; fw_own：谁抱着这块芯片</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-ASPM%EF%BC%9A%E6%A0%87%E5%87%86%E5%81%9A%E6%B3%95-vs-mt7925"><span class="toc-text">6.2 ASPM：标准做法 vs mt7925</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-suspend-resume%EF%BC%9A%E9%A1%BA%E5%BA%8F%E4%B8%8D%E8%83%BD%E4%B9%B1"><span class="toc-text">6.3 suspend &#x2F; resume：顺序不能乱</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%8D%B8%E8%BD%BD%EF%BC%9Aremove-shutdown-%E4%B8%8E-devres-%E8%BE%B9%E7%95%8C"><span class="toc-text">七、卸载：remove &#x2F; shutdown 与 devres 边界</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81USB-%E5%AF%B9%E7%85%A7%EF%BC%88%E7%AE%80%E7%89%88%EF%BC%89"><span class="toc-text">八、USB 对照（简版）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81PCIe-%E7%9B%B8%E5%85%B3%E6%95%85%E9%9A%9C%E5%AE%9A%E4%BD%8D"><span class="toc-text">九、PCIe 相关故障定位</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%B0%8F%E7%BB%93%EF%BC%9A%E4%B8%80%E4%BB%BD%E5%8F%AF%E8%BF%81%E7%A7%BB%E7%9A%84-PCIe-%E9%A9%B1%E5%8A%A8-checklist"><span class="toc-text">十、小结：一份可迁移的 PCIe 驱动 checklist</span></a></li></ol>
   </div>
 </aside>
 

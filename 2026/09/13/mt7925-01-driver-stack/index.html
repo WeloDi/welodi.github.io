@@ -4,20 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MT7925 驱动学习 01：硬件架构与 Linux 6.12 驱动栈分层 | Welodi</title>
-  <meta name="description" content="文档概述本文梳理 Linux 6.12 中 MediaTek MT7925（Wi-Fi 7 &#x2F; 802.11be）网卡驱动的硬件接口与源码分层。驱动路径 drivers&#x2F;net&#x2F;wireless&#x2F;mediatek&#x2F;mt76&#x2F;mt7925&#x2F;，向上挂 mac80211&#x2F;cfg80211，向下经 PCIe 或 USB 访问芯片，协议栈的关键逻辑跑在片内 MCU 的固件里。  说明：下文所有结构体、函数名">
+  <meta name="description" content="文档概述本文梳理 Linux 6.12 中 MediaTek MT7925（Wi-Fi 7 &#x2F; 802.11be）网卡驱动的硬件接口与源码分层。驱动路径 drivers&#x2F;net&#x2F;wireless&#x2F;mediatek&#x2F;mt76&#x2F;mt7925&#x2F;，向上挂 mac80211&#x2F;cfg80211，向下经 PCIe 或 USB 访问芯片，协议栈的关键逻辑跑在片内 MCU 的固件里。  一、芯片与主机接口MT792">
 <meta property="og:type" content="article">
 <meta property="og:title" content="MT7925 驱动学习 01：硬件架构与 Linux 6.12 驱动栈分层">
 <meta property="og:url" content="http://example.com/2026/09/13/mt7925-01-driver-stack/index.html">
 <meta property="og:site_name" content="Welodi">
-<meta property="og:description" content="文档概述本文梳理 Linux 6.12 中 MediaTek MT7925（Wi-Fi 7 &#x2F; 802.11be）网卡驱动的硬件接口与源码分层。驱动路径 drivers&#x2F;net&#x2F;wireless&#x2F;mediatek&#x2F;mt76&#x2F;mt7925&#x2F;，向上挂 mac80211&#x2F;cfg80211，向下经 PCIe 或 USB 访问芯片，协议栈的关键逻辑跑在片内 MCU 的固件里。  说明：下文所有结构体、函数名">
+<meta property="og:description" content="文档概述本文梳理 Linux 6.12 中 MediaTek MT7925（Wi-Fi 7 &#x2F; 802.11be）网卡驱动的硬件接口与源码分层。驱动路径 drivers&#x2F;net&#x2F;wireless&#x2F;mediatek&#x2F;mt76&#x2F;mt7925&#x2F;，向上挂 mac80211&#x2F;cfg80211，向下经 PCIe 或 USB 访问芯片，协议栈的关键逻辑跑在片内 MCU 的固件里。  一、芯片与主机接口MT792">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2026/09/13/mt7925-01-driver-stack/mt7925-architecture.svg">
+<meta property="og:image" content="http://example.com/2026/09/13/mt7925-01-driver-stack/mt7925-lifecycle.svg">
 <meta property="article:published_time" content="2026-09-13T15:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-13T09:15:44.215Z">
+<meta property="article:modified_time" content="2026-09-16T08:42:32.850Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="MT7925">
 <meta property="article:tag" content="WiFi 7">
 <meta property="article:tag" content="mt76">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2026/09/13/mt7925-01-driver-stack/mt7925-architecture.svg">
   <link rel="icon" href="/images/logo.svg">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
@@ -206,9 +209,6 @@ mjx-container[display="true"] + br {
   <div class="post-body-wrapper">
     <div class="post-content">
       <h2 id="文档概述"><a href="#文档概述" class="headerlink" title="文档概述"></a>文档概述</h2><p>本文梳理 Linux 6.12 中 MediaTek MT7925（Wi-Fi 7 / 802.11be）网卡驱动的硬件接口与源码分层。驱动路径 <code>drivers/net/wireless/mediatek/mt76/mt7925/</code>，向上挂 mac80211/cfg80211，向下经 PCIe 或 USB 访问芯片，协议栈的关键逻辑跑在片内 MCU 的固件里。</p>
-<blockquote>
-<p>说明：下文所有结构体、函数名、宏、设备 ID 均取自 Linux <strong>v6.12</strong> 的 <code>mt76/mt7925/</code> 与 <code>mt76/mt792x*</code>、<code>mt76_connac*</code> 源码，不是记忆或推测。</p>
-</blockquote>
 <hr>
 <h2 id="一、芯片与主机接口"><a href="#一、芯片与主机接口" class="headerlink" title="一、芯片与主机接口"></a>一、芯片与主机接口</h2><p>MT7925 是一颗 tri-band（2.4 / 5 / 6GHz）Wi-Fi 7 芯片，驱动里通过三个 <code>cap</code> 位判断当前硬件到底暴露了哪些频段：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (phy-&gt;mt76-&gt;cap.has_2ghz)   <span class="comment">/* 2.4G */</span></span><br><span class="line"><span class="keyword">if</span> (phy-&gt;mt76-&gt;cap.has_5ghz)   <span class="comment">/* 5G   */</span></span><br><span class="line"><span class="keyword">if</span> (phy-&gt;mt76-&gt;cap.has_6ghz)   <span class="comment">/* 6G   */</span></span><br></pre></td></tr></table></figure>
@@ -400,7 +400,13 @@ mjx-container[display="true"] + br {
 <li><strong><code>deflink</code> / <code>bss_conf</code> 是内嵌的</strong>：非 MLO 场景 <code>valid_links == BIT(0)</code>，只用内嵌这一份，零额外分配。</li>
 </ul>
 <hr>
-<h2 id="四、从-probe-到收包的调用层次"><a href="#四、从-probe-到收包的调用层次" class="headerlink" title="四、从 probe 到收包的调用层次"></a>四、从 probe 到收包的调用层次</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">总线层</span><br><span class="line">  mt7925_pci_probe()                 mt7925u_probe()</span><br><span class="line">    ├─ mt792x_get_mac80211_ops()        （按 driver_data 取能力，拿到 ops 副本）</span><br><span class="line">    ├─ mt76_alloc_device()              （分配 mt792x_dev，注册 mt76 设备）</span><br><span class="line">    ├─ 覆写 bus_ops-&gt;rr/wr/rmw          （接入 MT7925 的寄存器重映射）</span><br><span class="line">    ├─ mt7925_dma_init()                （TX/RX ring、NAPI）</span><br><span class="line">    └─ mt7925_register_device()  ◀──────┐</span><br><span class="line">                                        │ init.c</span><br><span class="line">    ┌───────────────────────────────────┘</span><br><span class="line">    ├─ 初始化 work/timer/锁/PM 默认值</span><br><span class="line">    ├─ mt792x_init_wcid() / mt792x_init_wiphy()</span><br><span class="line">    ├─ 补 HT / VHT 能力位</span><br><span class="line">    └─ queue_work(init_work)</span><br><span class="line"></span><br><span class="line">  mt7925_init_work()                        （异步，system_wq）</span><br><span class="line">    ├─ mt7925_init_hardware()</span><br><span class="line">    │    └─ mt792x_mcu_init() → mt76_eeprom_override() → mt7925_mcu_set_eeprom() → mt7925_mac_init()</span><br><span class="line">    ├─ mt76_set_stream_caps()</span><br><span class="line">    ├─ mt7925_set_stream_he_eht_caps()      （HE/EHT 能力 → wiphy）</span><br><span class="line">    ├─ mt7925_init_mlo_caps()               （WIPHY_FLAG_SUPPORTS_MLO）</span><br><span class="line">    ├─ mt76_register_device()               （向 mac80211 注册）</span><br><span class="line">    └─ mt7925_init_debugfs() / mt7925_thermal_init()</span><br><span class="line"></span><br><span class="line">运行期</span><br><span class="line">  发包: mac80211 → mt792x_tx → tx_prepare_skb（写 TXWI）→ WFDMA TX ring</span><br><span class="line">  收包: WFDMA RX ring → mt7925_rx_check / mt7925_queue_rx_skb</span><br><span class="line">        ├─ PKT_TYPE_NORMAL  → mt7925_mac_fill_rx() → mt76_rx() → mac80211</span><br><span class="line">        ├─ PKT_TYPE_RX_EVENT→ mt7925_mcu_rx_event()</span><br><span class="line">        └─ PKT_TYPE_TXS/TRX_NOTIFY → TX 完成回收</span><br><span class="line">  控制: mac80211 回调 → mt7925_mcu_*() → MCU UNI 命令（TX ring 15 / MCU 队列）</span><br></pre></td></tr></table></figure>
+<h2 id="四、从-probe-到收包的调用层次"><a href="#四、从-probe-到收包的调用层次" class="headerlink" title="四、从 probe 到收包的调用层次"></a>四、从 probe 到收包的调用层次</h2><p>先看一张<strong>框图</strong>：模块构成 + 系统关系（驱动 ↔ PCIe ↔ 芯片）。</p>
+<img src="/2026/09/13/mt7925-01-driver-stack/mt7925-architecture.svg" class="" title="MT7925 驱动框图：模块构成与系统关系">
+
+<p>再看<strong>生命周期流程图</strong>：驱动的一生（加载启动 → 数据收发 → 关闭卸载）串在一起，本节末尾是它的文字版树状流程。</p>
+<img src="/2026/09/13/mt7925-01-driver-stack/mt7925-lifecycle.svg" class="" title="MT7925 驱动生命周期：加载启动 → 运行期数据收发 → 关闭卸载">
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">总线层</span><br><span class="line">  mt7925_pci_probe()                 mt7925u_probe()</span><br><span class="line">    ├─ mt792x_get_mac80211_ops()        （按 driver_data 取能力，拿到 ops 副本）</span><br><span class="line">    ├─ mt76_alloc_device()              （分配 mt792x_dev，注册 mt76 设备）</span><br><span class="line">    ├─ 覆写 bus_ops-&gt;rr/wr/rmw          （接入 MT7925 的寄存器重映射）</span><br><span class="line">    ├─ mt7925_dma_init()                （TX/RX ring、NAPI）</span><br><span class="line">    └─ mt7925_register_device()  ◀──────┐</span><br><span class="line">                                        │ init.c</span><br><span class="line">    ┌───────────────────────────────────┘</span><br><span class="line">    ├─ 初始化 work/timer/锁/PM 默认值</span><br><span class="line">    ├─ mt792x_init_wcid() / mt792x_init_wiphy()</span><br><span class="line">    ├─ 补 HT / VHT 能力位</span><br><span class="line">    └─ queue_work(init_work)</span><br><span class="line"></span><br><span class="line">  mt7925_init_work()                        （异步，system_wq）</span><br><span class="line">    ├─ mt7925_init_hardware()</span><br><span class="line">    │    └─ mt792x_mcu_init() → mt76_eeprom_override() → mt7925_mcu_set_eeprom() → mt7925_mac_init()</span><br><span class="line">    ├─ mt76_set_stream_caps()</span><br><span class="line">    ├─ mt7925_set_stream_he_eht_caps()      （HE/EHT 能力 → wiphy）</span><br><span class="line">    ├─ mt7925_init_mlo_caps()               （WIPHY_FLAG_SUPPORTS_MLO）</span><br><span class="line">    ├─ mt76_register_device()               （向 mac80211 注册）</span><br><span class="line">    └─ mt7925_init_debugfs() / mt7925_thermal_init()</span><br><span class="line"></span><br><span class="line">运行期</span><br><span class="line">  发包: mac80211 → mt792x_tx → tx_prepare_skb（写 TXWI）→ WFDMA TX ring</span><br><span class="line">  收包: WFDMA RX ring → mt7925_rx_check / mt7925_queue_rx_skb</span><br><span class="line">        ├─ PKT_TYPE_NORMAL  → mt7925_mac_fill_rx() → mt76_rx() → mac80211</span><br><span class="line">        ├─ PKT_TYPE_RX_EVENT→ mt7925_mcu_rx_event()</span><br><span class="line">        └─ PKT_TYPE_TXS/TRX_NOTIFY → TX 完成回收</span><br><span class="line">  控制: mac80211 回调 → mt7925_mcu_*() → MCU UNI 命令（TX ring 15 / MCU 队列）</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="五、看这个驱动时的几个坑"><a href="#五、看这个驱动时的几个坑" class="headerlink" title="五、看这个驱动时的几个坑"></a>五、看这个驱动时的几个坑</h2><ol>
@@ -444,7 +450,7 @@ mjx-container[display="true"] + br {
     <nav class="post-nav">
       
       
-        <a class="next" href="/2026/09/13/mt7925-02-pcie-bus/">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法（probe / 中断 / DMA / 电源 / 卸载） &raquo;</a>
+        <a class="next" href="/2026/09/13/mt7925-02-pcie-bus/">MT7925 驱动学习 02：PCIe 接口与 PCIe 驱动写法 &raquo;</a>
       
     </nav>
   </footer>

@@ -12,7 +12,7 @@
 <meta property="og:description" content="文档概述本文从 mt7925_register_device() 开始，追一遍 MT7925 上电到”可收发包”的全过程：软资源初始化 → 异步 init_work → 固件&#x2F;MAC 寄存器配置 → WTBL 与定点速率表 → wiphy 能力上报（HE&#x2F;EHT&#x2F;MLO）。  一、软资源初始化：mt7925_register_device()probe 的最后一步（无论 PCIe 还是 USB 都">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2026-09-13T12:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-13T09:16:00.994Z">
+<meta property="article:modified_time" content="2026-09-19T04:24:16.878Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="MT7925">
 <meta property="article:tag" content="MAC">
@@ -297,7 +297,7 @@ mjx-container[display="true"] + br {
 </tr>
 </tbody></table>
 <p>关键 chip id / rev 寄存器（<code>mt7925/regs.h</code> 侧使用）：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">MT_HW_CHIPID     <span class="comment">/* 芯片 ID，probe 里 &lt;&lt;16 存进 dev-&gt;rev */</span></span><br><span class="line">MT_HW_REV        <span class="comment">/* 版本号（低 8 位） */</span></span><br><span class="line">MT_HW_EMI_CTL    <span class="comment">/* EMI 省电保护，probe 里 SLPPROT_EN 置 1 */</span></span><br><span class="line">MT_CONN_ON_MISC  <span class="comment">/* MT_TOP_MISC2_FW_N9_RDY：固件就绪位 */</span></span><br><span class="line">MT_PCIE_MAC_INT_ENABLE / MT_WFDMA0_HOST_INT_ENA  <span class="comment">/* 中断使能 */</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">MT_HW_CHIPID     <span class="comment">/* 芯片 ID，probe 里 &lt;&lt;16 存进 dev-&gt;rev */</span></span><br><span class="line">MT_HW_REV        <span class="comment">/* 版本号（低 8 位） */</span></span><br><span class="line">MT_HW_EMI_CTL    <span class="comment">/* EMI 休眠保护，probe 里 SLPPROT_EN(BIT(1)) 置 1 = 使能 */</span></span><br><span class="line">MT_CONN_ON_MISC  <span class="comment">/* MT_TOP_MISC2_FW_N9_RDY：固件就绪位 */</span></span><br><span class="line">MT_PCIE_MAC_INT_ENABLE / MT_WFDMA0_HOST_INT_ENA  <span class="comment">/* 中断使能 */</span></span><br></pre></td></tr></table></figure>
 
 <p><code>MT_HW_CHIPID</code> 决定”这到底是什么芯片”，所以 <code>mt792x_ram_name()</code>、能力表都靠它分流；<code>MT_HW_REV</code> 则影响部分 workaround 分支。</p>
 <hr>
