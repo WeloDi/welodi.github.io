@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>问题集 | Welodi</title>
-  <meta name="description" content="一、C&#x2F;C++ 与嵌入式基础你熟练使用 C&#x2F;C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？ static 修饰全局变量、局部变量、函数分别是什么含义？ 内核里 container_of 怎么实现的？为什么驱动框架大量用它？ kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？ copy_to_user &#x2F; copy_fro">
+  <meta name="description" content="一、C 语言 volatile 的作用与使用场合？ 禁止编译器把变量缓存到寄存器或优化掉&quot;冗余&quot;读写，保证每次都真正访问内存。用于 MMIO 寄存器、被中断或线程修改的共享标志。它不保证原子性。 static 修饰局部变量、全局变量、函数时的区别？ 局部变量：改为静态存储期，只初始化一次，作用域不变。全局变量与函数：限定链接域为当前文件，避免命名冲突、隐藏实现细节。 const int *p &#x2F;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="问题集">
 <meta property="og:url" content="http://example.com/2026/09/27/%E9%97%AE%E9%A2%98%E9%9B%86/index.html">
 <meta property="og:site_name" content="Welodi">
-<meta property="og:description" content="一、C&#x2F;C++ 与嵌入式基础你熟练使用 C&#x2F;C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？ static 修饰全局变量、局部变量、函数分别是什么含义？ 内核里 container_of 怎么实现的？为什么驱动框架大量用它？ kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？ copy_to_user &#x2F; copy_fro">
+<meta property="og:description" content="一、C 语言 volatile 的作用与使用场合？ 禁止编译器把变量缓存到寄存器或优化掉&quot;冗余&quot;读写，保证每次都真正访问内存。用于 MMIO 寄存器、被中断或线程修改的共享标志。它不保证原子性。 static 修饰局部变量、全局变量、函数时的区别？ 局部变量：改为静态存储期，只初始化一次，作用域不变。全局变量与函数：限定链接域为当前文件，避免命名冲突、隐藏实现细节。 const int *p &#x2F;">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2026-09-27T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-27T14:45:20.138Z">
+<meta property="article:modified_time" content="2026-09-27T15:43:12.748Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="面试">
 <meta property="article:tag" content="综合">
@@ -23,6 +23,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
   <link rel="stylesheet" href="/css/style.css?v=7ef16e4b">
   <link rel="stylesheet" href="/css/image-zoom.css?v=7ef16e4b">
+  
+    <link rel="stylesheet" href="/css/qa.css?v=7ef16e4b">
+  
   
   <script>
     (function () {
@@ -203,118 +206,246 @@ mjx-container[display="true"] + br {
     </div>
   </header>
 
+  
+    <button type="button" class="qa-fab" id="qa-toggle" aria-pressed="false" title="显示 / 隐藏答案">
+  <span class="qa-fab-text">显示答案</span>
+</button>
+
+<script>
+  (function () {
+    var btn = document.getElementById('qa-toggle');
+    if (!btn) return;
+    var text = btn.querySelector('.qa-fab-text');
+
+    function apply(on) {
+      document.documentElement.classList.toggle('qa-show', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (text) text.textContent = on ? '隐藏答案' : '显示答案';
+    }
+
+    var saved = null;
+    try {
+      saved = localStorage.getItem('qa-show');
+    } catch (e) {}
+    apply(saved === '1');
+
+    btn.addEventListener('click', function () {
+      var on = !document.documentElement.classList.contains('qa-show');
+      apply(on);
+      try {
+        localStorage.setItem('qa-show', on ? '1' : '0');
+      } catch (e) {}
+    });
+  })();
+</script>
+
+  
+
   <div class="post-body-wrapper">
     <div class="post-content">
-      <p>一、C/C++ 与嵌入式基础<br>你熟练使用 C/C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？</p>
-<p>static 修饰全局变量、局部变量、函数分别是什么含义？</p>
-<p>内核里 container_of 怎么实现的？为什么驱动框架大量用它？</p>
-<p>kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？</p>
-<p>copy_to_user / copy_from_user 为什么不能直接用 memcpy？</p>
-<p>内核里 printk 和用户态 printf 有什么区别？日志级别怎么控制？</p>
-<p>驱动里出现 Oops 一般怎么定位？BUG_ON 和 WARN_ON 该不该在驱动里用？</p>
-<p>你写过 Makefile，一个内核模块的 Makefile 基本结构是什么？</p>
-<p>Git/repo 管理代码时，你怎么处理多仓库依赖和版本同步？</p>
-<p>你熟悉 Shell/Python，举一个你用脚本做自动化调试或日志分析的实际例子。</p>
-<p>二、ARM 架构与系统基础<br>请说一下 ARM 异常级别 EL0–EL3，Linux 内核和用户态分别运行在哪一级？</p>
-<p>ARM 的中断和异常有什么区别？异常向量表怎么跳转？</p>
-<p>MMU 地址映射的作用是什么？页表、TTBR、TLB 之间怎么配合？</p>
-<p>什么是 Cache 一致性？DMA 传输时为什么要处理 Cache？</p>
-<p>DMA 的常见模式有哪些？驱动里怎么申请和使用 DMA 通道？</p>
-<p>I2C、SPI、UART 在电气特性、速率、拓扑和驱动模型上有什么区别？</p>
-<p>PCIe 和 MIPI-CSI2 这类高速接口，在驱动开发上和低速总线最大的差异在哪？</p>
-<p>你了解 EtherCAT、CANopen，它们和 Linux 网络驱动、字符设备驱动怎么结合？</p>
-<p>三、Linux 内核与启动流程<br>请完整讲一下 ARM Linux 的启动流程：BootROM → U-Boot → Kernel → Rootfs。</p>
-<p>U-Boot 阶段主要做什么？SPL 和 U-Boot proper 的区别？</p>
-<p>设备树 DTS/DTSI/DTSO 的关系？compatible 怎么匹配驱动？</p>
-<p>内核启动时驱动 probe 的顺序由什么决定？module_init 和 late_initcall 有什么区别？</p>
-<p>EPROBE_DEFER 是什么机制？什么场景下会用到？</p>
-<p>你做过内核裁剪和移植，裁剪时主要关注哪些配置项？</p>
-<p>menuconfig 里 =y、=m、is not set 分别代表什么？</p>
-<p>内核启动卡住，你会按什么顺序排查？从哪几个阶段入手？</p>
-<p>你熟悉 U-Boot/Linux Kernel 启动流程，如果 Kernel 已经启动但 rootfs 挂载失败，可能是什么原因？</p>
-<p>设备树里 GPIO、时钟、电源域、Pinmux 一般怎么配置？配错会有什么现象？</p>
-<p>四、字符设备与驱动模型<br>请写一个最简单的字符设备驱动框架：file_operations、register_chrdev、cdev 的关系。</p>
-<p>miscdevice 和普通字符设备有什么区别？什么时候用 misc？</p>
-<p>用户态 open/read/write/ioctl 到内核驱动的调用路径是怎样的？</p>
-<p>ioctl、sysfs、procfs、debugfs 分别适合暴露什么信息？</p>
-<p>驱动里并发控制有哪些手段？自旋锁、互斥锁、信号量、原子操作怎么选？</p>
-<p>中断上下文能不能睡眠？为什么？如果一定要延迟处理怎么办？</p>
-<p>softirq、tasklet、workqueue 的区别和适用场景？</p>
-<p>platform_driver 和 i2c_driver、spi_driver 的匹配机制有什么异同？</p>
-<p>probe 函数里一般做哪些事？资源申请失败怎么回滚？</p>
-<p>设备树里 interrupt-parent、interrupts、gpio 怎么解析？gpiod_get 怎么用？</p>
-<p>五、I2C/SPI/IIO/Input 子系统<br>请说一下 i2c_adapter、i2c_client、i2c_driver 的关系。</p>
-<p>I2C 读写时序里 Start、ACK/NACK、Stop 是什么？时钟拉伸是什么？</p>
-<p>i2c_smbus_read_byte_data 和 i2c_transfer 有什么区别？</p>
-<p>SPI 的 CPOL、CPHA 是什么？四种模式怎么对应？</p>
-<p>SPI 驱动里 spi_message、spi_transfer 怎么组织一次完整传输？</p>
-<p>IIO 子系统适合什么类型的设备？iio_dev、iio_chan_spec、触发缓冲怎么理解？</p>
-<p>你移植 hx9023s 时遇到 iio 跨版本 API 差异，具体是什么差异？怎么解决的？</p>
-<p>触发缓冲采样和阈值事件上报在 IIO 里怎么实现？</p>
-<p>Input 子系统里 input_dev、input_event、input_report_key 的流程是什么？</p>
-<p>你做过 It9611ex 桥接芯片驱动，HPD 触发和 EDID 读取链路怎么实现？</p>
-<p>EDID 读取超时可能有哪些原因？热插拔不识别怎么定位？</p>
-<p>六、V4L2/DRM/Camera 项目<br>请详细讲一下 IMX219 从上电到出图的完整流程。</p>
-<p>IMX219 初始化寄存器序列里，分辨率、帧率、曝光、增益分别怎么配置？</p>
-<p>V4L2 Control 框架怎么实现？v4l2_ctrl_handler、v4l2_ctrl_new_std 怎么用？</p>
-<p>曝光、增益、VBLANK、翻转这些控制项，用户态怎么调用？内核怎么下发到 Sensor？</p>
-<p>DTS overlay 里 Sensor 和 RK3588 ISP 管线怎么异步绑定？remote-endpoint 怎么配？</p>
-<p>V4L2 子设备驱动的 s_stream、enum_mbus_code、set_fmt、get_fmt 回调分别做什么？</p>
-<p>视频流启停时，MIPI CSI-2 的 Lane、Clock、Data Type 怎么配置？</p>
-<p>VBLANK 和帧率的关系是什么？帧率控制有哪些方式？</p>
-<p>图像出不来，你会按什么顺序排查？从 Sensor、MIPI、ISP、V4L2 到应用层。</p>
-<p>RK3588 的 ISP 和 VICAP 架构你了解多少？</p>
-<p>MIPI-CSI2 和 DVP 接口在驱动上主要差异在哪？</p>
-<p>如果 Sensor 能读到 ID 但不出图，可能是什么原因？</p>
-<p>你熟悉 DRM 显示框架，KMS、GEM、framebuffer 分别是什么？显示出图链路怎么走？</p>
-<p>七、BSP/Bringup 与量产实战<br>请讲一下一个新平台 Bringup 的完整流程。</p>
-<p>Bringup 阶段一般先调什么？串口、电源、时钟、DDR、存储、显示的顺序怎么定？</p>
-<p>外设驱动适配时，DTS 一般要改哪些内容？</p>
-<p>你集成过 WLAN MT792x 和 LTE RW101/135，射频加载和连接问题一般怎么排查？</p>
-<p>笔电项目里休眠唤醒异常、异常重启、响应延迟，这三类问题你分别怎么定位？</p>
-<p>异常重启怎么区分是 kernel panic、watchdog、硬件复位还是电源问题？</p>
-<p>响应延迟怎么量化？用 ftrace、perf、trace-cmd 做过哪些分析？</p>
-<p>工厂生产阶段，无法开机、反复重启、灰屏/白屏、系统卡顿，你遇到过哪些典型问题？</p>
-<p>出货超 30 万台，你怎么保证发版前各模块功能稳定？做过哪些压力测试？</p>
-<p>不同机型 DTS 怎么管理？有没有用 overlay？</p>
-<p>量产阶段发现问题但产线不能停，你怎么平衡快速规避和根因修复？</p>
-<p>你和 Google 协同定位 ChromeOS 上层异常，跨团队怎么推动问题闭环？</p>
-<p>八、系统调试与问题定位<br>你常用哪些调试工具？dmesg、ftrace、perf、gdb、strace、trace-cmd、devmem、i2c-tools。</p>
-<p>内核 panic 后，怎么从 panic 信息定位到具体驱动？</p>
-<p>Oops 和 panic 有什么区别？</p>
-<p>内存泄漏怎么排查？kmemleak、slabinfo、/proc/meminfo 怎么用？</p>
-<p>死锁怎么排查？lockdep 是什么？</p>
-<p>系统卡顿/响应延迟，怎么用 ftrace 抓调度延迟？</p>
-<p>设备 probe 失败，怎么确认是 DTS 问题、驱动问题还是硬件问题？</p>
-<p>线上设备偶发重启，没有现场，怎么设计日志保存机制？Pstore 怎么用？</p>
-<p>kdump 和 Pstore 的区别？各自适合什么场景？</p>
-<p>给你一个完全陌生的平台和板子，你怎么在最短时间内完成 Bringup？</p>
-<p>九、项目深挖与发散<br>挑一个你最有成就感的嵌入式/驱动项目，讲背景、你的角色、难点、解决方案、结果。</p>
-<p>讲一次你定位最久、最难的驱动 bug，最后怎么解决的？</p>
-<p>讲一次你和硬件/厂商/上层软件意见不一致，怎么推进的？</p>
-<p>你在华兴源创做 ATE 固件，ADC 采样、数据拟合校准、过流过压保护分别怎么实现？</p>
-<p>开尔文四线探针电压差定位异常点位的原理是什么？</p>
-<p>Camera 芯片模组检测设备里，DCR、Short、LDO 分别测什么？怎么测？</p>
-<p>校准板开发中，怎么把测量板卡校准到与标准仪表一致？</p>
-<p>多模式/多通道/多量程灵活校准，软件上怎么抽象？</p>
-<p>测试节拍要求很高时，你怎么优化固件响应速度？</p>
-<p>如果测试结果重复性差，你会从哪些方面排查？</p>
-<p>你从 PLC 转向 Linux 驱动，最大的思维转变是什么？</p>
-<p>你未来 1–3 年想深耕 BSP 还是某个子系统？为什么？</p>
-<p>十、手写/编程题建议<br>手写一个字符设备驱动骨架。</p>
-<p>手写 I2C 读写寄存器的函数。</p>
-<p>手写设备树节点，描述一个 I2C Sensor。</p>
-<p>手写一个内核模块的 Makefile。</p>
-<p>用 C 实现 container_of 宏。</p>
-<p>用 C 实现环形缓冲区。</p>
-<p>解释一段内核 panic 日志，指出可能原因。</p>
-<p>画一个 V4L2 Camera 出图链路图。</p>
-<p>画一个系统 suspend/resume 流程图。</p>
-<p>画一个 I2C 设备驱动 probe 流程图</p>
+      <h2 id="一、C-语言"><a href="#一、C-语言" class="headerlink" title="一、C 语言"></a>一、C 语言</h2><ol>
+<li><code>volatile</code> 的作用与使用场合？ <div class="qa-answer">禁止编译器把变量缓存到寄存器或优化掉"冗余"读写，保证每次都真正访问内存。用于 MMIO 寄存器、被中断或线程修改的共享标志。它不保证原子性。</div></li>
+<li><code>static</code> 修饰局部变量、全局变量、函数时的区别？ <div class="qa-answer">局部变量：改为静态存储期，只初始化一次，作用域不变。全局变量与函数：限定链接域为当前文件，避免命名冲突、隐藏实现细节。</div></li>
+<li><code>const int *p</code> / <code>int * const p</code> / <code>const int * const p</code> 的区别？ <div class="qa-answer">分别是"指向常量的指针"（值不可改、指针可变）、"常量指针"（指针不可改、值可变）、"都不可改"。判断口诀：const 修饰它右侧的整体。</div></li>
+<li>结构体内存对齐规则？如何计算结构体大小？ <div class="qa-answer">成员起始地址必须是其自身对齐数的整数倍，结构体总大小再向上取整为最大成员对齐数的整数倍。可用 `__attribute__((packed))` 或 `#pragma pack` 改变，代价是访问效率与兼容性。</div></li>
+<li><code>sizeof</code> 与 <code>strlen</code> 的区别？ <div class="qa-answer">`sizeof` 是编译期运算符，算类型或对象占的字节数（含结尾的 '\0'）；`strlen` 是运行期函数，遇到 '\0' 停止。数组名 `sizeof` 得到整个数组，退化为指针后只剩地址宽度。</div></li>
+<li>宏函数与普通函数的优劣？多语句宏为什么用 <code>do{}while(0)</code>？ <div class="qa-answer">宏省调用开销、不检查类型因而通用；缺点是无类型检查、易因缺括号或参数副作用出错、无法调试。`do{}while(0)` 把多条语句包装成单条语句，可在 if/else 后安全加分号，还提供独立作用域。</div></li>
+<li><code>container_of</code> 的实现原理？ <div class="qa-answer">用成员地址减去 `offsetof(结构体类型, 成员)` 得到宿主结构体首地址再强转。内核据此从嵌入成员反查外层对象，如由 cdev 找到自己的设备结构体。</div></li>
+<li>大小端如何判断与转换？ <div class="qa-answer">小端低字节存低地址（x86/ARM 常见），大端相反。判断可用联合体或强转 char 指针读首字节；转换一般用 htonl/ntohl 族，或手写位拆分组合。</div></li>
+<li>位运算实现置位、清位、取位的写法？ <div class="qa-answer">置位 `reg |= BIT(n)`；清位 `reg &amp;= ~BIT(n)`；取连续位域 `(reg &amp; GENMASK(h,l)) &gt;&gt; l`。内核推荐 `FIELD_GET/PREP`，避免手算掩码出错。</div></li>
+<li>内存泄漏、野指针、越界如何定位？常用检测手段？<div class="qa-answer">用户态用 valgrind、AddressSanitizer；内核态用 kmemleak 查泄漏，KASAN、SLUB debug（redzone/poison）查越界与 use-after-free，野指针多靠 oops 地址反查。</div></li>
+<li><code>#define</code> 宏与 <code>inline</code> 函数的区别？<div class="qa-answer">宏在预处理阶段做文本替换，无类型检查、无作用域、可被 undef，参数还可能有副作用；inline 由编译器处理，有类型检查与作用域，遵循函数语义，可调试。两者都可能省掉调用开销，但 inline 只是建议，编译器可能不展开；为语义清晰，优先用 static inline。</div></li>
+<li>为什么需要字节对齐？对齐的本质原因是什么？<div class="qa-answer">CPU 按总线宽度成块取数据，未对齐访问要么被拆成多次访存（性能损失），要么直接触发对齐异常；此外原子操作、向量指令与 cache line 访问都要求地址对齐。因此对齐是硬件访问粒度与原子性共同决定的约束。</div></li>
+</ol>
+<h2 id="二、Linux-基础"><a href="#二、Linux-基础" class="headerlink" title="二、Linux 基础"></a>二、Linux 基础</h2><ol>
+<li>用户态与内核态的区别与切换方式？ <div class="qa-answer">内核态可执行特权指令、访问全部资源；用户态受限，只能访问自己的虚拟地址空间。切换靠三种陷入：系统调用、异常（如缺页）、外设中断。</div></li>
+<li>系统调用的完整流程？ <div class="qa-answer">glibc 封装 → svc/ecall 指令陷入 → 查系统调用表找到 sys_xxx → 执行 → 返回值写入返回寄存器 → 恢复现场返回用户态。错误时置 errno。</div></li>
+<li>进程、线程、协程的区别？ <div class="qa-answer">进程是资源分配基本单位，有独立地址空间；线程是调度基本单位，共享地址空间（Linux 同样用 task_struct 描述）；协程运行在用户态，切换不进内核、开销极小，多为非抢占。</div></li>
+<li>进程间通信方式各自的适用场景？ <div class="qa-answer">管道适合父子进程简单字节流；信号用于异步通知；消息队列保留消息边界；共享内存最快，但需另配信号量或互斥锁同步；信号量做计数同步；socket 支持跨主机与本地 AF_UNIX。</div></li>
+<li>虚拟内存与物理内存的映射关系？MMU 的作用？ <div class="qa-answer">CPU 只看到虚拟地址，MMU 查页表转换成物理地址，并检查读写执行权限与缓存属性。每个进程有独立页表，因此各自看到独立的地址空间。</div></li>
+<li>缺页异常的触发与处理流程？ <div class="qa-answer">页表项无效或权限不足时 CPU 触发缺页，进入 do_page_fault：区分匿名页（分配零页或伙伴页）、文件映射（从磁盘读入 page cache）、写时复制（复制新页）、真非法访问（发 SIGSEGV）四类处理。</div></li>
+<li>动态库与静态库的区别？ <div class="qa-answer">静态库在链接时被复制进可执行文件，运行不依赖外部库但体积大、升级需重编；动态库运行时由加载器映射，可被多进程共享、体积小，但需保证库存在且路径正确。</div></li>
+<li>文件描述符与 inode 的关系？ <div class="qa-answer">fd 是进程打开文件表的索引，指向 struct file（记录打开实例与读写偏移）；多个 fd 可指向同一 file（dup），多个 file 可指向同一 inode（多次 open）。inode 才是文件本身的元数据。</div></li>
+<li>同步与异步、阻塞与非阻塞的区别？ <div class="qa-answer">同步/异步关注"结果怎么拿到"，阻塞/非阻塞关注"调用是否立刻返回"。二者正交：同步阻塞 read、同步非阻塞轮询、异步 IO（aio、io_uring）。</div></li>
+<li><code>select</code> / <code>poll</code> / <code>epoll</code> 的区别？<div class="qa-answer">select 有 fd 数量上限且每次要重传并全量遍历；poll 用链表突破数量限制但仍要遍历；epoll 用红黑树注册、就绪链表回调，返回即就绪，另有 LT/ET 两种模式差异。</div></li>
+<li>CPU cache 的工作原理？cache line、局部性与伪共享是什么？<div class="qa-answer">cache 是 CPU 与主存之间的小容量高速缓存，按 cache line（通常 64 字节）为单位搬运，依赖时间局部性与空间局部性提高命中率。由此带来两个问题：一是与外部设备（DMA）或其他核的数据一致性，需要显式 flush/invalidate；二是伪共享，多个核频繁改写同一 cache line 的不同变量会互相失效，需做 cache line 对齐或隔离。</div></li>
+<li>什么是进程上下文与中断上下文？各自的约束是什么？<div class="qa-answer">进程上下文是内核"代表某个进程"执行的状态（系统调用或内核线程），有明确的 task_struct，current 有意义，可以睡眠、被调度，也可以与用户空间交换数据（copy_to_user/copy_from_user）。中断上下文是处理中断时的状态，不属于任何任务，因此不能睡眠、不能取 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。此外还有软中断/tasklet 上下文，同样不允许睡眠。</div></li>
+</ol>
+<h2 id="三、Linux-驱动"><a href="#三、Linux-驱动" class="headerlink" title="三、Linux 驱动"></a>三、Linux 驱动</h2><ol>
+<li>字符设备驱动的编写流程？ <div class="qa-answer">申请设备号（alloc_chrdev_region）→ 初始化并 cdev_add 注册 → class_create / device_create 生成设备节点 → 实现 file_operations → 退出时反向释放。简单场景可用 miscdevice 简化。</div></li>
+<li><code>module_init</code> 的调用时机与实现机制？ <div class="qa-answer">宏把函数指针放进 .initcall 段，编译进内核时由 do_initcalls 按级别顺序调用；编译成模块时由 insmod 的装载过程调用该入口。</div></li>
+<li>设备树的作用？驱动如何与设备树匹配？ <div class="qa-answer">设备树描述硬件资源（寄存器、中断、GPIO、时钟、供电），使硬件改动不必改代码。驱动用 of_match_table 中的 compatible 与节点匹配，再由 of_* API 取具体资源。</div></li>
+<li><code>platform</code> 总线、设备、驱动三者关系？ <div class="qa-answer">platform 是虚拟总线：platform_device（由设备树生成或代码注册）与 platform_driver 通过 compatible/name 匹配后调用 probe。总线负责"设备与驱动解耦 + 统一匹配"。</div></li>
+<li><code>probe</code> 函数的职责？ <div class="qa-answer">取资源（寄存器、中断、GPIO、时钟、regulator）、初始化硬件、向内核子系统注册设备、保存 drvdata。remove 做反向释放，失败路径需回退已申请的资源。</div></li>
+<li><code>copy_to_user</code> / <code>copy_from_user</code> 为什么不能直接 memcpy？ <div class="qa-answer">用户地址属于另一地址空间，内核不能直接解引用；且指针可能非法或未映射。copy_*_user 会做 access_ok 校验，出错返回 -EFAULT 而不是崩内核。</div></li>
+<li><code>ioremap</code> 的作用？为什么不能直接用物理地址？ <div class="qa-answer">CPU 只认虚拟地址。ioremap 把物理地址区间映射进内核页表（通常带设备内存、非缓存属性），返回可用的虚拟地址。直接用物理地址会触发缺页。</div></li>
+<li><code>kmalloc</code> / <code>vmalloc</code> / <code>dma_alloc_coherent</code> 的区别？ <div class="qa-answer">kmalloc 物理连续、快但大小有限；vmalloc 仅虚拟连续、可分配大块但不能做 DMA；dma_alloc_coherent 物理连续且保证一致性，适合 DMA 缓冲。</div></li>
+<li><code>file_operations</code> 中常用成员的作用？ <div class="qa-answer">open/release 管理打开与释放，read/write/llseek 读写数据，unlocked_ioctl 下发自定义命令，poll 支持 select/epoll，mmap 把内核缓冲映射到用户空间；owner 防止模块被意外卸载。</div></li>
+<li>主设备号与次设备号的意义？设备节点如何创建？<div class="qa-answer">主设备号标识驱动，次设备号标识该驱动下的具体实例。节点可手工 mknod、由 udev 依据 uevent 自动创建，或用 class_create 加 device_create 生成。</div></li>
+<li><code>regmap</code> 的作用与优势？<div class="qa-answer">把 I2C/SPI/MMIO 寄存器访问抽象成统一接口，附带缓存、字节序处理、volatile/precious 标记、寄存器范围检查，还能在 debugfs 直接导出寄存器。</div></li>
+<li>总线驱动、设备驱动、控制器驱动的分层关系？<div class="qa-answer">控制器（主机侧）驱动实现总线时序本身；核心层提供统一注册与匹配 API；设备（外设）驱动只关心具体器件逻辑。三者通过总线匹配解耦。</div></li>
+<li>DMA 为什么会有缓存一致性问题？如何处理？<div class="qa-answer">DMA 直接在内存读写，CPU 看到的可能是 cache 中的旧副本，两边数据不一致。三种处理方式：用一致性内存 dma_alloc_coherent（非缓存或硬件一致性）；用流式映射 dma_map_single/sg 并在 map/unmap 时由框架按方向做 invalidate/flush；在搬运过程中需要访问时用 dma_sync_single_for_cpu/for_device 同步。</div></li>
+<li>DMA 的实现方式有哪些？提升数据吞吐的优化方向？<div class="qa-answer">实现方式：一致性分配 dma_alloc_coherent、流式映射加 scatter-gather（dma_map_sg）、跨设备共享用 dma-buf，带 IOMMU 时可直接用物理离散页。优化方向：批量搬运而非单包频繁映射、用 SG 聚合减少映射开销、加大缓冲与环形队列、合并中断或改用轮询减少中断次数、按 cache line 对齐避免伪共享、必要时提升 DDR 带宽或总线 QoS 优先级。</div></li>
+<li>probe 时依赖的资源或上游设备还没就绪怎么办？不想在 probe 里等待如何处理？<div class="qa-answer">不要在 probe 中无超时轮询或长延时死等。若刚好处在资源缺失（时钟、regulator、GPIO、上游供应商设备）阶段，应返回 -EPROBE_DEFER，内核会在依赖就绪后自动重新调用 probe，可查看 /sys/kernel/debug/devices_deferred。若不想拖慢启动：①用 device_link_add 声明供应者-消费者关系，由框架保证 probe 顺序；②probe 只做最小注册，把耗时初始化放到 open/首次访问时的延迟初始化，或交给 workqueue 异步执行；③确实要等待时用带超时的 wait_for_completion_timeout 或轮询加超时，超时返回错误而不是阻塞，注意失败路径的资源回退。</div></li>
+</ol>
+<h2 id="四、并发与同步"><a href="#四、并发与同步" class="headerlink" title="四、并发与同步"></a>四、并发与同步</h2><ol>
+<li>自旋锁与互斥锁的选用原则？ <div class="qa-answer">临界区极短且不能睡眠（含中断上下文）用自旋锁，忙等占 CPU；临界区较长、允许睡眠的进程上下文用互斥锁。</div></li>
+<li>为什么自旋锁保护的临界区不能睡眠？ <div class="qa-answer">睡眠会让持锁者被调度出去，等待者只能空转占住 CPU，单核上必然死锁。因此临界区内不能调用可能睡眠的函数。</div></li>
+<li>中断上下文中能用 mutex 吗？为什么？ <div class="qa-answer">不能。mutex 获取失败会让出 CPU，而中断上下文不是可调度实体，一旦睡眠无人把它唤醒，会触发 scheduling while atomic 错误。</div></li>
+<li><code>spin_lock</code> / <code>spin_lock_irqsave</code> / <code>spin_lock_bh</code> 的区别？ <div class="qa-answer">spin_lock 关闭抢占；_irqsave 保存并关闭本地 CPU 中断，用于与中断上下文共享的数据；_bh 关软中断，用于进程上下文与 tasklet/软中断共享的数据。</div></li>
+<li>死锁产生的四个必要条件？如何排查死锁？ <div class="qa-answer">互斥、占有且等待、不可抢占、循环等待。排查用 Lockdep 报告、hung_task 检测、sysrq 打印任务堆栈。预防靠统一加锁顺序、避免嵌套、trylock 回退。</div></li>
+<li>原子操作适用于什么场景？ <div class="qa-answer">简单的计数或标志位的"读-改-写"不可分割场景，开销小且可在中断上下文使用，如 atomic_t、refcount_t、set_bit/test_and_set_bit。</div></li>
+<li>信号量的使用场景？ <div class="qa-answer">允许指定数量持有者的资源计数场合（如最多 N 个进程同时打开设备）。新代码一般改用 mutex（二值）或 completion（一次性同步）。</div></li>
+<li>完成量 <code>completion</code> 适用于什么场景？ <div class="qa-answer">一个执行体等待另一执行体完成某件事：等待固件或硬件初始化完成、等待线程退出等。语义比信号量更明确，并支持超时等待。</div></li>
+</ol>
+<h2 id="五、中断"><a href="#五、中断" class="headerlink" title="五、中断"></a>五、中断</h2><ol>
+<li>中断的完整处理流程？ <div class="qa-answer">外设拉中断 → 控制器（GIC）路由到 CPU → 硬件保存现场并跳转向量表 → 通用入口 do_IRQ → 查 irq_desc → 执行 handler（上半部）→ 写 EOI → 返回时执行 pending 的软中断/tasklet。</div></li>
+<li>上半部与下半部如何划分？ <div class="qa-answer">上半部做最紧急的事：确认中断源、清中断、把数据搬到缓冲、调度下半部，必须尽快返回；下半部处理耗时工作：协议解析、唤醒进程等。</div></li>
+<li>tasklet 与 workqueue 的区别？ <div class="qa-answer">tasklet 基于软中断，同类串行且不能睡眠，适合短任务；workqueue 运行在内核线程上下文，可以睡眠，适合可能阻塞的工作。选择依据就是"是否需要睡眠"。</div></li>
+<li>中断为什么不能睡眠？ <div class="qa-answer">中断上下文不参与调度，睡眠后没人能把它再调度回来，系统直接死锁。这也是为何中断里只能自旋、不能取 mutex。</div></li>
+<li>中断线程化解决了什么问题？ <div class="qa-answer">把大部分处理移到可被调度的内核线程，缩短不可抢占区，降低延迟抖动，也是 PREEMPT_RT 的基础形式；用 request_threaded_irq 实现。</div></li>
+<li>共享中断如何注册？<code>dev_id</code> 的作用？ <div class="qa-answer">request_irq 带 IRQF_SHARED，多个 handler 挂在同一 irq_desc 的 action 链表上逐个调用。dev_id 必须唯一非空，free_irq 时用它定位自己的 action。</div></li>
+<li>中断号与硬件中断线的映射关系？ <div class="qa-answer">由 irq_domain 把设备树中的硬件中断号（hwirq）映射成内核虚拟中断号。interrupt-parent 指明控制器，#interrupt-cells 定义编码格式（含触发类型）。</div></li>
+<li>GIC 的工作流程？ <div class="qa-answer">Distributor 收集中断、按优先级与亲和性路由；CPU interface 向 CPU 发 IRQ/FIQ；软件读 IAR 取中断号，处理完写 EOIR。中断类型含 SGI/PPI/SPI/LPI。</div></li>
+<li>电平触发与边沿触发的区别？工程上如何选型？ <div class="qa-answer">电平触发：只要外设中断未被清除就持续有效，因此必须在返回前清掉外设中断源，否则反复重入。边沿触发：只在电平跳变瞬间有效，处理期间来的边沿可能丢失。选型：事件型、脉冲窄且需要保证不丢件(如数据就绪) 适合边沿；状态型、需要保持到软件查询处理、并且exclusive 独占中断的场景适合电平，但电平不要用在共享中断上。</div></li>
+<li>什么是中断风暴？常见原因与处理手段？<div class="qa-answer">现象是某 IRQ 计数暴涨、CPU 被占满甚至 softlockup。常见原因：外设中断未被写 1 清除或 EOI 顺序错误、电平一直保持有效、硬件故障拉住引脚、共享中断 handler 返回值错误导致反复 retry。处理：先 cat /proc/interrupts 定位 irq，检查清中断与 EOI、确认设备状态寄存器与极性配置；临时可在 handler 中屏蔽该中断线并转线程化处理；再用 ftrace irqsoff 与 /proc/irq/xx/spurious 辅助定位。</div></li>
+</ol>
+<h2 id="六、总线协议"><a href="#六、总线协议" class="headerlink" title="六、总线协议"></a>六、总线协议</h2><ol>
+<li>I2C 为什么要上拉电阻？开漏输出的作用？ <div class="qa-answer">I2C 器件只能拉低不能输出高电平，靠外部上拉提供高电平，从而实现多设备"线与"：任一方拉低即为低。上拉阻值影响上升沿与最高通信速率。</div></li>
+<li>I2C 的起始/停止信号与 ACK 机制？ <div class="qa-answer">SCL 高电平时 SDA 由高变低为 START，由低变高为 STOP；每字节后第 9 个时钟，接收方拉低 SDA 表示 ACK，未拉低即 NACK。</div></li>
+<li>I2C 仲裁与时钟拉伸？ <div class="qa-answer">仲裁靠"线与"：多主同时发送，谁发现自己发的 1 而总线是 0 就退出。时钟拉伸是从机拉低 SCL 延长时间，主机必须支持。</div></li>
+<li>SPI 的四种工作模式如何区分？ <div class="qa-answer">由 CPOL（空闲电平）与 CPHA（第几个边沿采样）组合而成。常用模式 0（CPOL=0, CPHA=0）与模式 3（CPOL=1, CPHA=1），均在上升沿采样、下降沿切换数据。</div></li>
+<li>SPI 与 I2C 的优劣对比？ <div class="qa-answer">SPI 全双工、速率高、靠片选寻址、无应答机制、占用线多；I2C 半双工、有地址寻址与 ACK、只需两根线、速率较低。</div></li>
+<li>UART 的波特率误差容忍度？为什么要过采样？ <div class="qa-answer">UART 无时钟，靠约定波特率；常用 16 倍过采样在比特中部取样。双方波特率偏差累积通常不超过 2%~3%，否则出现帧错误。</div></li>
+<li>RS232 与 RS485 的差异？ <div class="qa-answer">232 单端负逻辑、点对点、距离几十米；485 差分传输、支持多点总线、抗干扰强、可达上千米，多为半双工需要方向控制。</div></li>
+<li>CAN 的仲裁机制与错误检测机制？ <div class="qa-answer">非破坏性仲裁：优先级低的节点发现总线与自己发送不一致就退让，ID 越小优先级越高。错误检测有 CRC、位填充、格式校验、ACK 槽、收发错误计数器。</div></li>
+<li>PCIe 的配置空间与枚举流程？ <div class="qa-answer">软件遍历 bus/device/function，读 Vendor/Device ID 判断是否存在，写全 1 再读回 BAR 得到空间大小并分配，最后按设备 ID 匹配驱动。</div></li>
+<li>USB 设备枚举流程？<div class="qa-answer">hub 检测电平变化 → 主机复位设备并判别速度 → 用地址 0、端点 0 依次取设备/配置/接口/端点/字符串描述符 → 分配新地址 → 选择配置 → 匹配驱动。</div></li>
+</ol>
+<h2 id="七、存储与启动"><a href="#七、存储与启动" class="headerlink" title="七、存储与启动"></a>七、存储与启动</h2><ol>
+<li>嵌入式系统的完整启动流程？ <div class="qa-answer">上电 → BootROM 读启动模式引脚并加载 SPL 到 SRAM → SPL 初始化 DDR 并加载 U-Boot → U-Boot 初始化外设并加载内核与设备树 → 内核启动用户 init。</div></li>
+<li>BootROM / SPL / U-Boot 各阶段职责？ <div class="qa-answer">BootROM 固化在片内，做最小初始化与安全校验并加载下一级；SPL 负责初始化 DDR 并加载主 U-Boot；U-Boot 完成完整外设初始化并启动内核，提供命令行。</div></li>
+<li>SPL 存在的原因？ <div class="qa-answer">片内 SRAM 太小装不下完整 U-Boot，而 DDR 又必须先被初始化，因此需要一个能在 SRAM 中运行、只做 DDR 初始化与加载工作的小 loader。</div></li>
+<li>U-Boot 如何向内核传递参数？ <div class="qa-answer">主要靠设备树：把 dtb 地址交给内核，其中 chosen 节点的 bootargs 携带命令行（root、console、init 等）。旧的 ATAG 方式已被废弃。</div></li>
+<li>设备树在启动流程中的作用？ <div class="qa-answer">U-Boot 把 dtb 传给内核，内核展开为 device_node 进而生成 platform_device，再按 compatible 匹配驱动。硬件改动不需要改 C 代码。</div></li>
+<li>安全启动的实现原理？ <div class="qa-answer">产线把公钥哈希烧进一次性可编程的 eFuse，每一级镜像用私钥签名，启动时由 BootROM/SPL 用公钥逐级验签，形成信任链，并可加入版本号防回滚。</div></li>
+<li>eMMC 与 NAND Flash 的差异？ <div class="qa-answer">eMMC 内部集成控制器，自带 ECC 与磨损均衡，对主机表现为块设备；NAND 需要主机端处理坏块与 ECC，通常配合 UBI/UBIFS 使用。</div></li>
+<li>根文件系统的挂载方式？ <div class="qa-answer">常见三种：initramfs/initrd 作临时根加载驱动后再切换；直接挂载块设备上的 ext4/squashfs；网络场景用 NFS 根便于调试。</div></li>
+</ol>
+<h2 id="八、调试"><a href="#八、调试" class="headerlink" title="八、调试"></a>八、调试</h2><ol>
+<li>内核崩溃如何定位？ <div class="qa-answer">先保留日志（串口、pstore/ramoops、kdump），拿到 PC 指针与调用栈，再用 addr2line 或 gdb 结合 vmlinux/模块符号反查到源码行。</div></li>
+<li><code>oops</code> 与 <code>panic</code> 的区别？ <div class="qa-answer">oops 是非致命错误：打印现场后杀掉当前进程，内核通常还能继续跑；panic 是致命错误，内核立即停止，可按 panic_timeout 重启。</div></li>
+<li>如何根据 PC 指针反查出错代码位置？ <div class="qa-answer">用 addr2line -e vmlinux/module.ko 加地址，或 gdb 的 list *地址；内核配合 CONFIG_DEBUG_INFO 与 scripts/decode_stacktrace.sh 还原完整调用栈。</div></li>
+<li><code>printk</code> 的日志级别与查看方式？ <div class="qa-answer">分 0~7 级（KERN_EMERG 到 KERN_DEBUG），只有高于控制台阈值才打印，可通过 /proc/sys/kernel/printk 或 dmesg -n 调整；细粒度调试用动态调试 dyndbg。</div></li>
+<li><code>/proc</code> 与 <code>/sys</code> 的区别？ <div class="qa-answer">/proc 是内核内部状态与进程信息的动态视图；/sys 按设备模型组织 kobject 树，遵循"一个属性一个值"的约定，稳定性要求更高，不鼓励随意添加。</div></li>
+<li><code>debugfs</code> 的使用场景？ <div class="qa-answer">给开发者用的临时调试接口：导出寄存器、内部状态或调试开关，不承诺 ABI 稳定，因此不适合承载正式功能。</div></li>
+<li><code>ftrace</code> / <code>perf</code> / <code>strace</code> / <code>gdb</code> 各自的适用场景？ <div class="qa-answer">ftrace 看函数调用与 wakeup/irq 延迟；perf 做采样、PMU 与热点分析；strace 看系统调用；gdb/kgdb 或 crash+vmcore 做断点与现场分析。</div></li>
+<li>内存泄漏如何检测？slab 信息如何查看？ <div class="qa-answer">用 kmemleak 扫描疑似泄漏对象，KASAN 与 SLUB_DEBUG 查越界；总量看 /proc/meminfo 与 /proc/slabinfo，也可用 kmem tracepoint 追踪分配释放。</div></li>
+<li><code>devmem</code> / <code>i2c-tools</code> 等工具的使用？ <div class="qa-answer">devmem 直接读写物理地址以核验寄存器；i2cdetect/i2cdump/i2cget/i2cset 用来确认器件地址与寄存器值，常用来判断是软件配置还是硬件问题。</div></li>
+</ol>
+<h2 id="九、显示"><a href="#九、显示" class="headerlink" title="九、显示"></a>九、显示</h2><ol>
+<li>DRM 框架的组成部分？ <div class="qa-answer">用户空间 libdrm、内核 DRM core、KMS（模式设置与显示管线）、GEM（显存分配管理）四大块；驱动实现 drm_driver 与各类 object 回调。</div></li>
+<li>CRTC / Encoder / Connector / Plane / Framebuffer 各自职责？ <div class="qa-answer">Framebuffer 描述显存格式与 pitch；Plane 是图层，决定取哪块显存、位置与合成方式；CRTC 产生时序并扫描输出；Encoder 把 CRTC 信号转成 HDMI/eDP/DSI 等格式；Connector 代表物理接口，承载连接状态与 EDID。</div></li>
+<li>DRM bridge 的作用？ <div class="qa-answer">表示链路上一个独立的转换器件（如 DSI 转 HDMI 的 LT9611），提供 attach、mode_valid、detect、get_edid、atomic_enable/disable 等回调，串接进显示管线。</div></li>
+<li>显示时序（Hsync/Vsync/消影区）的含义？ <div class="qa-answer">行同步与场同步信号，配合前后肩、同步宽度和有效区共同决定像素时钟与刷新率；消影区给电子束回扫留出时间，软件常用 Vsync 做页面翻转同步。</div></li>
+<li>MIPI DSI 的工作模式？ <div class="qa-answer">分为 video mode（持续发送视频包）和 command mode（按命令写显示寄存器）；video mode 又细分为 non-burst、sync pulse、sync event 三种时序。</div></li>
+<li>MIPI CSI-2 与 DSI 的差异？ <div class="qa-answer">CSI-2 是摄像头到 SoC 的单向接收链路，含虚拟通道与短包（帧起始/结束）结构；DSI 是 SoC 到屏幕的输出链路，通常还需要双向的 command 通道。</div></li>
+<li>buffer 如何在用户态与内核态之间流转？ <div class="qa-answer">由内核分配或导入 dma-buf，用户空间通过 mmap 或 dma-buf fd 访问；显示侧用 GEM handle 转 prime fd 后做 atomic 提交，摄像头侧则通过 videobuf2 队列轮转。</div></li>
+</ol>
+<h2 id="十、网络"><a href="#十、网络" class="headerlink" title="十、网络"></a>十、网络</h2><ol>
+<li>mac80211 与 cfg80211 的关系？ <div class="qa-answer">cfg80211 是内核无线配置与法规域子系统，向用户空间暴露 nl80211；mac80211 是 softMAC 协议栈，实现 802.11 的 MLME 与收发。fullMAC 驱动直接对接 cfg80211，不经过 mac80211。</div></li>
+<li>WiFi 驱动的注册流程？ <div class="qa-answer">填充 ieee80211_ops 与能力，用 ieee80211_alloc_hw/register_hw 注册 wiphy，生成网络接口 netdev；再加载固件、初始化硬件后才可操作。</div></li>
+<li>固件加载的流程？ <div class="qa-answer">驱动 request_firmware 请求 /lib/firmware 下的固件文件，由内核的固件加载器（或用户空间协助）取回，再按芯片要求分段下载并启动。</div></li>
+<li>扫描、连接、认证、关联的先后顺序？ <div class="qa-answer">先扫描发现网络 → 认证（Open/SAE/共享密钥）→ 关联请求与响应 → 四次握手生成 PTK/GTK → 之后才能进行 DHCP 与数据收发。</div></li>
+<li>数据收发路径？ <div class="qa-answer">发送 netdev tx → mac80211 → 速率选择与聚合 → 驱动下发 → 固件发出；接收由固件产生中断或事件 → 构造 skb → ieee80211_rx → mac80211 → 上传协议栈。</div></li>
+<li>省电机制如何实现？ <div class="qa-answer">802.11 省电（PS-Poll、U-APSD、DTIM 间隔）、固件 beacon filter 与 WoWLAN、驱动及 bus 层 runtime PM 三者配合，在保持唤醒能力的前提下尽量关闭时钟与供电。</div></li>
+</ol>
+<h2 id="十一、功耗与电源管理"><a href="#十一、功耗与电源管理" class="headerlink" title="十一、功耗与电源管理"></a>十一、功耗与电源管理</h2><ol>
+<li>suspend / resume 的完整流程？ <div class="qa-answer">写 /sys/power/state → 冻结用户进程与内核线程 → dpm_suspend 系列阶段挂起设备 → 关闭非引导 CPU → 平台层进入低功耗；唤醒后按相反顺序恢复。</div></li>
+<li><code>dpm_suspend</code> 的顺序如何保证？ <div class="qa-answer">按设备注册与父子依赖关系排序，保证子设备先于父设备挂起，并分 prepare/suspend/suspend_late/suspend_noirq 等多个阶段，其中部分阶段可异步并行。</div></li>
+<li>驱动的 <code>suspend</code> / <code>resume</code> 回调何时被调用？ <div class="qa-answer">在系统挂起与恢复过程中由 PM 核心遍历设备调用，对应 dev_pm_ops 的各级回调；legacy 的 bus pm ops 也提供同名回调。</div></li>
+<li>runtime PM 的使用场景？ <div class="qa-answer">设备空闲时自动进入低功耗、被访问时自动恢复，由 pm_runtime_get/put 与 autosuspend 延时控制；关键是正确处理上下文保存与恢复。</div></li>
+<li>wakeup source 的作用？ <div class="qa-answer">标记设备的唤醒能力并统计唤醒事件，保证挂起过程中发生的唤醒不会丢失；配合 wakeup_count 读写检测"正在唤醒却要睡眠"的竞态。</div></li>
+<li>系统无法唤醒的常见原因？ <div class="qa-answer">唤醒中断未正确配置或未设为唤醒源、GPIO 极性错误、唤醒时电源域已被断电、固件未就绪、或某个设备驱动在 suspend_late/noirq 阶段卡住。</div></li>
+</ol>
+<h2 id="十二、Camera-与-V4L2"><a href="#十二、Camera-与-V4L2" class="headerlink" title="十二、Camera 与 V4L2"></a>十二、Camera 与 V4L2</h2><ol>
+<li>V4L2 框架的核心对象有哪些？<code>v4l2_device</code> / <code>video_device</code> / <code>v4l2_subdev</code> / <code>media_entity</code> 的关系？ <div class="qa-answer">v4l2_device 是顶层管理对象（挂在 bridge/ISP 驱动上），v4l2_subdev 代表一个具体视频器件（sensor、PHY、ISP），video_device 才是用户看到的 /dev/videoX；media_entity 是它们在拓扑图中的节点，用来建立连线。</div></li>
+<li><code>v4l2_subdev_ops</code> 中 core / video / pad 三类 ops 各自的职责？ <div class="qa-answer">core 负责初始化、日志、供电与事件订阅；video 负责 s_stream 启停、帧率的 get/set；pad 负责格式协商与枚举，即 enum_mbus_code、get_fmt、set_fmt、get_selection。</div></li>
+<li>media entity、pad、link 的作用？pipeline 如何构建与使能？ <div class="qa-answer">pad 是输入或输出端口，entity 是功能模块，link 描述两者连接。先用 media_create_pad_link 建链，再用 media_entity_setup_link 使能链路、media_pipeline_start 启动整条 pipeline。</div></li>
+<li><code>media-ctl</code>、<code>v4l2-ctl</code>、<code>yavta</code> 常用命令？如何用它们排查链路？ <div class="qa-answer">media-ctl -p 打印拓扑、-l 建立链路、-V 设置格式；v4l2-ctl 列举格式、shown with --set-fmt-video 设置格式、--stream-mmap 抓帧；yavta 常用于 RAW 抓帧存盘。</div></li>
+<li>格式协商流程？<code>enum_mbus_code</code> / <code>get_fmt</code> / <code>set_fmt</code> 分别在什么时候被调用？ <div class="qa-answer">应用对 video 节点下发 S_FMT 时，驱动沿 pad 逐层反向调用下游 get_fmt/set_fmt 完成协商；enum_mbus_code 由应用在枚举阶段查询某个 pad 支持的 media bus 格式。</div></li>
+<li><code>MEDIA_BUS_FMT_*</code> 是什么？为何要区分 sensor 输出格式与用户空间格式？ <div class="qa-answer">它描述器件之间链路上的传输格式（如 SRGGB10_1X10），而用户空间拿到的是内存中的像素格式；二者由 ISP 或桥接器件转换，因此必须分开描述。</div></li>
+<li><code>try_fmt</code> 与 <code>set_fmt</code> 的关系？crop / selection API 解决什么问题？ <div class="qa-answer">try_fmt 只计算并返回结果而不改动状态，set_fmt 才真正写寄存器；selection API 用 CROP 与 COMPOSE 两个矩形描述裁剪与缩放窗口，支持硬缩放与 binning。</div></li>
+<li><code>v4l2_ctrl_handler</code> 的作用？如何自定义 exposure / gain / hflip 控件？ <div class="qa-answer">它统一管理一组 v4l2_ctrl，处理取/设值、范围校验与变更事件。自定义控件用 v4l2_ctrl_new_std 等接口注册，并在 s_ctrl 回调里写入寄存器。</div></li>
+<li>如何通过 vblank / hblank 控制帧率？VTS、HTS 与帧率的关系？ <div class="qa-answer">帧率等于像素率除以 VTS 与 HTS 的乘积，VTS 即有效行数加垂直消隐。改 vblank 就是改 VTS，驱动收到后会同步更新 VTS 寄存器，帧率随之变化。</div></li>
+<li><code>pixel_rate</code> 与 <code>link_freq</code> 控件的区别？谁会去读它们？<div class="qa-answer">pixel_rate 是每秒像素数，link_freq 是各 MIPI lane 的链路频率。CSI 接收侧在配 PHY 与带宽时读取 link_freq，sensor 侧则用 pixel_rate 计算帧率与曝光。</div></li>
+<li><code>s_stream</code> 里要实现什么？启流 / 停流的先后顺序要求？<div class="qa-answer">启流时写模式表、配 lane、写曝光增益、关测试图案，最后才打开数据流输出；停流时先停输出再下电。反过来会遇到无效帧或 I2C 挂死。</div></li>
+<li>videobuf2 的作用？dma-contig / vmalloc / dma-sg 三种内存方式的区别？<div class="qa-answer">videobuf2 统一管理缓冲区队列与入队出队。dma-contig 物理连续、适合 DMA；vmalloc 仅虚拟连续、不能做 DMA；dma-sg 用散列表，配合 IOMMU 使用。</div></li>
+<li>buffer 入队出队流程？<code>REQBUFS</code> / <code>QBUF</code> / <code>STREAMON</code> / <code>DQBUF</code> 的调用顺序？<div class="qa-answer">先 REQBUFS 申请缓冲，QBUF 把空缓冲交给驱动，STREAMON 开始采集，应用 DQBUF 取回填好的一帧，处理后再 QBUF 归还，最后 STREAMOFF 停止。</div></li>
+<li>sensor 驱动里 <code>s_power</code> 与 runtime PM 如何配合？上电时序谁保证？<div class="qa-answer">runtime PM 负责引用计数式的开关电源，真正的时序由 sensor 驱动保证：先供电，再开时钟，再释放复位或 powerdown 脚，等待若干毫秒后才做第一次 I2C 访问。</div></li>
+<li>一颗 sensor 驱动中 I2C 与 MIPI CSI-2 各自承担什么职责？<div class="qa-answer">I2C 是控制通道，写寄存器配分辨率、曝光、启停；MIPI CSI-2 只负责高速传输图像数据。二者独立：控制面正常不代表数据面正常。</div></li>
+<li>设备树里 sensor 节点的关键属性？<code>endpoint</code>、<code>data-lanes</code>、<code>remote-endpoint</code> 怎么配？<div class="qa-answer">compatible、reg（I2C 地址）、供电 regulator、时钟 xclk、复位与 powerdown GPIO；port 节点下的 endpoint 用 remote-endpoint 指向 CSI 接收端，data-lanes 写明使用的 lane 数量与编号。</div></li>
+<li>MIPI CSI-2 的 lane 数与带宽如何计算？lane 数与像素时钟的关系？<div class="qa-answer">所需速率约为分辨率×帧率×每像素位数再计上空消失额外的开销，再除以 lane 数得到单 lane 速率，必须落在 PHY 支持范围内并留一定余量。</div></li>
+<li>CSI-2 长包的数据结构？VC / DT / WC / ECC 字段的作用？<div class="qa-answer">包头为数据标识（虚拟通道 VC 加数据类型 DT）、字计数 WC 与 ECC 校验，随后是有效数据，最后是 CRC 校验；VC 区分多路逻辑流，DT 区分数据类型，WC 给出数据长度。</div></li>
+<li>CSI-2 的 LP / HS 状态机与时序参数如何确认？<div class="qa-answer">LP 是低速控制态，收包起止在 LP11；HS 是高速传输态。如果 RX 频繁报错，通常是 HS settle、LPX 等时序参数与 D-PHY 手册不匹配，需要调 PHY 寄存器或用示波器核对。</div></li>
+<li>D-PHY 与 C-PHY 的区别？<div class="qa-answer">D-PHY 用源同步差分时钟加若干数据 lane，双沿采样；C-PHY 用三线一组嵌入式时钟，无独立时钟线，单位引脚带宽更高，多用于高分辨率场景。</div></li>
+<li>RAW Bayer 数据进入 ISP 的路径？RK3588 ISP 管线由哪些部分组成？<div class="qa-answer">sensor 输出 RAW → CSI-2 RX 接收 → VICAP/ISP 做黑电平、镜头阴影、去马赛克、降噪与 3A 统计 → 输出 MP/SP 节点写入内存。RK3588 对应 rkisp 的 rawpath、mainpath 与 selfpath 几个 video 节点。</div></li>
+<li>3A（AE / AWB / AF）由谁控制？用户空间在哪一层介入？<div class="qa-answer">统计信息由 ISP 硬件产生，算法一般在用户空间守护进程（如 rkaiq、libcamera）或固件中，算完后经 subdev 节点把曝光、增益写回 sensor。</div></li>
+<li>测试图案（test pattern）怎么用？如何判断问题是出在 sensor 还是 MIPI 链路？<div class="qa-answer">打开 sensor 内置彩条图案：图案正常说明链路与 CSI 接收没问题，问题在光学或 ISP 处理；图案也异常则查 MIPI lane、带宽、时钟与供电。</div></li>
+<li>多摄硬同步的实现方式？XVS / XHS / FSIN 外部触发的差别？<div class="qa-answer">主 sensor 输出帧同步信号给从 sensor，或接收外部同步信号。XVS/XHS 是行场同步输出，FSIN 则是把外部脉冲作为帧起始输入，从机据此对齐自己的曝光起点。</div></li>
+<li>主从模式下如何保证两颗 sensor 同帧率、同相位？<div class="qa-answer">共用同一外部时钟，配置相同的分辨率与 VTS/HTS 以得到相同帧率，再用 FSIN 或主 sensor 的同步输出统一帧起始，必要时用寄存器微调延迟抵消固定相位差。</div></li>
+<li>时间戳应取哪一时刻？为何用曝光中点而不是帧到达时刻？<div class="qa-answer">曝光中点最能代表该帧的物理时刻。帧到达时刻包含传输与中断、缓冲调度等抖动，误差大且不稳定，因此要用硬件帧起始加已知曝光时长校正。</div></li>
+<li>多 sensor 与 IMU 如何统一时基？NTP / PTP / PPS 各自适用什么场景？<div class="qa-answer">NTP 毫秒级但依赖网络；PTP 靠硬件时间戳达微秒级，适合局域网；PPS 提供秒脉冲用于驯服本地时钟。嵌入式通常用 PPS 加本地计数器给各传感器打统一时基。</div></li>
+<li>时钟抖动与走线长度对 MIPI 链路的影响？<div class="qa-answer">时钟抖动大会缩小接收端眼图的采样余量；lane 间长度不等会引入偏斜。表现为偶发 ECC/CRC 错误、花屏，通常需要等长布线、降速或调整 PHY 时序参数。</div></li>
+<li>掉帧、帧率不稳的常见原因？<div class="qa-answer">应用取帧太慢导致队列耗尽、CPU 或内存带宽不足、ISP 处理跟不上；此外低照度下自动曝光拉长曝光时间也会把帧率压低。</div></li>
+<li>图像偏绿偏紫、条纹干扰、花屏的常见原因？Bayer 顺序配错的判定方法？<div class="qa-answer">偏色多为 Bayer 顺序或白平衡、镜头阴影校正不对；条纹多为电源纹波与工频频闪（需配 50/60Hz 抗闪）；花屏多为链路带宽或 PHY 参数问题。判定 Bayer 可输出纯色或拍摄单色物体对比通道值与 RGGB 排列。</div></li>
+<li>probe 失败常见原因？如何确认是时钟、电源还是 I2C 地址问题？<div class="qa-answer">时钟未使能或频率不对、供电未打开、复位脚极性反了导致器件无应答、I2C 地址错、读出的芯片 ID 不匹配。可用万用表与示波器量电、i2cdetect 探地址，或看是否是资源缺失导致的延迟探测。</div></li>
+</ol>
+<h2 id="十三、传感器与-IIO"><a href="#十三、传感器与-IIO" class="headerlink" title="十三、传感器与 IIO"></a>十三、传感器与 IIO</h2><ol>
+<li>为什么传感器要用 IIO 子系统？相比自己写字符设备的优势？ <div class="qa-answer">IIO 提供统一的采集与配置模型：标准 sysfs 属性、缓冲与触发机制、用户空间 libiio 直接可用，省去自造 ABI，也让上层应用可以跨厂商复用。</div></li>
+<li>IIO 不是总线，那它到底是什么层级的东西？ <div class="qa-answer">它是位于具体总线（I2C/SPI）之上的设备类子系统，把五花八门的传感器抽象成统一的 Industrial IO 设备，向用户空间提供一致的访问方式。</div></li>
+<li><code>iio_dev</code> 的核心结构体成员与作用？ <div class="qa-answer">包含设备名与 modes（能力标志）、通道数组 channels、读写回调 info、以及当前绑定的 buffer 与 trigger 指针，是驱动的主体对象。</div></li>
+<li>IIO 通道（channel）如何描述？<code>type</code> / <code>channel</code> / <code>scan_index</code> / <code>scan_type</code> 的含义？ <div class="qa-answer">type 指物理量类型（加速度、接近等），channel 区分同类第几个轴，scan_index 决定其在缓冲数据帧中的顺序，scan_type 描述存储位数、字节序、符号与位移。</div></li>
+<li><code>iio_chan_spec</code> 中 <code>modified</code>、<code>channel2</code>、<code>indexed</code> 的区别？ <div class="qa-answer">indexed 表示有编号的通道（如 accel_x），modified 表示用修饰维度进一步区分（如 accel_x + channel2 修饰的轴向），channel2 承载具体的修饰值。</div></li>
+<li><code>read_raw</code> / <code>write_raw</code> 回调何时被调用？<code>mask</code> 参数怎么用？ <div class="qa-answer">用户读写 sysfs 下的 raw、scale、offset、sampling_frequency 等属性时被调用。mask 是一个位掩码，指示当前要处理的是哪个属性（多个属性对应一个 mask 位）。</div></li>
+<li>sysfs 下 <code>/sys/bus/iio/devices/iio:deviceX/</code> 各文件怎么来的？ <div class="qa-answer">由 IIO 核心根据设备模式与通道定义、指定 type + mask 的属性自动生成，对应 sysfs Attributes；raw/scale/sampling_frequency 等名字由 IIO 核心固定。</div></li>
+<li>单次读取（one-shot）与缓冲采集（triggered buffer）的区别与适用场景？ <div class="qa-answer">单次读取是按需读一个属性，速度慢、延迟大；缓冲采集由 trigger 驱动连续采样并批量提交，适合高频、需要时间戳的场景，用 iio_readdev/libiio 读取。</div></li>
+<li>IIO trigger 的作用？为什么 IIO 不能直接循环采集？ <div class="qa-answer">trigger 提供采样节拍（数据就绪中断、定时器、软触发等），每次触发采集一帧。没有 trigger 就无法确定采样时机，也就无法形成带时间戳的一批扫描数据。</div></li>
+<li>trigger 的类型有哪些？硬件 trigger 与 <code>iio-trig-sysfs</code> 的区别？<div class="qa-answer">包括基于中断的硬件 trigger、hrtimer 定时 trigger、sysfs 软 trigger 等。sysfs trigger 用于没有中断或临时调试的情况，精度与实时性都不如硬件 trigger。</div></li>
+<li><code>iio_trigger_generic_data_rdy_poll</code> 的作用？<div class="qa-answer">用于在中断或上半部里通知 IIO：数据已就绪，让 IIO 框架调度下半部去读取并推送到缓冲。它是典型的"数据准备好"触发源。</div></li>
+<li><code>iio_trigger_poll</code> 在上半部还是下半部调用？为什么？<div class="qa-answer">在上半部调用，它只负责把采样工作排入队列，并不做 I2C 读写等慢操作；真正的读取在 buffer 下半部的 pollfunc 里完成，从而保证中断快速返回。</div></li>
+<li><code>iio_triggered_buffer_setup</code> 的四个参数各是什么？<div class="qa-answer">分别是 iio_dev 指针、下半部处理函数（真正去器件读取样本）、上半部（默认用 iio_pollfunc_store_time 打时间戳）以及 buffer setup ops（含 preenable/postdisable）。</div></li>
+<li>bottom half 中 <code>iio_push_to_buffers_with_timestamp</code> 做什么？<div class="qa-answer">把本轮采样的数据与时间戳写入 kfifo 缓冲，通知等待的读取者。若希望带硬件时间戳，则改用带 hardware timestamp 的版本。</div></li>
+<li><code>iio_pollfunc_store_time</code> 的作用？时间戳从哪来？<div class="qa-answer">它是默认的上半部，在 trigger 触发瞬间用内核时间源记下时间戳，供下半部推送数据时使用，保证时间戳尽量接近真实采样时刻。</div></li>
+<li>buffer 的 <code>preenable</code> / <code>postdisable</code> 回调用来做什么？<div class="qa-answer">preenable 在缓冲使能前做硬件准备（配采样率、打开测量、清 FIFO），postdisable 在停止采集后关闭相关通路。它们是 enable/disable 时的钩子。</div></li>
+<li>数据如何从内核缓冲传到用户空间？libiio / <code>iio_readdev</code> 怎么用？<div class="qa-answer">用户通过 IIO 字符设备读取缓冲（可用 select/poll 等待），libiio 封装了属性访问与缓冲流；iio_readdev 命令行工具可直接把数据录到文件。</div></li>
+<li>用户空间 iiod / libiio 的工作原理？网络后端如何支持远程采集？<div class="qa-answer">iiod 作为守护进程在本地与设备交互，libiio 通过本地或网络后端连接它；网络后端让上位机远程访问板上的传感器，便于远程调试。</div></li>
+<li>为什么 IIO 采集要用线程化中断？<code>devm_request_threaded_irq</code> 的上半部该做什么？<div class="qa-answer">取样本要通过 I2C/SPI 总线传输，耗时长且不能在原子上下文完成，因此交给中断线程去做。上半部只确认中断源、清中断，并调用 IIO 触发一次采样。</div></li>
+<li>传感器数据的时间戳误差来自哪里？如何提高精度？<div class="qa-answer">误差来自中断响应延迟、总线传输耗时与软件打时间戳的滞后。提高精度的方法：尽量用硬件时间戳、让打时间戳的位置贴近真实采样时刻、必要时用定时 trigger 保证等间隔。</div></li>
+<li>采样率如何配置？sysfs 的 <code>sampling_frequency</code> 与驱动的关系？<div class="qa-answer">由用户写 sampling_frequency 属性，驱动在 write_raw 回调里换算成器件支持的输出速率并写寄存器；注意实际值可能需要修约读回。</div></li>
+<li><code>IIO_CHAN_INFO_SCALE</code> / <code>OFFSET</code> / <code>RAW</code> 的关系？为什么用户空间要自己换算物理量？<div class="qa-answer">物理量 = (raw + offset) * scale。把换算责任放到用户空间，让内核只提供线性系数，避免不同单位制与浮点运算进入内核。</div></li>
+<li>接近传感器（如 hx9023s）的通道配置与校准流程？<div class="qa-answer">先按数据手册配置通道与采样参数，再在无障碍条件下读一次基线作为 offset，然后用标准目标物在各距离测试确认读数曲线，必要时做串扰与温度补偿。</div></li>
+<li>多通道数据如何保证来自同一时刻？<div class="qa-answer">靠同一 trigger 的一次扫描：所有启用通道由一次采样同时读出并打同一个时间戳，存入同一条扫描记录。</div></li>
+<li>regmap 在传感器驱动中的作用？为何 IIO 驱动普遍使用 regmap？<div class="qa-answer">统一 I2C/SPI 寄存器读写，并提供缓存、范围检查与 debugfs 导出。传感器以寄存器访问为主，因此 regmap 几乎成为标配。</div></li>
+<li><code>IIO_TRIGGER</code> 与事件（<code>IIO_EV_TYPE_*</code> / <code>iio_push_event</code>）的区别？中断阈值告警如何实现？<div class="qa-answer">trigger 用于批量数据采集；事件则是单个异步通知（越阈值、方向变化、接近物体等），用 iio_push_event 推给用户空间读取。</div></li>
+<li>IIO 与 hwmon 的边界？什么设备该放 IIO、什么该放 hwmon？<div class="qa-answer">hwmon 面向慢速的系统监控类器件（温度、电压、风扇），强调可读的限值告警；需要高采样率、时间戳、多轴数据的就放 IIO。</div></li>
+<li>IIO 与 input 子系统的边界？加速度计为什么有的走 input 有的走 IIO？<div class="qa-answer">input 用于人机交互事件（按键、屏幕旋转上报），语义是离散事件；IIO 用于带时间戳、可缓冲的连续采样。早期 Android HAL 常用 input 方式上报加速度，现在倾向 IIO。</div></li>
+<li>传感器驱动的 suspend / resume 需要注意什么？runtime PM 如何配合？<div class="qa-answer">挂起前停止缓冲与采样，必要时保存器件上下文；恢复时按 buffer setup ops 重新执行使能流程，清掉残留 FIFO，避免第一帧数据错位。</div></li>
+<li>读数漂移、噪声大、偶发丢数的常见原因？<div class="qa-answer">电源纹波与地线干扰、安装应力与温漂、采样率设置不当造成混叠、超出量程；此外用户取数太慢也会导致缓冲溢出丢帧。</div></li>
+<li>如何在不改动驱动的情况下验证传感器硬件是否正常？<div class="qa-answer">用 i2cdetect/i2cdump 核对器件地址与寄存器值，再用 iio_info、直接读 raw/scale 或用 iio_readdev 观察数据是否随物理量变化而变化。</div></li>
+</ol>
 
     </div>
 
     
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81C-%E8%AF%AD%E8%A8%80"><span class="toc-text">一、C 语言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81Linux-%E5%9F%BA%E7%A1%80"><span class="toc-text">二、Linux 基础</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Linux-%E9%A9%B1%E5%8A%A8"><span class="toc-text">三、Linux 驱动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5"><span class="toc-text">四、并发与同步</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E4%B8%AD%E6%96%AD"><span class="toc-text">五、中断</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BA%BF%E5%8D%8F%E8%AE%AE"><span class="toc-text">六、总线协议</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%AD%98%E5%82%A8%E4%B8%8E%E5%90%AF%E5%8A%A8"><span class="toc-text">七、存储与启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E8%B0%83%E8%AF%95"><span class="toc-text">八、调试</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%98%BE%E7%A4%BA"><span class="toc-text">九、显示</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E7%BD%91%E7%BB%9C"><span class="toc-text">十、网络</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E5%8A%9F%E8%80%97%E4%B8%8E%E7%94%B5%E6%BA%90%E7%AE%A1%E7%90%86"><span class="toc-text">十一、功耗与电源管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81Camera-%E4%B8%8E-V4L2"><span class="toc-text">十二、Camera 与 V4L2</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%89%E3%80%81%E4%BC%A0%E6%84%9F%E5%99%A8%E4%B8%8E-IIO"><span class="toc-text">十三、传感器与 IIO</span></a></li></ol>
+  </div>
+</aside>
+
+      
   </div>
 
   <footer class="post-footer">

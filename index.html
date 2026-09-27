@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/css/style.css?v=7ef16e4b">
   <link rel="stylesheet" href="/css/image-zoom.css?v=7ef16e4b">
   
+  
   <script>
     (function () {
       try {
@@ -225,7 +226,7 @@ mjx-container[display="true"] + br {
   <div class="post-card-excerpt">
     
       
-      <p>一、C/C++ 与嵌入式基础你熟练使用 C/C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？ static 修饰全局变量、局部变量、函数分别是什么含义？ 内核里 container_of 怎么实现的？为什么驱动框架大量用它？ kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？ copy_to_user / ...</p>
+      <p>的作用与使用场合？ 禁止编译器把变量缓存到寄存器或优化掉"冗余"读写，保证每次都真正访问内存。用于 MMIO 寄存器、被中断或线程修改的共享标志。它不保证原子性。 修饰局部变量、全局变量、函数时的区别？ 局部变量：改为静态存储期，只初始化一次，作用域不变。全局变量与函数：限定链接域为当前文件，避免命名冲突、隐藏实现细节。 / / 的区别？ ...</p>
     
   </div>
   <a class="read-more" href="/2026/09/27/%E9%97%AE%E9%A2%98%E9%9B%86/">Read More &rarr;</a>
