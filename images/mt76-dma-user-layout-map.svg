@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="4646" height="1678" viewBox="0 0 4646 1678">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6772"/></marker>
+    <marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1565c0"/></marker>
+    <marker id="arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2e7d32"/></marker>
+    <marker id="arO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e65100"/></marker>
+    <marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+    <marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#00838f"/></marker>
+  </defs>
+  <style>
+    text { font-family: "Microsoft YaHei","PingFang SC","SimHei",sans-serif; }
+    .mt  { font-size:20px; font-weight:bold; fill:#1b2733; }
+    .sub { font-size:13px; fill:#5a6772; }
+    .cn  { font-size:12px; fill:#1b2733; }
+    .cmt { font-size:11px; fill:#5a6772; }
+    .dot { font-size:20px; font-weight:bold; fill:#37474f; }
+    .code{ font-family:"SFMono-Regular","Consolas","Liberation Mono","Courier New",monospace; font-size:11px; fill:#1b2733; }
+    .cc{ fill:#8c8c8c; font-style:italic; }
+  </style>
+<rect x="0" y="0" width="4646" height="1678" fill="#ffffff"/>
+<rect x="56" y="90" width="700" height="48" rx="4" fill="#f5f5f5" stroke="#424242" stroke-width="2"/>
+<rect x="56" y="172" width="700" height="88" rx="4" fill="#f5f5f5" stroke="#424242" stroke-width="2"/>
+<rect x="56" y="304" width="700" height="128" rx="4" fill="#f5f5f5" stroke="#424242" stroke-width="2"/>
+<rect x="890" y="90" width="460" height="244" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<path d="M200,138 V172" fill="none" stroke="#5a6772" stroke-width="2" marker-end="url(#ar)"/>
+<path d="M200,260 V304" fill="none" stroke="#5a6772" stroke-width="2" marker-end="url(#ar)"/>
+<path d="M890,217 H266" fill="none" stroke="#1565c0" stroke-width="2" marker-end="url(#arB)"/>
+<rect x="56" y="502" width="700" height="1094" rx="4" fill="#f5f5f5" stroke="#424242" stroke-width="2"/>
+<line x1="68" y1="532" x2="68" y2="1561" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="547" x2="98" y2="547" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="625" x2="98" y2="625" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1041" x2="98" y2="1041" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1119" x2="98" y2="1119" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1197" x2="98" y2="1197" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1301" x2="98" y2="1301" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1405" x2="98" y2="1405" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1457" x2="98" y2="1457" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1509" x2="98" y2="1509" stroke="#37474f" stroke-width="1.8"/>
+<line x1="68" y1="1561" x2="98" y2="1561" stroke="#37474f" stroke-width="1.8"/>
+<line x1="96" y1="558" x2="96" y2="573" stroke="#37474f" stroke-width="1.8"/>
+<line x1="96" y1="573" x2="126" y2="573" stroke="#37474f" stroke-width="1.8"/>
+<line x1="96" y1="636" x2="96" y2="703" stroke="#37474f" stroke-width="1.8"/>
+<line x1="96" y1="703" x2="126" y2="703" stroke="#37474f" stroke-width="1.8"/>
+<line x1="124" y1="714" x2="124" y2="963" stroke="#37474f" stroke-width="1.8"/>
+<line x1="124" y1="729" x2="154" y2="729" stroke="#37474f" stroke-width="1.8"/>
+<line x1="124" y1="755" x2="154" y2="755" stroke="#37474f" stroke-width="1.8"/>
+<line x1="124" y1="937" x2="154" y2="937" stroke="#37474f" stroke-width="1.8"/>
+<line x1="124" y1="963" x2="154" y2="963" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="766" x2="152" y2="911" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="781" x2="182" y2="781" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="807" x2="182" y2="807" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="833" x2="182" y2="833" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="859" x2="182" y2="859" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="885" x2="182" y2="885" stroke="#37474f" stroke-width="1.8"/>
+<line x1="152" y1="911" x2="182" y2="911" stroke="#37474f" stroke-width="1.8"/>
+<rect x="64" y="614" width="684" height="387" rx="5" fill="none" stroke="#e65100" stroke-width="1.6" stroke-dasharray="7,4"/>
+<rect x="890" y="538" width="460" height="264" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<path d="M890,579 H352" fill="none" stroke="#1565c0" stroke-width="2" marker-end="url(#arB)"/>
+<path d="M583,891 H866 V619 H886" fill="none" stroke="#e65100" stroke-width="2" marker-end="url(#arO)"/>
+<rect x="1490" y="578" width="660" height="1044" rx="4" fill="#fff8e1" stroke="#f57f17" stroke-width="2"/>
+<path d="M1350,619 H1498" fill="none" stroke="#e65100" stroke-width="2" marker-end="url(#arO)"/>
+<rect x="2280" y="578" width="520" height="639" rx="6" fill="none" stroke="#5a6772" stroke-width="1.5" stroke-dasharray="8,4"/>
+<rect x="2290" y="612" width="500" height="453" rx="4" fill="#ffe0b2" stroke="#e65100" stroke-width="2"/>
+<rect x="2326" y="689" width="428" height="60" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.5"/>
+<rect x="2336" y="711" width="408" height="30" rx="4" fill="#fafafa" stroke="#b0bec5" stroke-width="1"/>
+<line x1="2438" y1="711" x2="2438" y2="741" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2540" y1="711" x2="2540" y2="741" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2642" y1="711" x2="2642" y2="741" stroke="#cfd8dc" stroke-width="1"/>
+<rect x="2326" y="789" width="428" height="60" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.5"/>
+<rect x="2336" y="811" width="408" height="30" rx="4" fill="#fafafa" stroke="#b0bec5" stroke-width="1"/>
+<line x1="2438" y1="811" x2="2438" y2="841" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2540" y1="811" x2="2540" y2="841" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2642" y1="811" x2="2642" y2="841" stroke="#cfd8dc" stroke-width="1"/>
+<rect x="2326" y="889" width="428" height="60" rx="4" fill="#ffffff" stroke="#c62828" stroke-width="1.5"/>
+<rect x="2336" y="911" width="408" height="30" rx="4" fill="#fafafa" stroke="#b0bec5" stroke-width="1"/>
+<line x1="2438" y1="911" x2="2438" y2="941" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2540" y1="911" x2="2540" y2="941" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2642" y1="911" x2="2642" y2="941" stroke="#cfd8dc" stroke-width="1"/>
+<rect x="2326" y="989" width="428" height="60" rx="4" fill="#ffffff" stroke="#c62828" stroke-width="1.5"/>
+<rect x="2336" y="1011" width="408" height="30" rx="4" fill="#fafafa" stroke="#b0bec5" stroke-width="1"/>
+<line x1="2438" y1="1011" x2="2438" y2="1041" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2540" y1="1011" x2="2540" y2="1041" stroke="#cfd8dc" stroke-width="1"/>
+<line x1="2642" y1="1011" x2="2642" y2="1041" stroke="#cfd8dc" stroke-width="1"/>
+<rect x="2290" y="1111" width="500" height="40" rx="4" fill="#fff3e0" stroke="#8d6e63" stroke-width="1.5"/>
+<rect x="2290" y="1163" width="500" height="40" rx="4" fill="#fff3e0" stroke="#8d6e63" stroke-width="1.5"/>
+<rect x="2870" y="578" width="840" height="821" rx="4" fill="#e0f7fa" stroke="#00838f" stroke-width="2"/>
+<rect x="2886" y="707" width="328" height="76" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<line x1="2886" y1="726" x2="3214" y2="726" stroke="#2e7d32" stroke-width="1"/>
+<line x1="2886" y1="745" x2="3214" y2="745" stroke="#2e7d32" stroke-width="1"/>
+<rect x="2887" y="746" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="2886" y1="764" x2="3214" y2="764" stroke="#2e7d32" stroke-width="1"/>
+<rect x="2886" y="849" width="328" height="76" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<line x1="2886" y1="868" x2="3214" y2="868" stroke="#2e7d32" stroke-width="1"/>
+<line x1="2886" y1="887" x2="3214" y2="887" stroke="#2e7d32" stroke-width="1"/>
+<rect x="2887" y="888" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="2886" y1="906" x2="3214" y2="906" stroke="#2e7d32" stroke-width="1"/>
+<rect x="2886" y="991" width="328" height="76" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<line x1="2886" y1="1010" x2="3214" y2="1010" stroke="#2e7d32" stroke-width="1"/>
+<line x1="2886" y1="1029" x2="3214" y2="1029" stroke="#2e7d32" stroke-width="1"/>
+<rect x="2887" y="1030" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="2886" y1="1048" x2="3214" y2="1048" stroke="#2e7d32" stroke-width="1"/>
+<rect x="2886" y="1133" width="328" height="76" rx="4" fill="#ffffff" stroke="#c62828" stroke-width="1.2"/>
+<line x1="2886" y1="1152" x2="3214" y2="1152" stroke="#c62828" stroke-width="1"/>
+<line x1="2886" y1="1171" x2="3214" y2="1171" stroke="#c62828" stroke-width="1"/>
+<rect x="2887" y="1172" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="2886" y1="1190" x2="3214" y2="1190" stroke="#c62828" stroke-width="1"/>
+<rect x="2886" y="1275" width="328" height="76" rx="4" fill="#ffffff" stroke="#c62828" stroke-width="1.2"/>
+<line x1="2886" y1="1294" x2="3214" y2="1294" stroke="#c62828" stroke-width="1"/>
+<line x1="2886" y1="1313" x2="3214" y2="1313" stroke="#c62828" stroke-width="1"/>
+<rect x="2887" y="1314" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="2886" y1="1332" x2="3214" y2="1332" stroke="#c62828" stroke-width="1"/>
+<rect x="3790" y="578" width="800" height="821" rx="4" fill="#f5f5f5" stroke="#424242" stroke-width="2"/>
+<rect x="3806" y="707" width="328" height="76" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<line x1="3806" y1="726" x2="4134" y2="726" stroke="#2e7d32" stroke-width="1"/>
+<line x1="3806" y1="745" x2="4134" y2="745" stroke="#2e7d32" stroke-width="1"/>
+<rect x="3807" y="746" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="3806" y1="764" x2="4134" y2="764" stroke="#2e7d32" stroke-width="1"/>
+<rect x="3806" y="849" width="328" height="76" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<line x1="3806" y1="868" x2="4134" y2="868" stroke="#2e7d32" stroke-width="1"/>
+<line x1="3806" y1="887" x2="4134" y2="887" stroke="#2e7d32" stroke-width="1"/>
+<rect x="3807" y="888" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="3806" y1="906" x2="4134" y2="906" stroke="#2e7d32" stroke-width="1"/>
+<rect x="3806" y="991" width="328" height="76" rx="4" fill="#ffffff" stroke="#2e7d32" stroke-width="1.2"/>
+<line x1="3806" y1="1010" x2="4134" y2="1010" stroke="#2e7d32" stroke-width="1"/>
+<line x1="3806" y1="1029" x2="4134" y2="1029" stroke="#2e7d32" stroke-width="1"/>
+<rect x="3807" y="1030" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="3806" y1="1048" x2="4134" y2="1048" stroke="#2e7d32" stroke-width="1"/>
+<rect x="3806" y="1133" width="328" height="76" rx="4" fill="#ffffff" stroke="#c62828" stroke-width="1.2"/>
+<line x1="3806" y1="1152" x2="4134" y2="1152" stroke="#c62828" stroke-width="1"/>
+<line x1="3806" y1="1171" x2="4134" y2="1171" stroke="#c62828" stroke-width="1"/>
+<rect x="3807" y="1172" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="3806" y1="1190" x2="4134" y2="1190" stroke="#c62828" stroke-width="1"/>
+<rect x="3806" y="1275" width="328" height="76" rx="4" fill="#ffffff" stroke="#c62828" stroke-width="1.2"/>
+<line x1="3806" y1="1294" x2="4134" y2="1294" stroke="#c62828" stroke-width="1"/>
+<line x1="3806" y1="1313" x2="4134" y2="1313" stroke="#c62828" stroke-width="1"/>
+<rect x="3807" y="1314" width="326" height="17" rx="0" fill="#f5f5f5" stroke="#e0e0e0" stroke-width="1"/>
+<line x1="3806" y1="1332" x2="4134" y2="1332" stroke="#c62828" stroke-width="1"/>
+<path d="M2150,719 H2326" fill="none" stroke="#2e7d32" stroke-width="2" marker-end="url(#arG)"/>
+<path d="M2754,719 H2886" fill="none" stroke="#2e7d32" stroke-width="2" marker-end="url(#arG)"/>
+<path d="M2754,919 H2845 V1142 H2886" fill="none" stroke="#c62828" stroke-width="2" marker-end="url(#arR)"/>
+<text class="mt" x="40" y="38" xml:space="preserve">mt76 DMA 队列初始化 · 结构重绘（含 RX 缓冲区 / page_pool）</text>
+<text class="sub" x="40" y="74" xml:space="preserve">① 申请 BAR0 使用权 → 映射为内核虚拟地址 → 挂总线方法表 → 替换为芯片私有回调</text>
+<text class="code" x="72" y="115">pcim_iomap_regions(pdev, BIT(0), pci_name(pdev));</text>
+<text class="code" x="72" y="197">mt76_mmio_init(&amp;dev-&gt;mt76, <tspan fill="#2e7d32" font-weight="bold">pcim_iomap_table</tspan>(pdev)[0]);</text>
+<text class="code" x="72" y="217">├─ dev-&gt;bus = &amp;<tspan fill="#1565c0" font-weight="bold">mt76_mmio_ops</tspan>;</text>
+<text class="code" x="72" y="237">└─  dev-&gt;<tspan fill="#1565c0" font-weight="bold">mmio.regs</tspan> = regs;</text>
+<text class="cmt" x="300" y="292" xml:space="preserve">→ 替换为 7925 自己的回调</text>
+<text class="code" x="72" y="329"><tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan> = devm_kmemdup(dev-&gt;mt76.dev, dev-&gt;<tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan>, sizeof(*<tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan>), GFP_KERNEL);</text>
+<text class="code" x="72" y="349"><tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan>-&gt;rr  = mt7925_rr;</text>
+<text class="code" x="72" y="369"><tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan>-&gt;wr  = mt7925_wr;</text>
+<text class="code" x="72" y="389"><tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan>-&gt;rmw = mt7925_rm;</text>
+<text class="code" x="72" y="409">dev-&gt;mt76.bus = <tspan fill="#6a1b9a" font-weight="bold">bus_ops</tspan>;</text>
+<text class="cmt" x="904" y="110" xml:space="preserve">mt76\mmio.c</text>
+<text class="code" x="906" y="131">static const struct mt76_bus_ops <tspan fill="#1565c0" font-weight="bold">mt76_mmio_ops</tspan> = {</text>
+<text class="code" x="906" y="151">    .rr         = mt76_mmio_rr,</text>
+<text class="code" x="906" y="171">    .rmw        = mt76_mmio_rmw,</text>
+<text class="code" x="906" y="191">    .wr         = mt76_mmio_wr,</text>
+<text class="code" x="906" y="211">    .write_copy = mt76_mmio_write_copy,</text>
+<text class="code" x="906" y="231">    .read_copy  = mt76_mmio_read_copy,</text>
+<text class="code" x="906" y="251">    .wr_rp      = mt76_mmio_wr_rp,</text>
+<text class="code" x="906" y="271">    .rd_rp      = mt76_mmio_rd_rp,</text>
+<text class="code" x="906" y="291">    .type       = MT76_BUS_MMIO,</text>
+<text class="code" x="906" y="311">};</text>
+<text class="sub" x="40" y="486" xml:space="preserve">② dma 初始化：queue_ops 挂载 → 各队列创建 → 派发到 .alloc</text>
+<text class="code" x="72" y="527">mt7925_dma_init</text>
+<text class="code" x="100" y="553">mt76_dma_attach</text>
+<text class="code" x="128" y="579">dev-&gt;queue_ops = &amp;<tspan fill="#1565c0" font-weight="bold">mt76_dma_ops</tspan>;</text>
+<text class="code" x="100" y="631">mt76_connac_init_tx_queues(dev-&gt;phy.mt76, MT7925_TXQ_BAND0,</text>
+<text class="code" x="114" y="657">MT7925_TX_RING_SIZE,  //2048</text>
+<text class="code" x="114" y="683">MT_TX_RING_BASE, NULL, 0);</text>
+<text class="code" x="128" y="709">mt76_init_tx_queue(phy, 0, idx, n_desc, ring_base, wed, flags);</text>
+<text class="code" x="156" y="735">struct mt76_queue *q;</text>
+<text class="code" x="156" y="761">q = mt76_init_queue(phy-&gt;dev, qid, idx, n_desc, ring_base, wed, flags);</text>
+<text class="code" x="184" y="787">struct mt76_queue *hwq;</text>
+<text class="code" x="184" y="813">hwq = devm_kzalloc(dev-&gt;dev, sizeof(*hwq), GFP_KERNEL);</text>
+<text class="code" x="184" y="839">hwq-&gt;flags = flags;</text>
+<text class="code" x="184" y="865">hwq-&gt;wed = wed;</text>
+<text class="code" x="184" y="891"><tspan fill="#e65100" font-weight="bold">dev-&gt;queue_ops-&gt;alloc</tspan>(dev, hwq, idx, n_desc, 0, ring_base);</text>
+<text class="code" x="184" y="917">return hwq;</text>
+<text class="code" x="156" y="943">phy-&gt;q_tx[qid] = q</text>
+<text class="code" x="156" y="969">for (i = 1; i &lt;= 4; i++)</text>
+<text class="code" x="170" y="995">phy-&gt;q_tx[i] = phy-&gt;q_tx[0];</text>
+<text class="code" x="100" y="1047">mt76_init_mcu_queue(&amp;dev-&gt;mt76, MT_MCUQ_WM, MT7925_TXQ_MCU_WM,</text>
+<text class="code" x="114" y="1073">MT7925_TX_MCU_RING_SIZE, MT_TX_RING_BASE);</text>
+<text class="code" x="100" y="1125">mt76_init_mcu_queue(&amp;dev-&gt;mt76, MT_MCUQ_FWDL, MT_TXQ_FWDL,</text>
+<text class="code" x="114" y="1151">MT7925_TX_FWDL_RING_SIZE, MT_TX_RING_BASE);</text>
+<text class="code" x="100" y="1203">mt76_queue_alloc(dev, &amp;dev-&gt;mt76.q_rx[MT_RXQ_MCU],</text>
+<text class="code" x="114" y="1229">MT7925_RXQ_MCU_WM, MT7925_RX_MCU_RING_SIZE,</text>
+<text class="code" x="114" y="1255">MT_RX_BUF_SIZE, MT_RX_EVENT_RING_BASE);</text>
+<text class="code" x="100" y="1307">mt76_queue_alloc(dev, &amp;dev-&gt;mt76.q_rx[MT_RXQ_MAIN],</text>
+<text class="code" x="114" y="1333">MT7925_RXQ_BAND0, MT7925_RX_RING_SIZE,</text>
+<text class="code" x="114" y="1359">MT_RX_BUF_SIZE, MT_RX_DATA_RING_BASE);</text>
+<text class="code" x="100" y="1411">mt76_init_queues(dev, mt792x_poll_rx);</text>
+<text class="code" x="100" y="1463">netif_napi_add_tx(dev-&gt;mt76.tx_napi_dev, &amp;dev-&gt;mt76.tx_napi,</text>
+<text class="code" x="114" y="1489">mt792x_poll_tx);</text>
+
+<text class="code" x="100" y="1515">napi_enable(&amp;dev-&gt;mt76.tx_napi);</text>
+<text class="code" x="100" y="1567">return mt792x_dma_enable(dev);</text>
+<text class="cmt" x="525" y="631" xml:space="preserve">← 以 TX 队列初始化为例</text>
+<text class="cmt" x="904" y="558" xml:space="preserve">dma.c</text>
+<text class="code" x="906" y="579">static const struct mt76_queue_ops <tspan fill="#1565c0" font-weight="bold">mt76_dma_ops</tspan> = {</text>
+<text class="code" x="906" y="599">    .init           = mt76_dma_init,</text>
+<text class="code" x="906" y="619">    .alloc          = <tspan fill="#e65100" font-weight="bold">mt76_dma_alloc_queue</tspan>,</text>
+<text class="code" x="906" y="639">    .reset_q        = mt76_dma_queue_reset,</text>
+<text class="code" x="906" y="659">    .tx_queue_skb_raw = mt76_dma_tx_queue_skb_raw,</text>
+<text class="code" x="906" y="679">    .tx_queue_skb   = mt76_dma_tx_queue_skb,</text>
+<text class="code" x="906" y="699">    .tx_cleanup     = mt76_dma_tx_cleanup,</text>
+<text class="code" x="906" y="719">    .rx_cleanup     = mt76_dma_rx_cleanup,</text>
+<text class="code" x="906" y="739">    .rx_reset       = mt76_dma_rx_reset,</text>
+<text class="code" x="906" y="759">    .kick           = mt76_dma_kick_queue,</text>
+<text class="code" x="906" y="779">};</text>
+<text class="sub" x="1490" y="562" xml:space="preserve">③ mt76_dma_alloc_queue()：算出寄存器窗口 → 备好内存 → 复位硬件环</text>
+<text class="cmt" x="1504" y="598" xml:space="preserve">dma.c</text>
+<text class="code" x="1506" y="619">static int <tspan fill="#e65100" font-weight="bold">mt76_dma_alloc_queue</tspan>(struct mt76_dev *dev, struct mt76_queue *q,</text>
+<text class="code" x="1506" y="639">            int idx, int n_desc, int bufsize, u32 ring_base) {</text>
+<text class="code" x="1506" y="659">    spin_lock_init(&amp;q-&gt;lock);</text>
+<text class="code" x="1506" y="679">    spin_lock_init(&amp;q-&gt;cleanup_lock);</text>
+<text class="code" x="1506" y="719">    <tspan fill="#2e7d32" font-weight="bold">q-&gt;regs</tspan> = dev-&gt;<tspan fill="#1565c0" font-weight="bold">mmio.regs</tspan> + ring_base + idx * MT_RING_SIZE;</text>
+<text class="code" x="1506" y="739">    q-&gt;ndesc = n_desc;</text>
+<text class="code" x="1506" y="759">    q-&gt;buf_size = bufsize;</text>
+<text class="code" x="1506" y="779">    q-&gt;hw_idx = idx;</text>
+<text class="code" x="1506" y="819">    size = mt76_queue_is_wed_rro_ind(q) ? sizeof(struct mt76_wed_rro_desc)</text>
+<text class="code" x="1506" y="839">                : sizeof(struct mt76_desc);</text>
+<text class="code" x="1506" y="859">    <tspan fill="#c62828" font-weight="bold">q-&gt;desc</tspan> = dmam_alloc_coherent(dev-&gt;dma_dev, q-&gt;ndesc * size,</text>
+<text class="code" x="1506" y="879">                &amp;<tspan fill="#c62828" font-weight="bold">q-&gt;desc_dma</tspan>, GFP_KERNEL);   <tspan class="cc">// 分配 DMA 空间</tspan></text>
+<text class="code" x="1506" y="919">    if (mt76_queue_is_wed_rro_ind(q)) {</text>
+<text class="code" x="1506" y="939">        struct mt76_wed_rro_desc *rro_desc;</text>
+<text class="code" x="1506" y="959">        int i;</text>
+<text class="code" x="1506" y="999">        rro_desc = (struct mt76_wed_rro_desc *)<tspan fill="#c62828" font-weight="bold">q-&gt;desc</tspan>;</text>
+<text class="code" x="1506" y="1019">        for (i = 0; i &lt; q-&gt;ndesc; i++) {</text>
+<text class="code" x="1506" y="1039">            struct mt76_wed_rro_ind *cmd;</text>
+<text class="code" x="1506" y="1079">            cmd = (struct mt76_wed_rro_ind *)&amp;rro_desc[i];</text>
+<text class="code" x="1506" y="1099">            cmd-&gt;magic_cnt = MT_DMA_WED_IND_CMD_CNT - 1;</text>
+<text class="code" x="1506" y="1119">        }</text>
+<text class="code" x="1506" y="1139">    }</text>
+<text class="code" x="1506" y="1179">    size = q-&gt;ndesc * sizeof(*<tspan fill="#8d6e63" font-weight="bold">q-&gt;entry</tspan>);</text>
+<text class="code" x="1506" y="1199">    <tspan fill="#8d6e63" font-weight="bold">q-&gt;entry</tspan> = devm_kzalloc(dev-&gt;dev, size, GFP_KERNEL);</text>
+<text class="code" x="1506" y="1219">    if (!<tspan fill="#8d6e63" font-weight="bold">q-&gt;entry</tspan>)</text>
+<text class="code" x="1506" y="1239">        return -ENOMEM;</text>
+<text class="code" x="1506" y="1279">    ret = <tspan fill="#00838f" font-weight="bold">mt76_create_page_pool</tspan>(dev, q);   <tspan class="cc">// 内部会判断，只有 RX 队列会创建页池</tspan></text>
+<text class="code" x="1506" y="1299">    if (ret)</text>
+<text class="code" x="1506" y="1319">        return ret;</text>
+<text class="code" x="1506" y="1359">    <tspan class="cc">// 驱动把队列“交接”给 WED 硬件，降低 CPU 占用。WED 是 MTK 芯片上的硬件加速引擎。</tspan></text>
+<text class="code" x="1506" y="1379">    ret = mt76_wed_dma_setup(dev, q, false);</text>
+<text class="code" x="1506" y="1399">    if (ret)</text>
+<text class="code" x="1506" y="1419">        return ret;</text>
+<text class="code" x="1506" y="1459">    if (mtk_wed_device_active(&amp;dev-&gt;mmio.wed)) {</text>
+<text class="code" x="1506" y="1479">        if ((mtk_wed_get_rx_capa(&amp;dev-&gt;mmio.wed) &amp;&amp; mt76_queue_is_wed_rro(q)) ||</text>
+<text class="code" x="1506" y="1499">            mt76_queue_is_wed_tx_free(q))</text>
+<text class="code" x="1506" y="1519">            return 0;</text>
+<text class="code" x="1506" y="1539">    }</text>
+<text class="code" x="1506" y="1579">    mt76_dma_queue_reset(dev, q);   <tspan class="cc">// 把硬件队列恢复到已知初始状态</tspan></text>
+<text class="code" x="1506" y="1599">}</text>
+<text class="cn" x="2304" y="600" xml:space="preserve">pci_device</text>
+<text class="cn" x="2306" y="634" xml:space="preserve">BAR0 寄存器空间</text>
+<text class="cn" x="2326" y="681" xml:space="preserve">TX 区</text>
+<text class="cn" x="2338" y="704" xml:space="preserve">Ring 0 寄存器组</text>
+<text class="code" x="2342" y="731" xml:space="preserve">desc_base</text>
+<text class="code" x="2444" y="731" xml:space="preserve">ring_size</text>
+<text class="code" x="2546" y="731" xml:space="preserve">cpu_idx</text>
+<text class="code" x="2648" y="731" xml:space="preserve">dma_idx</text>
+<text class="dot" x="2326" y="770" xml:space="preserve">…</text>
+<text class="cn" x="2338" y="804" xml:space="preserve">Ring N 寄存器组</text>
+<text class="code" x="2342" y="831" xml:space="preserve">desc_base</text>
+<text class="code" x="2444" y="831" xml:space="preserve">ring_size</text>
+<text class="code" x="2546" y="831" xml:space="preserve">cpu_idx</text>
+<text class="code" x="2648" y="831" xml:space="preserve">dma_idx</text>
+<text class="cn" x="2326" y="871" xml:space="preserve">RX 区</text>
+<text class="cn" x="2338" y="904" xml:space="preserve">Ring 0 寄存器组</text>
+<text class="code" x="2342" y="931" xml:space="preserve">desc_base</text>
+<text class="code" x="2444" y="931" xml:space="preserve">ring_size</text>
+<text class="code" x="2546" y="931" xml:space="preserve">cpu_idx</text>
+<text class="code" x="2648" y="931" xml:space="preserve">dma_idx</text>
+<text class="dot" x="2326" y="970" xml:space="preserve">…</text>
+<text class="cn" x="2338" y="1004" xml:space="preserve">Ring N 寄存器组</text>
+<text class="code" x="2342" y="1031" xml:space="preserve">desc_base</text>
+<text class="code" x="2444" y="1031" xml:space="preserve">ring_size</text>
+<text class="code" x="2546" y="1031" xml:space="preserve">cpu_idx</text>
+<text class="code" x="2648" y="1031" xml:space="preserve">dma_idx</text>
+<text class="dot" x="2306" y="1097" xml:space="preserve">…</text>
+<text class="cn" x="2306" y="1137" xml:space="preserve">BAR4</text>
+<text class="cn" x="2306" y="1189" xml:space="preserve">BAR5</text>
+<text class="cn" x="2886" y="604" xml:space="preserve">系统 RAM · DMA 一致性区（dmam_alloc_coherent）</text>
+<text class="cn" x="2886" y="681" xml:space="preserve">TX 环</text>
+<text class="cn" x="2886" y="702" xml:space="preserve">phy-&gt;q_tx[0]</text>
+<text class="code" x="3108" y="702" xml:space="preserve">MT7925_TXQ_BAND0</text>
+<text class="code" x="2894" y="720" xml:space="preserve">desc[0]</text>
+<text class="code" x="2894" y="739" xml:space="preserve">desc[1]</text>
+<text class="dot" x="3043" y="761" xml:space="preserve">…</text>
+<text class="code" x="2894" y="777" xml:space="preserve">desc[n-1]</text>
+<text class="cn" x="2886" y="823" xml:space="preserve">MCU 环</text>
+<text class="cn" x="2886" y="844" xml:space="preserve">dev-&gt;q_mcu[MT_MCUQ_WM]</text>
+<text class="code" x="3101" y="844" xml:space="preserve">MT7925_TXQ_MCU_WM</text>
+<text class="code" x="2894" y="862" xml:space="preserve">desc[0]</text>
+<text class="code" x="2894" y="881" xml:space="preserve">desc[1]</text>
+<text class="dot" x="3043" y="903" xml:space="preserve">…</text>
+<text class="code" x="2894" y="919" xml:space="preserve">desc[n-1]</text>
+<text class="cn" x="2886" y="986" xml:space="preserve">dev-&gt;q_mcu[MT_MCUQ_FWDL]</text>
+<text class="code" x="3115" y="986" xml:space="preserve">MT7925_TXQ_FWDL</text>
+<text class="code" x="2894" y="1004" xml:space="preserve">desc[0]</text>
+<text class="code" x="2894" y="1023" xml:space="preserve">desc[1]</text>
+<text class="dot" x="3043" y="1045" xml:space="preserve">…</text>
+<text class="code" x="2894" y="1061" xml:space="preserve">desc[n-1]</text>
+<text class="cn" x="2886" y="1107" xml:space="preserve">RX 环</text>
+<text class="cn" x="2886" y="1128" xml:space="preserve">dev-&gt;mt76.q_rx[MT_RXQ_MCU]</text>
+<text class="code" x="3101" y="1128" xml:space="preserve">MT7925_RXQ_MCU_WM</text>
+<text class="code" x="2894" y="1146" xml:space="preserve">desc[0]</text>
+<text class="code" x="2894" y="1165" xml:space="preserve">desc[1]</text>
+<text class="dot" x="3043" y="1187" xml:space="preserve">…</text>
+<text class="code" x="2894" y="1203" xml:space="preserve">desc[n-1]</text>
+<text class="cn" x="2886" y="1270" xml:space="preserve">dev-&gt;mt76.q_rx[MT_RXQ_MAIN]</text>
+<text class="code" x="3108" y="1270" xml:space="preserve">MT7925_RXQ_BAND0</text>
+<text class="code" x="2894" y="1288" xml:space="preserve">desc[0]</text>
+<text class="code" x="2894" y="1307" xml:space="preserve">desc[1]</text>
+<text class="dot" x="3043" y="1329" xml:space="preserve">…</text>
+<text class="code" x="2894" y="1345" xml:space="preserve">desc[n-1]</text>
+<text class="cn" x="3806" y="604" xml:space="preserve">驱动侧元数据</text>
+<text class="cn" x="3806" y="702" xml:space="preserve">q_tx[0].entry[]</text>
+<text class="code" x="4028" y="702" xml:space="preserve">MT7925_TXQ_BAND0</text>
+<text class="code" x="3814" y="720" xml:space="preserve">entry[0]</text>
+<text class="code" x="3814" y="739" xml:space="preserve">entry[1]</text>
+<text class="dot" x="3963" y="761" xml:space="preserve">…</text>
+<text class="code" x="3814" y="777" xml:space="preserve">entry[n-1]</text>
+<text class="cn" x="3806" y="844" xml:space="preserve">q_mcu[MT_MCUQ_WM].entry[]</text>
+<text class="code" x="4021" y="844" xml:space="preserve">MT7925_TXQ_MCU_WM</text>
+<text class="code" x="3814" y="862" xml:space="preserve">entry[0]</text>
+<text class="code" x="3814" y="881" xml:space="preserve">entry[1]</text>
+<text class="dot" x="3963" y="903" xml:space="preserve">…</text>
+<text class="code" x="3814" y="919" xml:space="preserve">entry[n-1]</text>
+<text class="cn" x="3806" y="986" xml:space="preserve">q_mcu[MT_MCUQ_FWDL].entry[]</text>
+<text class="code" x="4035" y="986" xml:space="preserve">MT7925_TXQ_FWDL</text>
+<text class="code" x="3814" y="1004" xml:space="preserve">entry[0]</text>
+<text class="code" x="3814" y="1023" xml:space="preserve">entry[1]</text>
+<text class="dot" x="3963" y="1045" xml:space="preserve">…</text>
+<text class="code" x="3814" y="1061" xml:space="preserve">entry[n-1]</text>
+<text class="cn" x="3806" y="1128" xml:space="preserve">q_rx[MT_RXQ_MCU].entry[]</text>
+<text class="code" x="4021" y="1128" xml:space="preserve">MT7925_RXQ_MCU_WM</text>
+<text class="code" x="3814" y="1146" xml:space="preserve">entry[0]</text>
+<text class="code" x="3814" y="1165" xml:space="preserve">entry[1]</text>
+<text class="dot" x="3963" y="1187" xml:space="preserve">…</text>
+<text class="code" x="3814" y="1203" xml:space="preserve">entry[n-1]</text>
+<text class="cn" x="3806" y="1270" xml:space="preserve">q_rx[MT_RXQ_MAIN].entry[]</text>
+<text class="code" x="4028" y="1270" xml:space="preserve">MT7925_RXQ_BAND0</text>
+<text class="code" x="3814" y="1288" xml:space="preserve">entry[0]</text>
+<text class="code" x="3814" y="1307" xml:space="preserve">entry[1]</text>
+<text class="dot" x="3963" y="1329" xml:space="preserve">…</text>
+<text class="code" x="3814" y="1345" xml:space="preserve">entry[n-1]</text>
+<!-- ===== ⑤ RX 缓冲区 ===== -->
+<rect x="3286" y="1108" width="388" height="268" rx="6" fill="#ffffff" stroke="#00838f" stroke-width="1.6" stroke-dasharray="8,4"/>
+<text class="cn" x="3302" y="1100" xml:space="preserve" font-weight="bold" fill="#006064">⑤ RX 缓冲区</text>
+
+<text class="cn" x="3302" y="1122" xml:space="preserve" font-weight="bold" fill="#006064">给 q_rx[MT_RXQ_MCU] 的 buf[]   n=512</text>
+<rect x="3298" y="1128" width="364" height="86" rx="4" fill="#e0f7fa" stroke="#00838f" stroke-width="1.2"/>
+<rect x="3312" y="1134" width="336" height="16" rx="2" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+<text class="code" x="3320" y="1146" xml:space="preserve">buf[0]</text>
+<text class="cmt" x="3586" y="1146" xml:space="preserve">2048B</text>
+<rect x="3312" y="1153" width="336" height="16" rx="2" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+<text class="code" x="3320" y="1165" xml:space="preserve">buf[1]</text>
+<text class="cmt" x="3586" y="1165" xml:space="preserve">2048B</text>
+<text class="dot" x="3464" y="1186" xml:space="preserve">…</text>
+<rect x="3312" y="1191" width="336" height="16" rx="2" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+<text class="code" x="3320" y="1203" xml:space="preserve">buf[n-1]</text>
+<text class="cmt" x="3586" y="1203" xml:space="preserve">2048B</text>
+
+<text class="cn" x="3302" y="1264" xml:space="preserve" font-weight="bold" fill="#006064">给 q_rx[MT_RXQ_MAIN] 的 buf[]   n=1536</text>
+<rect x="3298" y="1270" width="364" height="86" rx="4" fill="#e0f7fa" stroke="#00838f" stroke-width="1.2"/>
+<rect x="3312" y="1276" width="336" height="16" rx="2" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+<text class="code" x="3320" y="1288" xml:space="preserve">buf[0]</text>
+<text class="cmt" x="3586" y="1288" xml:space="preserve">2048B</text>
+<rect x="3312" y="1295" width="336" height="16" rx="2" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+<text class="code" x="3320" y="1307" xml:space="preserve">buf[1]</text>
+<text class="cmt" x="3586" y="1307" xml:space="preserve">2048B</text>
+<text class="dot" x="3464" y="1329" xml:space="preserve">…</text>
+<rect x="3312" y="1333" width="336" height="16" rx="2" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+<text class="code" x="3320" y="1345" xml:space="preserve">buf[n-1]</text>
+<text class="cmt" x="3586" y="1345" xml:space="preserve">2048B</text>
+
+<!-- desc[i] → buf[i] 一一对应 -->
+<path d="M3218,1142 H3288" fill="none" stroke="#00838f" stroke-width="1.6" marker-end="url(#arT)"/>
+<path d="M3218,1161 H3288" fill="none" stroke="#00838f" stroke-width="1.6" marker-end="url(#arT)"/>
+<path d="M3218,1199 H3288" fill="none" stroke="#00838f" stroke-width="1.6" marker-end="url(#arT)"/>
+<path d="M3218,1284 H3288" fill="none" stroke="#00838f" stroke-width="1.6" marker-end="url(#arT)"/>
+<path d="M3218,1303 H3288" fill="none" stroke="#00838f" stroke-width="1.6" marker-end="url(#arT)"/>
+<path d="M3218,1341 H3288" fill="none" stroke="#00838f" stroke-width="1.6" marker-end="url(#arT)"/>
+
+<!-- mt76_create_page_pool() 创建这片缓冲区 -->
+<path d="M2150,1272 H2215 V1240 H4188" fill="none" stroke="#e65100" stroke-width="2"/>
+<path d="M4188,1240 V1157 H4224" fill="none" stroke="#e65100" stroke-width="2" marker-end="url(#arO)"/>
+<path d="M4188,1240 V1304 H4224" fill="none" stroke="#e65100" stroke-width="2" marker-end="url(#arO)"/>
+<text class="cmt" x="2900" y="1232" xml:space="preserve" fill="#e65100"><tspan fill="#00838f" font-weight="bold">mt76_create_page_pool()</tspan></text><!-- entry[i] 也指向同一片 buf[i]（不再用虚线直连 desc 与 entry） -->
+<text class="cn" x="4230" y="1128" xml:space="preserve">q_rx[MT_RXQ_MCU].page_pool</text>
+<text class="cmt" x="4460" y="1128" xml:space="preserve">pool_size = 16</text>
+<rect x="4230" y="1133" width="340" height="96" rx="4" fill="#e0f7fa" stroke="#00838f" stroke-width="1.2"/>
+<text class="cmt" x="4242" y="1146" xml:space="preserve">alloc.cache[]  128 槽 · 每 CPU 一份</text>
+<g>
+  <rect x="4242" y="1150" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4294" y="1150" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4346" y="1150" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4398" y="1150" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4450" y="1150" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4502" y="1150" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+</g>
+<text class="cmt" x="4242" y="1181" xml:space="preserve">ptr_ring  容量 = pool_size (16)</text>
+<g>
+  <rect x="4242" y="1185" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4294" y="1185" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4346" y="1185" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4398" y="1185" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4450" y="1185" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4502" y="1185" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+</g>
+<text class="cmt" x="4242" y="1217" xml:space="preserve">每页 4096B，切 2×2048B 给 buf[]</text>
+
+<text class="cn" x="4230" y="1275" xml:space="preserve">q_rx[MT_RXQ_MAIN].page_pool</text>
+<text class="cmt" x="4460" y="1275" xml:space="preserve">pool_size = 256</text>
+<rect x="4230" y="1280" width="340" height="96" rx="4" fill="#e0f7fa" stroke="#00838f" stroke-width="1.2"/>
+<text class="cmt" x="4242" y="1293" xml:space="preserve">alloc.cache[]  128 槽 · 每 CPU 一份</text>
+<g>
+  <rect x="4242" y="1297" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4294" y="1297" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4346" y="1297" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4398" y="1297" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4450" y="1297" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4502" y="1297" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+</g>
+<text class="cmt" x="4242" y="1328" xml:space="preserve">ptr_ring  容量 = pool_size (256)</text>
+<g>
+  <rect x="4242" y="1332" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4294" y="1332" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4346" y="1332" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4398" y="1332" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4450" y="1332" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+  <rect x="4502" y="1332" width="48" height="14" rx="1" fill="#ffffff" stroke="#8d6e63" stroke-width="1"/>
+</g>
+<text class="cmt" x="4242" y="1364" xml:space="preserve">每页 4096B，切 2×2048B 给 buf[]</text>
+
+<!-- page_pool ↔ buf[]：q_rx[MT_RXQ_MAIN] 的取缓冲 / 归还闭环 -->
+<path d="M4320,1376 V1428 H3420 V1360" fill="none" stroke="#00838f" stroke-width="2" marker-end="url(#arT)"/>
+<path d="M3380,1360 V1478 H4480 V1376" fill="none" stroke="#2e7d32" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#arG)"/>
+<text class="cmt" x="3450" y="1446" xml:space="preserve">① 取出：mt76_get_page_pool_buf(q, &amp;offset, 2048)</text>
+<text class="cmt" x="3450" y="1496" xml:space="preserve">② 归还：mt76_put_page_pool_buf() → page_pool_put_full_page()</text>
+<path d="M3786,1142 H3668" fill="none" stroke="#5a6772" stroke-width="1.6" marker-end="url(#ar)"/>
+<path d="M3786,1161 H3668" fill="none" stroke="#5a6772" stroke-width="1.6" marker-end="url(#ar)"/>
+<path d="M3786,1199 H3668" fill="none" stroke="#5a6772" stroke-width="1.6" marker-end="url(#ar)"/>
+<path d="M3786,1284 H3668" fill="none" stroke="#5a6772" stroke-width="1.6" marker-end="url(#ar)"/>
+<path d="M3786,1303 H3668" fill="none" stroke="#5a6772" stroke-width="1.6" marker-end="url(#ar)"/>
+<path d="M3786,1341 H3668" fill="none" stroke="#5a6772" stroke-width="1.6" marker-end="url(#ar)"/>
+<!-- 驱动侧 NAPI：按队列下标绑定，不属于 desc[] 描述符 -->
+<rect x="2886" y="792" width="94" height="13" rx="2" fill="#ffffff" stroke="#2e7d32" stroke-width="0.9"/>
+<text class="code" x="2896" y="802" xml:space="preserve" font-weight="bold" fill="#2e7d32">NAPI: tx_napi</text>
+<rect x="2886" y="934" width="94" height="13" rx="2" fill="#ffffff" stroke="#2e7d32" stroke-width="0.9"/>
+<text class="code" x="2896" y="944" xml:space="preserve" font-weight="bold" fill="#2e7d32">NAPI: tx_napi</text>
+<rect x="2886" y="1076" width="94" height="13" rx="2" fill="#ffffff" stroke="#2e7d32" stroke-width="0.9"/>
+<text class="code" x="2896" y="1086" xml:space="preserve" font-weight="bold" fill="#2e7d32">NAPI: tx_napi</text>
+<rect x="2886" y="1218" width="153" height="13" rx="2" fill="#ffffff" stroke="#c62828" stroke-width="0.9"/>
+<text class="code" x="2896" y="1228" xml:space="preserve" font-weight="bold" fill="#c62828">NAPI: napi[MT_RXQ_MCU]</text>
+<rect x="2886" y="1360" width="160" height="13" rx="2" fill="#ffffff" stroke="#c62828" stroke-width="0.9"/>
+<text class="code" x="2896" y="1370" xml:space="preserve" font-weight="bold" fill="#c62828">NAPI: napi[MT_RXQ_MAIN]</text>
+</svg>

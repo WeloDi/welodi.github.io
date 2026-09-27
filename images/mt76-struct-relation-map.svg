@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2120" height="1120" viewBox="0 0 2120 1120">
+<style>
+.h1    { font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:24px; font-weight:bold; fill:#0d1b2a; }
+.sub   { font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:13.5px; fill:#607d8b; }
+.lbl   { font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:12.5px; fill:#546e7a; }
+.tbox  { font-family:'Consolas','Cascadia Code',monospace; font-size:18px; font-weight:bold; fill:#ffffff; }
+.tbox2 { font-family:'Consolas','Cascadia Code',monospace; font-size:15px; font-weight:bold; fill:#ffffff; }
+.srcd  { font-family:'Consolas',monospace; font-size:11px; fill:#ffffff; }
+.mem   { font-family:'Consolas','Cascadia Code',monospace; font-size:14px; fill:#263238; }
+.mem2  { font-family:'Consolas','Cascadia Code',monospace; font-size:13px; fill:#263238; }
+.cmt2  { font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:12px; fill:#90a4ae; }
+.cmt   { font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:12.5px; fill:#546e7a; }
+.csrc  { font-family:'Consolas','Cascadia Code',monospace; font-size:13px; fill:#263238; }
+.ccmt  { font-family:'Segoe UI','Microsoft YaHei',sans-serif; font-size:12.5px; fill:#607d8b; }
+.ty    { fill:#8e24aa; }
+.tn    { fill:#0d47a1; font-weight:bold; }
+.vr    { fill:#00695c; font-weight:bold; }
+.hlT   { fill:#00695c; }
+.hlB   { fill:#1565c0; }
+.hlO   { fill:#e65100; }
+</style>
+<defs>
+  <marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1565c0"/></marker>
+  <marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#00695c"/></marker>
+  <marker id="arO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e65100"/></marker>
+</defs>
+
+<rect x="0" y="0" width="2120" height="1120" fill="#f7f9fa"/>
+
+<text class="h1" x="40" y="44">mt76 DMA 队列：结构体嵌套关系</text>
+<text class="sub" x="40" y="70">linux-6.12 · drivers/net/wireless/mediatek/mt76/{mt76.h, dma.h} · include/net/page_pool/types.h</text>
+
+<!-- ==================== struct mt76_dev（成员按 mt76.h:825-926 原序） ==================== -->
+<rect x="40" y="96" width="760" height="954" rx="10" fill="#ffffff" stroke="#37474f" stroke-width="1.8"/>
+<path d="M40,132 V106 a10,10 0 0 1 10,-10 h740 a10,10 0 0 1 10,10 V132 Z" fill="#37474f"/>
+<text class="tbox" x="56" y="123">struct mt76_dev</text>
+<text class="srcd" x="300" y="123">mt76.h:825</text>
+
+<!-- 826：第一个成员 struct mt76_phy（嵌套） -->
+<rect x="64" y="152" width="712" height="294" rx="6" fill="#fbfdff" stroke="#455a64" stroke-width="1.4" stroke-dasharray="7 4"/>
+<path d="M64,180 V158 a6,6 0 0 1 6,-6 h700 a6,6 0 0 1 6,6 V180 Z" fill="#455a64"/>
+<text class="tbox" x="78" y="172">struct mt76_phy phy;</text>
+<text class="srcd" x="700" y="172" text-anchor="end">mt76.h:769 · 第一个成员</text>
+
+<text class="mem" x="78" y="208"><tspan class="ty">struct</tspan> <tspan class="tn">ieee80211_hw</tspan> *<tspan class="vr">hw</tspan>;</text>
+<text class="mem" x="78" y="232"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_dev</tspan> *<tspan class="vr">dev</tspan>;</text>
+<text class="mem" x="78" y="256"><tspan class="ty">void</tspan> *<tspan class="vr">priv</tspan>;</text>
+<text class="mem" x="78" y="280"><tspan class="ty">unsigned long</tspan> <tspan class="vr">state</tspan>;</text>
+<text class="mem" x="78" y="304"><tspan class="ty">u8</tspan> <tspan class="vr">band_idx</tspan>;</text>
+<text class="mem" x="78" y="328"><tspan class="ty">spinlock_t</tspan> <tspan class="vr">tx_lock</tspan>;</text>
+<text class="mem" x="78" y="352"><tspan class="ty">struct</tspan> <tspan class="tn">list_head</tspan> <tspan class="vr">tx_list</tspan>;</text>
+<text class="mem" x="78" y="376"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_queue</tspan> *<tspan class="vr hlB">q_tx</tspan>[__MT_TXQ_MAX];</text>
+<text class="cmt2" x="78" y="400">/* 781-822 省略：chandef / offchannel / sband_2g/5g/6g / cap / macaddr / test / leds … */</text>
+<text class="mem" x="78" y="424">};</text>
+
+<!-- mt76_dev 其余成员（原序，行号见左栏） -->
+<text class="mem" x="56" y="478"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_phy</tspan> *<tspan class="vr">phys</tspan>[__MT_MAX_BAND];<tspan class="cmt2">   /* 其余 band 的 phy */</tspan></text>
+<text class="mem" x="56" y="500"><tspan class="ty">struct</tspan> <tspan class="tn">ieee80211_hw</tspan> *<tspan class="vr">hw</tspan>;</text>
+<text class="cmt2" x="56" y="522">/* 831-842 省略：wed_lock / lock / cc_lock / cur_cc_bss_rx / rx_ampdu_* / mutex */</text>
+<text class="mem" x="56" y="544"><tspan class="ty">const struct</tspan> <tspan class="tn">mt76_bus_ops</tspan> *<tspan class="vr">bus</tspan>;</text>
+<text class="mem" x="56" y="566"><tspan class="ty">struct</tspan> <tspan class="tn">device</tspan> *<tspan class="vr">dma_dev</tspan>;<tspan class="cmt2">   /* DMA 映射用 */</tspan></text>
+<text class="mem" x="56" y="588"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_mcu</tspan> <tspan class="vr">mcu</tspan>;</text>
+<text class="mem" x="56" y="610"><tspan class="ty">spinlock_t</tspan> <tspan class="vr">rx_lock</tspan>;</text>
+<text class="mem" x="56" y="632"><tspan class="ty">struct</tspan> <tspan class="tn">napi_struct</tspan> <tspan class="vr">napi</tspan>[__MT_RXQ_MAX];<tspan class="cmt2">   /* 与 q_rx[] 同下标 */</tspan></text>
+<text class="mem" x="56" y="654"><tspan class="ty">struct</tspan> <tspan class="tn">sk_buff_head</tspan> <tspan class="vr">rx_skb</tspan>[__MT_RXQ_MAX];</text>
+<text class="mem" x="56" y="676"><tspan class="ty">struct</tspan> <tspan class="tn">tasklet_struct</tspan> <tspan class="vr">irq_tasklet</tspan>;</text>
+<text class="mem" x="56" y="698"><tspan class="ty">struct</tspan> <tspan class="tn">list_head</tspan> <tspan class="vr">txwi_cache</tspan>;</text>
+<text class="mem" x="56" y="720"><tspan class="ty">struct</tspan> <tspan class="tn">list_head</tspan> <tspan class="vr">rxwi_cache</tspan>;</text>
+<text class="mem" x="56" y="742"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_queue</tspan> *<tspan class="vr">q_mcu</tspan>[__MT_MCUQ_MAX];<tspan class="cmt2">   /* MCU 队列 */</tspan></text>
+<text class="mem" x="56" y="764"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_queue</tspan> <tspan class="vr hlB">q_rx</tspan>[__MT_RXQ_MAX];</text>
+<text class="mem" x="56" y="786"><tspan class="ty">const struct</tspan> <tspan class="tn">mt76_queue_ops</tspan> *<tspan class="vr">queue_ops</tspan>;</text>
+<text class="mem" x="56" y="808"><tspan class="ty">int</tspan> <tspan class="vr">tx_dma_idx</tspan>[4];</text>
+<text class="mem" x="56" y="830"><tspan class="ty">struct</tspan> <tspan class="tn">napi_struct</tspan> <tspan class="vr">tx_napi</tspan>;</text>
+<text class="mem" x="56" y="852"><tspan class="ty">struct</tspan> <tspan class="tn">idr</tspan> <tspan class="vr">token</tspan>;<tspan class="cmt2">   /* TX token ↔ skb */</tspan></text>
+<text class="mem" x="56" y="874"><tspan class="ty">struct</tspan> <tspan class="tn">idr</tspan> <tspan class="vr">rx_token</tspan>;<tspan class="cmt2">   /* WED-RX token ↔ 页 */</tspan></text>
+<text class="mem" x="56" y="896"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_wcid</tspan> <tspan class="ty">__rcu</tspan> *<tspan class="vr">wcid</tspan>[MT76_N_WCIDS];</text>
+<text class="cmt2" x="56" y="918">/* 891-920 省略：wcid_mask / global_wcid / sta_poll_list / rev / 信标 / debugfs / wq */</text>
+<text class="mem" x="56" y="940"><tspan class="ty">union</tspan> {</text>
+<text class="mem" x="72" y="962"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_mmio</tspan> <tspan class="vr">mmio</tspan>;</text>
+<text class="mem" x="72" y="984"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_usb</tspan> <tspan class="vr">usb</tspan>;</text>
+<text class="mem" x="72" y="1006"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_sdio</tspan> <tspan class="vr">sdio</tspan>;</text>
+<text class="mem" x="56" y="1028">};</text>
+
+<!-- ==================== struct mt76_queue（独立框，dev 右侧） ==================== -->
+<rect x="880" y="96" width="520" height="580" rx="8" fill="#ffffff" stroke="#37474f" stroke-width="1.8"/>
+<path d="M880,130 V104 a8,8 0 0 1 8,-8 h504 a8,8 0 0 1 8,8 V130 Z" fill="#37474f"/>
+<text class="tbox" x="896" y="120">struct mt76_queue</text>
+<text class="srcd" x="1384" y="120" text-anchor="end">mt76.h:201</text>
+
+<text class="mem2" x="896" y="158"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_queue_regs</tspan> <tspan class="ty">__iomem</tspan> *<tspan class="vr">regs</tspan>;<tspan class="cmt2">   /* 环控制寄存器 MMIO 窗口 */</tspan></text>
+<text class="mem2" x="896" y="180"><tspan class="ty">spinlock_t</tspan> <tspan class="vr">lock</tspan>;<tspan class="cmt2">   /* 保护 head/queued 等计数 */</tspan></text>
+<text class="mem2" x="896" y="202"><tspan class="ty">spinlock_t</tspan> <tspan class="vr">cleanup_lock</tspan>;<tspan class="cmt2">   /* 串行化 tx/rx cleanup */</tspan></text>
+<text class="mem2" x="896" y="224"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_queue_entry</tspan> *<tspan class="vr hlT">entry</tspan>;<tspan class="cmt2">   /* 每槽的软件影子数据 */</tspan></text>
+<text class="mem2" x="896" y="246"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_rro_desc</tspan> *<tspan class="vr">rro_desc</tspan>;<tspan class="cmt2">   /* WED-RRO 描述符视图 */</tspan></text>
+<text class="mem2" x="896" y="268"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_desc</tspan> *<tspan class="vr hlB">desc</tspan>;<tspan class="cmt2">   /* 硬件描述符数组 desc[] */</tspan></text>
+<text class="mem2" x="896" y="290"><tspan class="ty">u16</tspan> <tspan class="vr">first</tspan>;<tspan class="cmt2">   /* USB/SDIO：待完成区起点 */</tspan></text>
+<text class="mem2" x="896" y="312"><tspan class="ty">u16</tspan> <tspan class="vr">head</tspan>;<tspan class="cmt2">   /* CPU 提交(生产者)下标 */</tspan></text>
+<text class="mem2" x="896" y="334"><tspan class="ty">u16</tspan> <tspan class="vr">tail</tspan>;<tspan class="cmt2">   /* CPU 回收(消费者)下标 */</tspan></text>
+<text class="mem2" x="896" y="356"><tspan class="ty">u8</tspan> <tspan class="vr">hw_idx</tspan>;<tspan class="cmt2">   /* 硬件环号 */</tspan></text>
+<text class="mem2" x="896" y="378"><tspan class="ty">u8</tspan> <tspan class="vr">ep</tspan>;<tspan class="cmt2">   /* USB 端点号(仅 USB) */</tspan></text>
+<text class="mem2" x="896" y="400"><tspan class="ty">int</tspan> <tspan class="vr">ndesc</tspan>;<tspan class="cmt2">   /* 描述符数 = 环容量 */</tspan></text>
+<text class="mem2" x="896" y="422"><tspan class="ty">int</tspan> <tspan class="vr">queued</tspan>;<tspan class="cmt2">   /* 已交给硬件的槽数 */</tspan></text>
+<text class="mem2" x="896" y="444"><tspan class="ty">int</tspan> <tspan class="vr">buf_size</tspan>;<tspan class="cmt2">   /* 单槽缓冲大小 */</tspan></text>
+<text class="mem2" x="896" y="466"><tspan class="ty">bool</tspan> <tspan class="vr">stopped</tspan>;<tspan class="cmt2">   /* 队列已停(流控) */</tspan></text>
+<text class="mem2" x="896" y="488"><tspan class="ty">bool</tspan> <tspan class="vr">blocked</tspan>;<tspan class="cmt2">   /* token 耗尽而阻塞 */</tspan></text>
+<text class="mem2" x="896" y="510"><tspan class="ty">u8</tspan> <tspan class="vr">buf_offset</tspan>;<tspan class="cmt2">   /* 缓冲内预留偏移 */</tspan></text>
+<text class="mem2" x="896" y="532"><tspan class="ty">u16</tspan> <tspan class="vr">flags</tspan>;<tspan class="cmt2">   /* MT_QFLAG_WED_* 位域 */</tspan></text>
+<text class="mem2" x="896" y="554"><tspan class="ty">struct</tspan> <tspan class="tn">mtk_wed_device</tspan> *<tspan class="vr">wed</tspan>;<tspan class="cmt2">   /* 绑定的 WED 设备 */</tspan></text>
+<text class="mem2" x="896" y="576"><tspan class="ty">u32</tspan> <tspan class="vr">wed_regs</tspan>;<tspan class="cmt2">   /* WED 寄存器基址偏移 */</tspan></text>
+<text class="mem2" x="896" y="598"><tspan class="ty">dma_addr_t</tspan> <tspan class="vr">desc_dma</tspan>;<tspan class="cmt2">   /* desc[] 的总线地址 */</tspan></text>
+<text class="mem2" x="896" y="620"><tspan class="ty">struct</tspan> <tspan class="tn">sk_buff</tspan> *<tspan class="vr">rx_head</tspan>;<tspan class="cmt2">   /* 分片重组中的 skb */</tspan></text>
+<text class="mem2" x="896" y="642"><tspan class="ty">struct</tspan> <tspan class="tn">page_pool</tspan> *<tspan class="vr hlO">page_pool</tspan>;<tspan class="cmt2">   /* 仅 RX 队列建页池 */</tspan></text>
+
+<!-- q_tx / q_rx 汇成一条箭头的合流括号 -->
+<path d="M420,376 H820" fill="none" stroke="#1565c0" stroke-width="2"/>
+<path d="M420,764 H820" fill="none" stroke="#1565c0" stroke-width="2"/>
+<path d="M820,376 V764" fill="none" stroke="#1565c0" stroke-width="2"/>
+<path d="M820,570 H877" fill="none" stroke="#1565c0" stroke-width="2" marker-end="url(#arB)"/>
+
+<!-- 直接由成员名引出箭头 -->
+<path d="M1250,224 H1477" fill="none" stroke="#00695c" stroke-width="2" marker-end="url(#arT)"/>
+<path d="M1216,268 H1420 V600 H1477" fill="none" stroke="#1565c0" stroke-width="2" marker-end="url(#arB)"/>
+<path d="M1245,642 H1445 V850 H1477" fill="none" stroke="#e65100" stroke-width="2" marker-end="url(#arO)"/>
+
+<!-- ==================== entry[] ==================== -->
+<rect x="1480" y="96" width="600" height="426" rx="8" fill="#ffffff" stroke="#00695c" stroke-width="1.8"/>
+<path d="M1480,128 V104 a8,8 0 0 1 8,-8 h584 a8,8 0 0 1 8,8 V128 Z" fill="#00695c"/>
+<text class="tbox2" x="1496" y="118">struct mt76_queue_entry  entry[ndesc]</text>
+<text class="srcd" x="2068" y="118" text-anchor="end">mt76.h:176</text>
+<text class="cmt" x="1496" y="150">// 每个环槽一份，下标与 desc[i] 一致</text>
+
+<text class="csrc" x="1496" y="176"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_queue_entry</tspan> {</text>
+<text class="csrc" x="1496" y="196"><tspan class="ty">union</tspan> {</text>
+<text class="csrc" x="1512" y="216"><tspan class="ty">void</tspan> *<tspan class="vr">buf</tspan>;</text>
+<text class="ccmt" x="1760" y="216">/* RX(DMA)：frag 虚拟地址 */</text>
+<text class="csrc" x="1512" y="236"><tspan class="ty">struct</tspan> <tspan class="tn">sk_buff</tspan> *<tspan class="vr">skb</tspan>;</text>
+<text class="ccmt" x="1760" y="236">/* RX(SDIO/USB)、TX(DMA) */</text>
+<text class="csrc" x="1496" y="256">};</text>
+<text class="csrc" x="1496" y="276"><tspan class="ty">union</tspan> {</text>
+<text class="csrc" x="1512" y="296"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_txwi_cache</tspan> *<tspan class="vr">txwi</tspan>;</text>
+<text class="ccmt" x="1760" y="296">/* DMA-TX */</text>
+<text class="csrc" x="1512" y="316"><tspan class="ty">struct</tspan> <tspan class="tn">urb</tspan> *<tspan class="vr">urb</tspan>;</text>
+<text class="ccmt" x="1760" y="316">/* USB */</text>
+<text class="csrc" x="1512" y="336"><tspan class="ty">int</tspan> <tspan class="vr">buf_sz</tspan>;</text>
+<text class="ccmt" x="1760" y="336">/* SDIO */</text>
+<text class="csrc" x="1496" y="356">};</text>
+<text class="csrc" x="1496" y="376"><tspan class="ty">dma_addr_t</tspan> <tspan class="vr">dma_addr</tspan>[2];</text>
+<text class="ccmt" x="1760" y="376">/* [0]↔buf0  [1]↔buf1 */</text>
+<text class="csrc" x="1496" y="396"><tspan class="ty">u16</tspan> <tspan class="vr">dma_len</tspan>[2];</text>
+<text class="csrc" x="1496" y="416"><tspan class="ty">u16</tspan> <tspan class="vr">wcid</tspan>;</text>
+<text class="csrc" x="1496" y="436"><tspan class="ty">bool</tspan> <tspan class="vr">skip_buf0</tspan>:1;</text>
+<text class="ccmt" x="1760" y="436">/* 该段不由 ring unmap */</text>
+<text class="csrc" x="1496" y="456"><tspan class="ty">bool</tspan> <tspan class="vr">skip_buf1</tspan>:1;</text>
+<text class="csrc" x="1496" y="476"><tspan class="ty">bool</tspan> <tspan class="vr">done</tspan>:1;</text>
+<text class="ccmt" x="1760" y="476">/* 仅 USB/SDIO 用 */</text>
+<text class="csrc" x="1496" y="496">};</text>
+
+<!-- ==================== desc[] ==================== -->
+<rect x="1480" y="544" width="600" height="206" rx="8" fill="#ffffff" stroke="#1565c0" stroke-width="1.8"/>
+<path d="M1480,576 V552 a8,8 0 0 1 8,-8 h584 a8,8 0 0 1 8,8 V576 Z" fill="#1565c0"/>
+<text class="tbox2" x="1496" y="566">struct mt76_desc  desc[ndesc]</text>
+<text class="srcd" x="2068" y="566" text-anchor="end">dma.h:44</text>
+<text class="cmt" x="1496" y="598">// 一致性内存，总线地址 = q->desc_dma</text>
+
+<text class="csrc" x="1496" y="624"><tspan class="ty">struct</tspan> <tspan class="tn">mt76_desc</tspan> {</text>
+<text class="csrc" x="1512" y="644"><tspan class="ty">__le32</tspan> <tspan class="vr">buf0</tspan>;</text>
+<text class="ccmt" x="1650" y="644">/* SD_P0 低 32 位 */</text>
+<text class="csrc" x="1512" y="664"><tspan class="ty">__le32</tspan> <tspan class="vr">ctrl</tspan>;</text>
+<text class="ccmt" x="1650" y="664">/* SD_LEN0/1 · DMA_DONE */</text>
+<text class="csrc" x="1512" y="684"><tspan class="ty">__le32</tspan> <tspan class="vr">buf1</tspan>;</text>
+<text class="ccmt" x="1650" y="684">/* SD_P1 低 32 位 */</text>
+<text class="csrc" x="1512" y="704"><tspan class="ty">__le32</tspan> <tspan class="vr">info</tspan>;</text>
+<text class="ccmt" x="1650" y="704">/* SDP0_H / RX status */</text>
+<text class="csrc" x="1496" y="724">} <tspan class="ty">__packed __aligned</tspan>(4);</text>
+
+<!-- ==================== page_pool ==================== -->
+<rect x="1480" y="772" width="600" height="326" rx="8" fill="#ffffff" stroke="#e65100" stroke-width="1.8"/>
+<path d="M1480,804 V780 a8,8 0 0 1 8,-8 h584 a8,8 0 0 1 8,8 V804 Z" fill="#e65100"/>
+<text class="tbox2" x="1496" y="794">struct page_pool  *page_pool</text>
+<text class="srcd" x="2068" y="794" text-anchor="end">types.h:159</text>
+<text class="cmt" x="1496" y="826">// 只给 RX / WED tx-free 队列建（mac80211.c:581）</text>
+
+<text class="csrc" x="1496" y="852"><tspan class="ty">struct</tspan> <tspan class="tn">page_pool</tspan> {</text>
+<text class="csrc" x="1512" y="872"><tspan class="ty">struct</tspan> <tspan class="tn">page_pool_params_fast</tspan> <tspan class="vr">p</tspan>;</text>
+<text class="ccmt" x="1770" y="872">/* order=0 → 4096B/页 */</text>
+<text class="csrc" x="1512" y="892"><tspan class="ty">int</tspan> <tspan class="vr">cpuid</tspan>;</text>
+<text class="csrc" x="1512" y="912"><tspan class="ty">u32</tspan> <tspan class="vr">pages_state_hold_cnt</tspan>;</text>
+<text class="csrc" x="1512" y="932"><tspan class="ty">bool</tspan> <tspan class="vr">dma_map</tspan>:1;</text>
+<text class="ccmt" x="1770" y="932">/* 整页一次性映射 */</text>
+<text class="csrc" x="1512" y="952"><tspan class="ty">bool</tspan> <tspan class="vr">dma_sync</tspan>:1;</text>
+<text class="ccmt" x="1770" y="952">/* PP_FLAG_DMA_SYNC_DEV */</text>
+<text class="csrc" x="1512" y="972"><tspan class="ty">long</tspan> <tspan class="vr">frag_users</tspan>;</text>
+<text class="csrc" x="1512" y="992"><tspan class="ty">netmem_ref</tspan> <tspan class="vr">frag_page</tspan>;</text>
+<text class="csrc" x="1512" y="1012"><tspan class="ty">unsigned int</tspan> <tspan class="vr">frag_offset</tspan>;</text>
+<text class="csrc" x="1512" y="1032"><tspan class="ty">struct</tspan> <tspan class="tn">pp_alloc_cache</tspan> <tspan class="vr">alloc</tspan>;</text>
+<text class="ccmt" x="1770" y="1032">/* 分配侧 per-CPU 缓存 */</text>
+<text class="csrc" x="1512" y="1052"><tspan class="ty">struct</tspan> <tspan class="tn">ptr_ring</tspan> <tspan class="vr">ring</tspan>;</text>
+<text class="ccmt" x="1770" y="1052">/* 回收侧，容量 = pool_size */</text>
+<text class="csrc" x="1496" y="1072">};</text>
+
+</svg>

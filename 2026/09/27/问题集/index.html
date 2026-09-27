@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>问题集 | Welodi</title>
+  <meta name="description" content="一、C&#x2F;C++ 与嵌入式基础你熟练使用 C&#x2F;C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？ static 修饰全局变量、局部变量、函数分别是什么含义？ 内核里 container_of 怎么实现的？为什么驱动框架大量用它？ kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？ copy_to_user &#x2F; copy_fro">
+<meta property="og:type" content="article">
+<meta property="og:title" content="问题集">
+<meta property="og:url" content="http://example.com/2026/09/27/%E9%97%AE%E9%A2%98%E9%9B%86/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="一、C&#x2F;C++ 与嵌入式基础你熟练使用 C&#x2F;C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？ static 修饰全局变量、局部变量、函数分别是什么含义？ 内核里 container_of 怎么实现的？为什么驱动框架大量用它？ kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？ copy_to_user &#x2F; copy_fro">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-09-27T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-27T14:45:20.138Z">
+<meta property="article:author" content="Welodi">
+<meta property="article:tag" content="面试">
+<meta property="article:tag" content="综合">
+<meta name="twitter:card" content="summary">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=7ef16e4b">
+  <link rel="stylesheet" href="/css/image-zoom.css?v=7ef16e4b">
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+      
+        
+        <a class="nav-link" href="/">Home</a>
+      
+        
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">问题集</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-27T02:00:00.000Z">2026-09-27</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/%E9%9D%A2%E8%AF%95/">面试</a>
+      
+    </div>
+  </header>
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <p>一、C/C++ 与嵌入式基础<br>你熟练使用 C/C++ 做嵌入式开发，请说一下 volatile 在驱动里的作用，什么场景必须用？</p>
+<p>static 修饰全局变量、局部变量、函数分别是什么含义？</p>
+<p>内核里 container_of 怎么实现的？为什么驱动框架大量用它？</p>
+<p>kmalloc、vmalloc、kzalloc、devm_kzalloc 的区别和适用场景？</p>
+<p>copy_to_user / copy_from_user 为什么不能直接用 memcpy？</p>
+<p>内核里 printk 和用户态 printf 有什么区别？日志级别怎么控制？</p>
+<p>驱动里出现 Oops 一般怎么定位？BUG_ON 和 WARN_ON 该不该在驱动里用？</p>
+<p>你写过 Makefile，一个内核模块的 Makefile 基本结构是什么？</p>
+<p>Git/repo 管理代码时，你怎么处理多仓库依赖和版本同步？</p>
+<p>你熟悉 Shell/Python，举一个你用脚本做自动化调试或日志分析的实际例子。</p>
+<p>二、ARM 架构与系统基础<br>请说一下 ARM 异常级别 EL0–EL3，Linux 内核和用户态分别运行在哪一级？</p>
+<p>ARM 的中断和异常有什么区别？异常向量表怎么跳转？</p>
+<p>MMU 地址映射的作用是什么？页表、TTBR、TLB 之间怎么配合？</p>
+<p>什么是 Cache 一致性？DMA 传输时为什么要处理 Cache？</p>
+<p>DMA 的常见模式有哪些？驱动里怎么申请和使用 DMA 通道？</p>
+<p>I2C、SPI、UART 在电气特性、速率、拓扑和驱动模型上有什么区别？</p>
+<p>PCIe 和 MIPI-CSI2 这类高速接口，在驱动开发上和低速总线最大的差异在哪？</p>
+<p>你了解 EtherCAT、CANopen，它们和 Linux 网络驱动、字符设备驱动怎么结合？</p>
+<p>三、Linux 内核与启动流程<br>请完整讲一下 ARM Linux 的启动流程：BootROM → U-Boot → Kernel → Rootfs。</p>
+<p>U-Boot 阶段主要做什么？SPL 和 U-Boot proper 的区别？</p>
+<p>设备树 DTS/DTSI/DTSO 的关系？compatible 怎么匹配驱动？</p>
+<p>内核启动时驱动 probe 的顺序由什么决定？module_init 和 late_initcall 有什么区别？</p>
+<p>EPROBE_DEFER 是什么机制？什么场景下会用到？</p>
+<p>你做过内核裁剪和移植，裁剪时主要关注哪些配置项？</p>
+<p>menuconfig 里 =y、=m、is not set 分别代表什么？</p>
+<p>内核启动卡住，你会按什么顺序排查？从哪几个阶段入手？</p>
+<p>你熟悉 U-Boot/Linux Kernel 启动流程，如果 Kernel 已经启动但 rootfs 挂载失败，可能是什么原因？</p>
+<p>设备树里 GPIO、时钟、电源域、Pinmux 一般怎么配置？配错会有什么现象？</p>
+<p>四、字符设备与驱动模型<br>请写一个最简单的字符设备驱动框架：file_operations、register_chrdev、cdev 的关系。</p>
+<p>miscdevice 和普通字符设备有什么区别？什么时候用 misc？</p>
+<p>用户态 open/read/write/ioctl 到内核驱动的调用路径是怎样的？</p>
+<p>ioctl、sysfs、procfs、debugfs 分别适合暴露什么信息？</p>
+<p>驱动里并发控制有哪些手段？自旋锁、互斥锁、信号量、原子操作怎么选？</p>
+<p>中断上下文能不能睡眠？为什么？如果一定要延迟处理怎么办？</p>
+<p>softirq、tasklet、workqueue 的区别和适用场景？</p>
+<p>platform_driver 和 i2c_driver、spi_driver 的匹配机制有什么异同？</p>
+<p>probe 函数里一般做哪些事？资源申请失败怎么回滚？</p>
+<p>设备树里 interrupt-parent、interrupts、gpio 怎么解析？gpiod_get 怎么用？</p>
+<p>五、I2C/SPI/IIO/Input 子系统<br>请说一下 i2c_adapter、i2c_client、i2c_driver 的关系。</p>
+<p>I2C 读写时序里 Start、ACK/NACK、Stop 是什么？时钟拉伸是什么？</p>
+<p>i2c_smbus_read_byte_data 和 i2c_transfer 有什么区别？</p>
+<p>SPI 的 CPOL、CPHA 是什么？四种模式怎么对应？</p>
+<p>SPI 驱动里 spi_message、spi_transfer 怎么组织一次完整传输？</p>
+<p>IIO 子系统适合什么类型的设备？iio_dev、iio_chan_spec、触发缓冲怎么理解？</p>
+<p>你移植 hx9023s 时遇到 iio 跨版本 API 差异，具体是什么差异？怎么解决的？</p>
+<p>触发缓冲采样和阈值事件上报在 IIO 里怎么实现？</p>
+<p>Input 子系统里 input_dev、input_event、input_report_key 的流程是什么？</p>
+<p>你做过 It9611ex 桥接芯片驱动，HPD 触发和 EDID 读取链路怎么实现？</p>
+<p>EDID 读取超时可能有哪些原因？热插拔不识别怎么定位？</p>
+<p>六、V4L2/DRM/Camera 项目<br>请详细讲一下 IMX219 从上电到出图的完整流程。</p>
+<p>IMX219 初始化寄存器序列里，分辨率、帧率、曝光、增益分别怎么配置？</p>
+<p>V4L2 Control 框架怎么实现？v4l2_ctrl_handler、v4l2_ctrl_new_std 怎么用？</p>
+<p>曝光、增益、VBLANK、翻转这些控制项，用户态怎么调用？内核怎么下发到 Sensor？</p>
+<p>DTS overlay 里 Sensor 和 RK3588 ISP 管线怎么异步绑定？remote-endpoint 怎么配？</p>
+<p>V4L2 子设备驱动的 s_stream、enum_mbus_code、set_fmt、get_fmt 回调分别做什么？</p>
+<p>视频流启停时，MIPI CSI-2 的 Lane、Clock、Data Type 怎么配置？</p>
+<p>VBLANK 和帧率的关系是什么？帧率控制有哪些方式？</p>
+<p>图像出不来，你会按什么顺序排查？从 Sensor、MIPI、ISP、V4L2 到应用层。</p>
+<p>RK3588 的 ISP 和 VICAP 架构你了解多少？</p>
+<p>MIPI-CSI2 和 DVP 接口在驱动上主要差异在哪？</p>
+<p>如果 Sensor 能读到 ID 但不出图，可能是什么原因？</p>
+<p>你熟悉 DRM 显示框架，KMS、GEM、framebuffer 分别是什么？显示出图链路怎么走？</p>
+<p>七、BSP/Bringup 与量产实战<br>请讲一下一个新平台 Bringup 的完整流程。</p>
+<p>Bringup 阶段一般先调什么？串口、电源、时钟、DDR、存储、显示的顺序怎么定？</p>
+<p>外设驱动适配时，DTS 一般要改哪些内容？</p>
+<p>你集成过 WLAN MT792x 和 LTE RW101/135，射频加载和连接问题一般怎么排查？</p>
+<p>笔电项目里休眠唤醒异常、异常重启、响应延迟，这三类问题你分别怎么定位？</p>
+<p>异常重启怎么区分是 kernel panic、watchdog、硬件复位还是电源问题？</p>
+<p>响应延迟怎么量化？用 ftrace、perf、trace-cmd 做过哪些分析？</p>
+<p>工厂生产阶段，无法开机、反复重启、灰屏/白屏、系统卡顿，你遇到过哪些典型问题？</p>
+<p>出货超 30 万台，你怎么保证发版前各模块功能稳定？做过哪些压力测试？</p>
+<p>不同机型 DTS 怎么管理？有没有用 overlay？</p>
+<p>量产阶段发现问题但产线不能停，你怎么平衡快速规避和根因修复？</p>
+<p>你和 Google 协同定位 ChromeOS 上层异常，跨团队怎么推动问题闭环？</p>
+<p>八、系统调试与问题定位<br>你常用哪些调试工具？dmesg、ftrace、perf、gdb、strace、trace-cmd、devmem、i2c-tools。</p>
+<p>内核 panic 后，怎么从 panic 信息定位到具体驱动？</p>
+<p>Oops 和 panic 有什么区别？</p>
+<p>内存泄漏怎么排查？kmemleak、slabinfo、/proc/meminfo 怎么用？</p>
+<p>死锁怎么排查？lockdep 是什么？</p>
+<p>系统卡顿/响应延迟，怎么用 ftrace 抓调度延迟？</p>
+<p>设备 probe 失败，怎么确认是 DTS 问题、驱动问题还是硬件问题？</p>
+<p>线上设备偶发重启，没有现场，怎么设计日志保存机制？Pstore 怎么用？</p>
+<p>kdump 和 Pstore 的区别？各自适合什么场景？</p>
+<p>给你一个完全陌生的平台和板子，你怎么在最短时间内完成 Bringup？</p>
+<p>九、项目深挖与发散<br>挑一个你最有成就感的嵌入式/驱动项目，讲背景、你的角色、难点、解决方案、结果。</p>
+<p>讲一次你定位最久、最难的驱动 bug，最后怎么解决的？</p>
+<p>讲一次你和硬件/厂商/上层软件意见不一致，怎么推进的？</p>
+<p>你在华兴源创做 ATE 固件，ADC 采样、数据拟合校准、过流过压保护分别怎么实现？</p>
+<p>开尔文四线探针电压差定位异常点位的原理是什么？</p>
+<p>Camera 芯片模组检测设备里，DCR、Short、LDO 分别测什么？怎么测？</p>
+<p>校准板开发中，怎么把测量板卡校准到与标准仪表一致？</p>
+<p>多模式/多通道/多量程灵活校准，软件上怎么抽象？</p>
+<p>测试节拍要求很高时，你怎么优化固件响应速度？</p>
+<p>如果测试结果重复性差，你会从哪些方面排查？</p>
+<p>你从 PLC 转向 Linux 驱动，最大的思维转变是什么？</p>
+<p>你未来 1–3 年想深耕 BSP 还是某个子系统？为什么？</p>
+<p>十、手写/编程题建议<br>手写一个字符设备驱动骨架。</p>
+<p>手写 I2C 读写寄存器的函数。</p>
+<p>手写设备树节点，描述一个 I2C Sensor。</p>
+<p>手写一个内核模块的 Makefile。</p>
+<p>用 C 实现 container_of 宏。</p>
+<p>用 C 实现环形缓冲区。</p>
+<p>解释一段内核 panic 日志，指出可能原因。</p>
+<p>画一个 V4L2 Camera 出图链路图。</p>
+<p>画一个系统 suspend/resume 流程图。</p>
+<p>画一个 I2C 设备驱动 probe 流程图</p>
+
+    </div>
+
+    
+  </div>
+
+  <footer class="post-footer">
+    
+      <div class="post-tags">
+        
+          <a href="/tags/%E9%9D%A2%E8%AF%95/">#面试</a>
+        
+          <a href="/tags/%E7%BB%BC%E5%90%88/">#综合</a>
+        
+      </div>
+    
+    <nav class="post-nav">
+      
+      
+        <a class="next" href="/2026/09/13/mt7925-01-driver-stack/">MT7925 驱动学习 01：硬件架构与 Linux 6.12 驱动栈分层 &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+  
+<script src="/js/image-zoom.js"></script>
+
+</body>
+</html>
