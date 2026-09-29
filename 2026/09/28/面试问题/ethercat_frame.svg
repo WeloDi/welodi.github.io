@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1380" height="700" viewBox="0 0 1380 700" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif">
+  <defs>
+    <style>
+      .box  { stroke: #333; stroke-width: 1.5; }
+      .lbl  { font-size: 15px; fill: #111; text-anchor: middle; dominant-baseline: middle; }
+      .size { font-size: 13px; fill: #555; text-anchor: middle; }
+      .note { font-size: 14px; fill: #444; }
+      .title{ font-size: 17px; font-weight: bold; fill: #222; }
+      .dash { stroke: #888; stroke-width: 1.5; stroke-dasharray: 6 4; fill: none; }
+      .lead { stroke: #555; stroke-width: 1.5; fill: none; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1380" height="700" fill="#ffffff"/>
+  <text x="30" y="32" class="title">EtherCAT 报文嵌入以太网数据帧</text>
+
+  <!-- ============ 行1：以太网帧 ============ -->
+  <text x="80"   y="62" class="size">6字节</text>
+  <text x="175"  y="62" class="size">6字节</text>
+  <text x="285"  y="62" class="size">2字节</text>
+  <text x="710"  y="62" class="size">44~1498字节</text>
+  <text x="1000" y="62" class="size">6字节</text>
+
+  <rect x="30"  y="70" width="100" height="48" class="box" fill="#cfe2f3"/>
+  <rect x="130" y="70" width="90"  height="48" class="box" fill="#cfe2f3"/>
+  <rect x="220" y="70" width="130" height="48" class="box" fill="#cfe2f3"/>
+  <rect x="350" y="70" width="110" height="48" class="box" fill="#ffe599"/>
+  <rect x="460" y="70" width="500" height="48" class="box" fill="#c6e0b4"/>
+  <rect x="960" y="70" width="80"  height="48" class="box" fill="#cfe2f3"/>
+  <text x="80"   y="94" class="lbl">目的地址</text>
+  <text x="175"  y="94" class="lbl">源地址</text>
+  <text x="285"  y="94" class="lbl">帧类型(0x88A4)</text>
+  <text x="405"  y="94" class="lbl">EtherCAT头</text>
+  <text x="710"  y="94" class="lbl">EtherCAT数据</text>
+  <text x="1000" y="94" class="lbl">FCS</text>
+
+  <!-- 行1 -> 行2 连接线（EtherCAT数据 左边界 x=460 与 子报文1 左边界对齐） -->
+  <line x1="460" y1="118" x2="460" y2="162" class="dash"/>
+  <line x1="960" y1="118" x2="960" y2="162" class="dash"/>
+
+  <!-- ============ 行2：EtherCAT数据 = 子报文序列 ============ -->
+  <rect x="460" y="162" width="200" height="48" class="box" fill="#a9d18e"/>
+  <rect x="660" y="162" width="200" height="48" class="box" fill="#a9d18e"/>
+  <rect x="860" y="162" width="100" height="48" class="box" fill="#ffffff"/>
+  <text x="560" y="186" class="lbl">子报文 1</text>
+  <text x="760" y="186" class="lbl">子报文 2</text>
+  <text x="910" y="186" class="lbl" font-size="20">…</text>
+
+  <!-- 行2 -> 行3（左：x=460 对齐子报文头；右：折线延伸到 WKC 右边界 x=1200） -->
+  <line x1="460" y1="210" x2="460" y2="266" class="dash"/>
+  <path d="M 660 210 V 234 H 1200 V 266" class="dash"/>
+
+  <!-- ============ 行3：单个子报文 ============ -->
+  <text x="560"  y="256" class="size">10字节</text>
+  <text x="890"  y="256" class="size">0~1486字节</text>
+  <text x="1160" y="256" class="size">2字节</text>
+
+  <rect x="460"  y="266" width="200" height="48" class="box" fill="#9dc3e6"/>
+  <rect x="660"  y="266" width="460" height="48" class="box" fill="#d9b3ff"/>
+  <rect x="1120" y="266" width="80"  height="48" class="box" fill="#ffd966"/>
+  <text x="560"  y="290" class="lbl">子报文头</text>
+  <text x="890"  y="290" class="lbl">数据</text>
+  <text x="1160" y="290" class="lbl">WKC</text>
+  <text x="1215" y="290" class="note">WKC：工作计数器</text>
+
+  <!-- 行3 -> 行4（左：x=460 对齐命令；右：折线延伸到 状态位 右边界 x=1290） -->
+  <line x1="460" y1="314" x2="460" y2="378" class="dash"/>
+  <path d="M 660 314 V 342 H 1290 V 378" class="dash"/>
+
+  <!-- ============ 行4：子报文头（10字节） ============ -->
+  <text x="520"  y="368" class="size">8位</text>
+  <text x="630"  y="368" class="size">8位</text>
+  <text x="790"  y="368" class="size">32位</text>
+  <text x="960"  y="368" class="size">11位</text>
+  <text x="1050" y="368" class="size">3位</text>
+  <text x="1105" y="368" class="size">1位</text>
+  <text x="1210" y="368" class="size">16位</text>
+
+  <rect x="460"  y="378" width="120" height="48" class="box" fill="#9dc3e6"/>
+  <rect x="580"  y="378" width="100" height="48" class="box" fill="#9dc3e6"/>
+  <rect x="680"  y="378" width="220" height="48" class="box" fill="#9dc3e6"/>
+  <rect x="900"  y="378" width="120" height="48" class="box" fill="#9dc3e6"/>
+  <rect x="1020" y="378" width="60"  height="48" class="box" fill="#9dc3e6"/>
+  <rect x="1080" y="378" width="50"  height="48" class="box" fill="#9dc3e6"/>
+  <rect x="1130" y="378" width="160" height="48" class="box" fill="#9dc3e6"/>
+  <text x="520"  y="402" class="lbl">命令</text>
+  <text x="630"  y="402" class="lbl">索引</text>
+  <text x="790"  y="402" class="lbl">地址区</text>
+  <text x="960"  y="402" class="lbl">长度</text>
+  <text x="1050" y="402" class="lbl">R</text>
+  <text x="1105" y="402" class="lbl">M</text>
+  <text x="1210" y="402" class="lbl">状态位(IRQ)</text>
+
+  <!-- 行4 -> 行5（地址区 宽度 220，下方展开保持同宽：x=680 ~ x=900） -->
+  <line x1="680" y1="426" x2="680" y2="458" class="dash"/>
+  <line x1="900" y1="426" x2="900" y2="458" class="dash"/>
+
+  <!-- ============ 行5：地址区（32位）的三种寻址方式 ============ -->
+  <text x="930" y="446" class="note" font-weight="bold">地址区（32位）的三种寻址方式：</text>
+
+  <text x="735"  y="452" class="size">16位</text>
+  <text x="845"  y="452" class="size">16位</text>
+  <rect x="680" y="458" width="110" height="44" class="box" fill="#bdd7ee"/>
+  <rect x="790" y="458" width="110" height="44" class="box" fill="#bdd7ee"/>
+  <text x="735" y="480" class="lbl">Position</text>
+  <text x="845" y="480" class="lbl">Offset</text>
+  <path d="M 900 480 H 920" class="lead"/>
+  <text x="930" y="480" class="note">位置寻址（Position Addressing）</text>
+
+  <text x="735"  y="516" class="size">16位</text>
+  <text x="845"  y="516" class="size">16位</text>
+  <rect x="680" y="522" width="110" height="44" class="box" fill="#bdd7ee"/>
+  <rect x="790" y="522" width="110" height="44" class="box" fill="#bdd7ee"/>
+  <text x="735" y="544" class="lbl">Address</text>
+  <text x="845" y="544" class="lbl">Offset</text>
+  <path d="M 900 544 H 920" class="lead"/>
+  <text x="930" y="544" class="note">节点寻址（Node Addressing）</text>
+
+  <text x="790" y="580" class="size">32位</text>
+  <rect x="680" y="586" width="220" height="44" class="box" fill="#bdd7ee"/>
+  <text x="790" y="608" class="lbl">逻辑地址</text>
+  <path d="M 900 608 H 920" class="lead"/>
+  <text x="930" y="608" class="note">逻辑寻址（Logical Addressing）</text>
+
+  <!-- ============ 底部说明 ============ -->
+  <text x="30" y="672" class="note" fill="#666">命令（Cmd）决定地址区采用哪种寻址方式；M=1 表示后续还有更多子报文；WKC 为工作计数器（2字节）。</text>
+</svg>

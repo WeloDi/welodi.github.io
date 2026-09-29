@@ -12,7 +12,7 @@
 <meta property="og:description" content="一、C 语言 volatile 的作用与使用场合？ 禁止编译器把变量缓存到寄存器或优化掉&quot;冗余&quot;读写，保证每次都真正访问内存。用于 MMIO 寄存器、被中断或线程修改的共享标志。它不保证原子性。 static 修饰局部变量、全局变量、函数时的区别？ 局部变量：改为静态存储期，只初始化一次，作用域不变。全局变量与函数：限定链接域为当前文件，避免命名冲突、隐藏实现细节。 const int *p &#x2F;">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2026-09-27T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-09-27T15:43:12.748Z">
+<meta property="article:modified_time" content="2026-09-28T04:51:15.560Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="面试">
 <meta property="article:tag" content="综合">
@@ -246,7 +246,7 @@ mjx-container[display="true"] + br {
       <h2 id="一、C-语言"><a href="#一、C-语言" class="headerlink" title="一、C 语言"></a>一、C 语言</h2><ol>
 <li><code>volatile</code> 的作用与使用场合？ <div class="qa-answer">禁止编译器把变量缓存到寄存器或优化掉"冗余"读写，保证每次都真正访问内存。用于 MMIO 寄存器、被中断或线程修改的共享标志。它不保证原子性。</div></li>
 <li><code>static</code> 修饰局部变量、全局变量、函数时的区别？ <div class="qa-answer">局部变量：改为静态存储期，只初始化一次，作用域不变。全局变量与函数：限定链接域为当前文件，避免命名冲突、隐藏实现细节。</div></li>
-<li><code>const int *p</code> / <code>int * const p</code> / <code>const int * const p</code> 的区别？ <div class="qa-answer">分别是"指向常量的指针"（值不可改、指针可变）、"常量指针"（指针不可改、值可变）、"都不可改"。判断口诀：const 修饰它右侧的整体。</div></li>
+<li><code>const int *p</code> / <code>int * const p</code> / <code>const int * const p</code> 的区别？ <div class="qa-answer">分别是"指向常量的指针"（值不可改、指针可变）、"常量指针"（指针不可改、值可变）、"都不可改"。判断口诀：从右往左读，const 修饰它左边最近的东西；如果左边没有，就修饰右边。</div></li>
 <li>结构体内存对齐规则？如何计算结构体大小？ <div class="qa-answer">成员起始地址必须是其自身对齐数的整数倍，结构体总大小再向上取整为最大成员对齐数的整数倍。可用 `__attribute__((packed))` 或 `#pragma pack` 改变，代价是访问效率与兼容性。</div></li>
 <li><code>sizeof</code> 与 <code>strlen</code> 的区别？ <div class="qa-answer">`sizeof` 是编译期运算符，算类型或对象占的字节数（含结尾的 '\0'）；`strlen` 是运行期函数，遇到 '\0' 停止。数组名 `sizeof` 得到整个数组，退化为指针后只剩地址宽度。</div></li>
 <li>宏函数与普通函数的优劣？多语句宏为什么用 <code>do{}while(0)</code>？ <div class="qa-answer">宏省调用开销、不检查类型因而通用；缺点是无类型检查、易因缺括号或参数副作用出错、无法调试。`do{}while(0)` 把多条语句包装成单条语句，可在 if/else 后安全加分号，还提供独立作用域。</div></li>
@@ -459,6 +459,8 @@ mjx-container[display="true"] + br {
       </div>
     
     <nav class="post-nav">
+      
+        <a class="prev" href="/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/">&laquo; 面试问题</a>
       
       
         <a class="next" href="/2026/09/13/mt7925-01-driver-stack/">MT7925 驱动学习 01：硬件架构与 Linux 6.12 驱动栈分层 &raquo;</a>

@@ -214,6 +214,25 @@ mjx-container[display="true"] + br {
   
     <article class="post-card">
   <h2 class="post-card-title">
+    <a href="/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/">面试问题</a>
+  </h2>
+  <div class="post-card-meta">
+    <time datetime="2026-09-28T02:00:00.000Z">2026-09-28</time>
+    
+  </div>
+  <div class="post-card-excerpt">
+    
+      
+      <p>为什么中断不能睡眠？. 进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 ...</p>
+    
+  </div>
+  <a class="read-more" href="/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/">Read More &rarr;</a>
+  
+</article>
+
+  
+    <article class="post-card">
+  <h2 class="post-card-title">
     <a href="/2026/09/27/%E9%97%AE%E9%A2%98%E9%9B%86/">问题集</a>
   </h2>
   <div class="post-card-meta">
@@ -500,42 +519,10 @@ mjx-container[display="true"] + br {
 </article>
 
   
-    <article class="post-card">
-  <h2 class="post-card-title">
-    <a href="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/">DRM显示驱动框架</a>
-  </h2>
-  <div class="post-card-meta">
-    <time datetime="2026-09-11T02:00:00.000Z">2026-09-11</time>
-    
-      <span class="separator">&middot;</span>
-      <a href="/categories/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/">显示驱动</a><span class="separator">/</span><a href="/categories/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/DRM/">DRM</a>
-    
-  </div>
-  <div class="post-card-excerpt">
-    
-      
-      <p>本文梳理 Linux 内核 DRM（Direct Rendering Manager） 显示驱动子系统的整体框架：从”为什么需要 DRM”、核心对象模型，到主机驱动的初始化流程、Atomic Modeset 状态机、典型热点流程与用户空间接口，再到分层归属（主机驱动 vs 设备驱动）与调试手段，给出一条”从注册到点亮屏幕”的完整脉络。. 在屏幕上显示一张图片，底层实际上要做这么多活：. ...</p>
-    
-  </div>
-  <a class="read-more" href="/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/">Read More &rarr;</a>
-  
-    <div class="post-card-tags">
-      
-        <a href="/tags/DRM/">#DRM</a>
-      
-        <a href="/tags/%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8/">#显示驱动</a>
-      
-        <a href="/tags/Linux%E5%86%85%E6%A0%B8/">#Linux内核</a>
-      
-    </div>
-  
-</article>
-
-  
 </div>
 
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
   </nav>
 
 

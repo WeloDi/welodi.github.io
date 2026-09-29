@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面试问题 | Welodi</title>
+  <meta name="description" content="一、中断 为什么中断不能睡眠？   进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 如果中断中使用睡眠，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="面试问题">
+<meta property="og:url" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="一、中断 为什么中断不能睡眠？   进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 如果中断中使用睡眠，">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg">
+<meta property="article:published_time" content="2026-09-28T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-29T08:30:46.107Z">
+<meta property="article:author" content="Welodi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=7ef16e4b">
+  <link rel="stylesheet" href="/css/image-zoom.css?v=7ef16e4b">
+  
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+      
+        
+        <a class="nav-link" href="/">Home</a>
+      
+        
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">面试问题</h1>
+    <div class="post-meta">
+      <time datetime="2026-09-28T02:00:00.000Z">2026-09-28</time>
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h2 id="一、中断"><a href="#一、中断" class="headerlink" title="一、中断"></a>一、中断</h2><ol>
+<li>为什么中断不能睡眠？</li>
+</ol>
+<ul>
+<li>进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。</li>
+<li>中断上下文不属于任何任务，<strong>没有task_struct</strong>，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，<strong>只能用自旋锁</strong>并要求尽快返回，慢活交给下半部或线程化处理。</li>
+<li>如果中断中使用睡眠，后续没人能把它再调度回来，系统直接死锁。</li>
+</ul>
+<ol start="2">
+<li><p>中断的完整流程：<a href="/2026/06/12/Interview/#%E4%B8%AD%E6%96%AD%E6%B5%81%E7%A8%8B">中断流程</a></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">外设拉中断</span><br><span class="line">  → GIC 路由到目标cpu</span><br><span class="line">  → CPU 切 IRQ 模式，保存硬件现场：PC → LR_irq、CPSR → SPSR_irq，跳向量表</span><br><span class="line">  → 汇编入口保存现场：把 R0–R12、LR、SPSR 压入 IRQ 栈</span><br><span class="line">  → 通用中断处理函数do_IRQ 查 irq_desc找到对应的中断处理函数handler</span><br><span class="line">  → 写 EOI 通知 GIC 中断处理完毕</span><br><span class="line">  → 弹栈恢复现场 SPSR→CPSR、LR→PC、R0–R12</span><br><span class="line">  → 检查 pending 软中断/tasklet，执行 do_softirq</span><br><span class="line">  → 返回源程序</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>中断下半部：见 <a target="_blank" rel="noopener" href="https://welodi.github.io/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/#6-%E4%B8%AD%E6%96%AD%E4%B8%8B%E5%8D%8A%E9%83%A8%E7%9A%84%E5%87%A0%E7%A7%8D%E6%9C%BA%E5%88%B6%E7%9A%84%E5%8C%BA%E5%88%AB%E4%B8%8E%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF">中断下半部机制</a></p>
+</li>
+</ol>
+<h2 id="二、DMA"><a href="#二、DMA" class="headerlink" title="二、DMA"></a>二、DMA</h2><p>2.1 怎么保证缓存一致性(CPU与DMA)？</p>
+<ul>
+<li><strong>硬件方法</strong> - 总线监听：Cache 控制器监听总线，发现 DMA 访问的地址在自己 Cache 里，则标记cache无效，让cpu直接访问内存</li>
+<li><strong>软件方法</strong> - 在 DMA 传输前后，软件手动操作 Cache（dma_map_single/dma_unmap_single）：<br>                   CPU 写数据到 buf, 然后flush cache：把dirty 数据写回内存。<br>                   CPU 读数据时，标记cache无效，让cpu直接访问内存。</li>
+<li><strong>使用非缓存内存</strong>dma_alloc_coherent（速度慢）：把 DMA 缓冲区映射为非缓存的，CPU 访问直接到内存，不经过 Cache</li>
+</ul>
+<p>2.2 DMA缓冲区结构</p>
+<ul>
+<li>单缓冲区<blockquote>
+<p>就一块buf, CPU 填数据 → dma_map_single → 启动 DMA → 等待完成 → dma_unmap_single</p>
+</blockquote>
+</li>
+<li>双缓冲区：两块缓冲区交替使用，一块给 DMA，一块给 CPU <figure class="highlight gherkin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> +-----------+     +-----------+</span><br><span class="line">|<span class="string"> Buffer A  </span>|<span class="string">     </span>|<span class="string"> Buffer B  </span>|</span><br><span class="line">+-----------+     +-----------+</span><br><span class="line">     ↑                  ↑</span><br><span class="line">   DMA 用             CPU 用</span><br><span class="line">   （下一轮互换）</span><br></pre></td></tr></table></figure></li>
+<li>环形缓冲区：内存是一块连续区域，但逻辑上首尾相连<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    +-------------------------------+</span><br><span class="line">    |  slot0 | slot1 | slot2 | ...  |</span><br><span class="line">    +-------------------------------+</span><br><span class="line">             ↑               ↑</span><br><span class="line">            <span class="built_in">tail</span>            <span class="built_in">head</span></span><br><span class="line">           (消费者)        (生产者)</span><br><span class="line"></span><br><span class="line">生产者往 <span class="built_in">head</span> 写，写完 <span class="built_in">head</span> 前移</span><br><span class="line">消费者从 <span class="built_in">tail</span> 读，读完 <span class="built_in">tail</span> 前移</span><br></pre></td></tr></table></figure>
+怎么回绕：head = (head + 1) % size<br>满空判断：</li>
+</ul>
+<ol>
+<li>浪费一个槽位：head == tail 时为空， head = (head + 1) % size == tail 时为满</li>
+<li>加一个额外计数器count 记录当前元素数量。 缺点：多一个变量，需要维护；多核场景要原子操作</li>
+</ol>
+<h2 id="三、Uboot和Kernel启动"><a href="#三、Uboot和Kernel启动" class="headerlink" title="三、Uboot和Kernel启动"></a>三、Uboot和Kernel启动</h2><p><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#1-%E5%85%A8%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%93%BE%E6%A6%82%E8%A7%88">启动流程</a></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">上电</span><br><span class="line">  ├──→ CPU 复位，PC 指向 BootROM 地址, </span><br><span class="line">  ▼</span><br><span class="line">BootROM</span><br><span class="line">  ├──→ 初始化基本时钟，读取 BOOT_MODE 引脚, 选择从哪启动（eMMC/SD/NAND/USB）</span><br><span class="line">  ├──→ 将SPL加载到SRAM</span><br><span class="line">  ▼</span><br><span class="line"><span class="title function_">SPL</span> (U-Boot 的精简版前置加载器,核心作用：芯片内部 SRAM 太小装不下U-Boot，需要先初始化 DDR 才能运行完整 U-Boot)</span><br><span class="line">  ├──→ 初始化 DDR 控制器、串口、时钟（DDR需要）</span><br><span class="line">  ├──→ 初始化存储设备驱动，从存储设备的 U-Boot 分区读取完整 U-Boot 到 DDR, 并跳转到 U-boot</span><br><span class="line">  ▼</span><br><span class="line">U-Boot</span><br><span class="line">  ├──→ 初始化外设（网卡、USB、MMC 等）</span><br><span class="line">  ├──→ 读取内核镜像、设备树、initrd</span><br><span class="line">  ├──→ 设置 bootargs，跳转到内核入口（网络加载、存储加载、文件系统加载）</span><br><span class="line">  ▼</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line"><span class="title function_">Kernel</span> (start_kernel)</span><br><span class="line">  ├──→ 初始化 CPU、内存管理、调度器、中断、定时器等</span><br><span class="line">  ├──→ 解析设备树，初始化各子系统, 注册平台设备与驱动</span><br><span class="line">  ├──→ 挂载 rootfs，启动 init（PID <span class="number">1</span>）</span><br><span class="line">  ▼</span><br><span class="line">init</span><br><span class="line">  ├──→ systemd 或 SysV init 读取配置</span><br><span class="line">  ├──→ 按依赖关系启动各类服务</span><br><span class="line">  ▼</span><br><span class="line">服务/应用</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、问题诊断工具"><a href="#四、问题诊断工具" class="headerlink" title="四、问题诊断工具"></a>四、问题诊断工具</h2><h2 id="五、通信协议"><a href="#五、通信协议" class="headerlink" title="五、通信协议"></a>五、通信协议</h2><h3 id="i2c"><a href="#i2c" class="headerlink" title="i2c"></a>i2c</h3><ul>
+<li>半双工 串行 同步总线 </li>
+<li>上拉电阻作用：iic总线开漏输出，无法输出高电平</li>
+</ul>
+<h3 id="spi"><a href="#spi" class="headerlink" title="spi"></a><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#SPI">spi</a></h3><ul>
+<li>高速、全双工、同步的串行通信总线</li>
+<li>时钟极性 和 时钟相位定义4种模式<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Mode <span class="number">0</span>：空闲低，上升沿采样  ← 最常用</span><br><span class="line">Mode <span class="number">1</span>：空闲低，下降沿采样</span><br><span class="line">Mode <span class="number">2</span>：空闲高，下降沿采样</span><br><span class="line">Mode <span class="number">3</span>：空闲高，上升沿采样  ← 常用</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="uart"><a href="#uart" class="headerlink" title="uart"></a>uart</h3><p>全双工并行异步通信</p>
+<figure class="highlight armasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">  TX  ──────────────────→  RX</span><br><span class="line">  RX  ←──────────────────  TX</span><br><span class="line">  GND ───────────────────  GND</span><br><span class="line"></span><br><span class="line">空闲(高) start <span class="built_in">D0</span> <span class="built_in">D1</span> <span class="built_in">D2</span> <span class="built_in">D3</span> <span class="built_in">D4</span> <span class="built_in">D5</span> <span class="built_in">D6</span> <span class="built_in">D7</span> 校验位 停止位 空闲(高)</span><br><span class="line">────────┐    ┌──┬──┬──┬──┬──┬──┬──┬──┐  ┌──┐    ┌────────</span><br><span class="line">        └────┘  │  │  │  │  │  │  │  └──┘  └────┘</span><br><span class="line">         ↑</span><br><span class="line">      起始位（低）触发接收方开始采样</span><br></pre></td></tr></table></figure>
+
+<h3 id="EtherCAT"><a href="#EtherCAT" class="headerlink" title="EtherCAT"></a><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#2-2-EtherCat">EtherCAT</a></h3><ul>
+<li>物理层全双工，逻辑上串行通信, 主从通信模式，主站发送报文给从站，从站从中读取数据</li>
+</ul>
+<p>报文格式：</p>
+<img src="/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg" class="" title="EtherCAT 帧结构">
+
+<p>寻址方式：</p>
+<ul>
+<li><strong>位置寻址</strong>：主站想找第8个设备，就设置位置为-8，每经过一个从站+1，当读取到0时，就是目标从站（依赖物理顺序）</li>
+<li><strong>节点寻址</strong>：为每个从站分配一个地址，发报文时，直接设置这个从站的地址。（一次报文只能寻址一个从站）</li>
+<li><strong>逻辑寻址</strong>：主站为每个从站分配逻辑地址，并将映射关系写入各从站的 FMMU。</li>
+</ul>
+<p>数据流程：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">上电</span><br><span class="line">  ├──→ 阶段<span class="number">1</span>：主站初始化</span><br><span class="line">  ├──→ 阶段<span class="number">2</span>：扫描网络（位置寻址）</span><br><span class="line">  ├──→ 阶段<span class="number">3</span>：配置从站（站点寻址 + SDO）</span><br><span class="line">  ├──→ 阶段<span class="number">4</span>：配置 PDO 映射（SDO）</span><br><span class="line">  ├──→ 阶段<span class="number">5</span>：配置 FMMU（逻辑寻址硬件）</span><br><span class="line">  ├──→ 阶段<span class="number">6</span>：配置从站的同步管理器（SM）</span><br><span class="line">  ├──→ 阶段<span class="number">7</span>：同步分布式时钟（DC）：计算从站时钟与主站时钟的偏移，并加补偿</span><br><span class="line">  ├──→ 阶段<span class="number">8</span>：进入正常运行（OP）状态</span><br><span class="line">  ▼</span><br><span class="line">阶段<span class="number">9</span>：周期性数据交换（PDO + 逻辑寻址）</span><br><span class="line">  │</span><br><span class="line">  └──→ 循环</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="CANopen"><a href="#CANopen" class="headerlink" title="CANopen"></a>CANopen</h3><ul>
+<li>CAN 是一种多主方式的串行通讯总线, 但是CANopen通信中有1个主节点，其他全都是从节点。</li>
+<li>采用差分信号传输，只需要 CAN_H 和 CAN_L 两根线</li>
+</ul>
+<p>核心：<strong>对象字典</strong>（Object Dictionary）<br>每个 CANopen 设备内部都有一个对象字典，存储着设备的所有参数、数据和配置。</p>
+<p><strong>报文 ID</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">报文 ID = 功能码（<span class="number">4</span>位） + 从机地址（<span class="number">7</span>位）</span><br></pre></td></tr></table></figure>
+
+<p><strong>通信方式</strong>：</p>
+<ul>
+<li><p>PDO(过程数据对象):速度快，周期性，无需应答，用于实时数据，长度&lt;= 8字节，高优先级</p>
+</li>
+<li><p>SDO(服务数据对象)：速度慢，按需，需应答，用于参数配置，长度任意，低优先级</p>
+</li>
+</ul>
+<p><strong>流程</strong>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────┐</span><br><span class="line">│                    主站                             │</span><br><span class="line">│                                                     │</span><br><span class="line">│  NMT：管理网络状态                                   │</span><br><span class="line">│  SDO：配置参数（读/写对象字典）                       │</span><br><span class="line">│  PDO：收发实时数据                                   │</span><br><span class="line">│  SYNC：周期同步信号                                  │</span><br><span class="line">└─────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">                        │ CAN 总线</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────┐</span><br><span class="line">│                    从站                             │</span><br><span class="line">│                                                     │</span><br><span class="line">│  对象字典：所有参数和数据                             │</span><br><span class="line">│  PDO：实时数据（位置、速度、IO）                      │</span><br><span class="line">│  SDO：配置参数                                       │</span><br><span class="line">│  EMCY：故障上报                                      │</span><br><span class="line">└─────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="六、项目"><a href="#六、项目" class="headerlink" title="六、项目"></a>六、项目</h2><h3 id="6-1-imx219-驱动"><a href="#6-1-imx219-驱动" class="headerlink" title="6.1 imx219 驱动"></a>6.1 <a href="/2026/08/08/imx219-driver/">imx219 驱动</a></h3><p>V4L2<br>V4L2 框架通过 v4l2_device、v4l2_subdev、video_device 三个核心对象，把复杂的摄像头硬件（Sensor、ISP、CSI 等）抽象成统一的软件模型，并配合 Media Controller 管理数据流水线，最终通过 /dev/videoX 等设备节点暴露给用户空间</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">V4L2 框架</span><br><span class="line">  │</span><br><span class="line">  ├──→ v4l2_device：设备实例容器</span><br><span class="line">  ├──→ v4l2_subdev：子设备（Sensor/VCM/ISP）</span><br><span class="line">  ├──→ video_device：字符设备节点（/dev/videoX）</span><br><span class="line">  ├──→ Media Controller：拓扑管理（Entity/Pad/Link）</span><br><span class="line">  └──→ 用户空间接口：/dev/videoX、/dev/v4l-subdevX、/dev/mediaX</span><br></pre></td></tr></table></figure>
+
+<p>fps = pixel_rate / (HTS × VTS)</p>
+<p>数据结构：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">imx219</span> {</span></span><br><span class="line">    <span class="comment">/* ---- V4L2 框架接口 ---- */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_subdev</span> <span class="title">sd</span>;</span> <span class="comment">/* V4L2 子设备核心，imx219_subdev_ops挂载在此 */</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">media_pad</span> <span class="title">pad</span>;</span>  <span class="comment">/* media 框架 pad，用于构建 pipeline */</span></span><br><span class="line"></span><br><span class="line">    * ---- V4L2 控制框架 ---- */</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_ctrl_handler</span> <span class="title">ctrl_handler</span>;</span> <span class="comment">/* 控件管理器 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_ctrl</span> *<span class="title">exposure</span>;</span>            <span class="comment">/* 曝光时间 (行数, 用于手动 AE) */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_ctrl</span> *<span class="title">analogue_gain</span>;</span>       <span class="comment">/* 模拟增益 (寄存器 0x0157) */</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line"><span class="comment">/* ---- 运行状态 ---- */</span></span><br><span class="line">    <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">imx219_mode</span> *<span class="title">mode</span>;</span> <span class="comment">/* 当前工作模式 (分辨率+帧率组合) */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_rect</span> <span class="title">crop</span>;</span>          <span class="comment">/* 当前裁剪窗口 (selection API, set_fmt 时更新) */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_mbus_framefmt</span> <span class="title">fmt</span>;</span>  <span class="comment">/* 当前媒体总线格式 (code/width/height/field) */</span></span><br></pre></td></tr></table></figure>
+
+
+<p>关键回调</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_subdev_ops</span> <span class="title">imx219_subdev_ops</span> =</span> {</span><br><span class="line">    <span class="attr">.core</span> = &amp;imx219_core_ops,   <span class="comment">//与媒体无关的通用控制 (事件订阅、电源、reset)</span></span><br><span class="line">    <span class="attr">.video</span> = &amp;imx219_video_ops, <span class="comment">//视频流控制 (streaming 启停、帧间隔)</span></span><br><span class="line">    <span class="attr">.pad</span> = &amp;imx219_pad_ops,     <span class="comment">//媒体 pad 上的格式/尺寸协商 (media 框架查询路径)</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="comment">//控制回调，用来设置设置曝光、模拟增益、水平/垂直翻转等参数</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_ctrl_ops</span> <span class="title">imx219_ctrl_ops</span> =</span> {</span><br><span class="line">    <span class="attr">.s_ctrl</span> = <span class="title function_">imx219_set_ctrl</span>,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">v4l2_subdev_internal_ops</span> <span class="title">imx219_internal_ops</span> =</span> {</span><br><span class="line">    <span class="attr">.open</span> = <span class="title function_">imx219_open</span>,<span class="comment">//用户态执行 open("/dev/v4l-subdevN"时首次初始化</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
+
+<p>probe流程：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">分配imx219 结构体</span><br><span class="line">绑定imx219_subdev_ops到imx219-&gt;sub_dev</span><br><span class="line">获取时钟：imx219-&gt;xclk</span><br><span class="line">设置默认分辨率模式imx219-&gt;mode = &amp;supported_modes[<span class="number">0</span>];</span><br><span class="line">初始化 MIPI D-PHY 到LP<span class="number">-11</span>状态（IMX219 上电后必须先 toggle streaming → standby 模式来初始化 MIPI D-PHY）</span><br><span class="line">初始化imx219-&gt;ctrl_handler控件容器，然后创建控件（像素速率，链路速率，Vbank，Hbank等）统一挂载到ctrl_handler上</span><br><span class="line">初始化 subdev 属性（imx219-&gt;sd<span class="attr">.internal_ops</span> = &amp;imx219_internal_ops）</span><br><span class="line">初始化默认格式（填充imx219-&gt;fmt：fmt-&gt;code、width、height）</span><br><span class="line">关联pads到media entity：<span class="title function_">media_entity_pads_init</span>(&amp;imx219-&gt;sd.entity, <span class="number">1</span>, &amp;imx219-&gt;pad);</span><br><span class="line">异步注册subdev：<span class="title function_">v4l2_async_register_subdev_sensor</span>() </span><br><span class="line"><span class="comment">//本质是把 sensor 的 v4l2_subdev 结构体挂到内核的“等待绑定池”里，让CSI/ISP驱动能根据设备树里的 remote-endpoint 描述找到它，并在匹配成功时调用 .bound() 回调建立 Media Controller 的 pad link</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 当异步绑定完成后，此时系统里会出现：*/</span></span><br><span class="line">/dev/mediaX：Media Controller 节点，描述整个 pipeline 拓扑。</span><br><span class="line">/dev/videoX：bridge 的 video 节点，用于实际取流。</span><br><span class="line">/dev/v4l-subdevX：IMX219 子设备节点，用户态可直接调 s_fmt、s_ctrl 等</span><br></pre></td></tr></table></figure>
+
+<p>启停流：<br>s_stream(1) -&gt; imx219_start_streaming:</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> pm<span class="emphasis">_runtime 上电</span></span><br><span class="line"><span class="emphasis">2. 写入当前模式的整张寄存器表</span></span><br><span class="line"><span class="emphasis">3. 应用所有 V4L2 control 当前值</span></span><br><span class="line"><span class="emphasis">4. 写 MODE_</span>SELECT=0x01 启动 streaming</span><br><span class="line"><span class="bullet">5.</span> 锁定 hflip/vflip（streaming 期间禁止切换,会破坏 Bayer 顺序）</span><br></pre></td></tr></table></figure>
+
+<p>s_stream(0) -&gt; imx219_stop_streaming:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1.</span> 写 MODE_SELECT=<span class="number">0x00</span> 进入 standby</span><br><span class="line"><span class="number">2.</span> 解锁 hflip/vflip</span><br><span class="line"><span class="number">3.</span> pm_runtime 下电</span><br></pre></td></tr></table></figure>
+
+<p>调试问题：v4l2-ctl –stream-mmap 抓流黑屏<br>排查：</p>
+<ol>
+<li>i2ctransfer 手动读 CHIP ID正常，读写Streaming寄存器回读正确</li>
+<li>读Clock Lane Status寄存器：发现一直停在 LP-11</li>
+<li>查看数据手册上电时序，发现是链路层问题<br>根因：<br>IMX219 的 D-PHY 在 standby 模式下不会自动进入 LP-11，必须先进 streaming 再退回 standby 让 D-PHY 状态机初始化一次。host 的 clock lane 检测超时，所以 CSI 永远收不到同步</li>
+</ol>
+<h3 id="6-2-hx9023s-驱动"><a href="#6-2-hx9023s-驱动" class="headerlink" title="6.2 hx9023s 驱动"></a>6.2 <a href="/2026/08/22/hx9023s-driver/#2-2-dts">hx9023s 驱动</a></h3><p><strong>probe</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1.</span> 分配/初始化IIO设备：devm_iio_device_alloc 获取 indio_dev 和私有数据 hx9023s_data。</span><br><span class="line"><span class="number">2.</span> 硬件初始化：复位芯片、配置寄存器</span><br><span class="line"><span class="number">3.</span> 填充 indio_dev：</span><br><span class="line">    indio_dev-&gt;num_channels = <span class="title function_">ARRAY_SIZE</span>(hx9023s_channels);</span><br><span class="line">    indio_dev-&gt;info = &amp;hx9023s_info;</span><br><span class="line">    ...</span><br><span class="line"><span class="number">4.</span> 注册中断和iio_trigger</span><br><span class="line"><span class="number">5.</span> 注册触发缓冲区：<span class="title function_">devm_iio_triggered_buffer_setup</span>()，绑定触发回调：(缓冲区由iio子系统创建)</span><br><span class="line">    iio_pollfunc_store_time（存时间戳）</span><br><span class="line">    hx9023s_trigger_handler（推数据）</span><br><span class="line">    hx9023s_buffer_setup_ops（preenable/postdisable）<span class="comment">//开关缓冲区的回调</span></span><br><span class="line"><span class="number">6.</span> 注册 IIO 设备 → 生成 /sys/bus/iio/devices/iio:deviceX 和 /dev/iio:deviceX。</span><br></pre></td></tr></table></figure>
+
+<p><strong>中断</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">hx9023s_irq_handler</span>()</span><br><span class="line">├── <span class="keyword">if</span> (data-&gt;trigger_enabled)</span><br><span class="line">│       └── <span class="title function_">iio_trigger_poll</span>(data-&gt;trig)                  ←  唤醒触发线程</span><br><span class="line">│</span><br><span class="line">└── <span class="keyword">return</span> IRQ_WAKE_THREAD                                 ← 唤醒中断线程</span><br><span class="line">═══════════════════════════════════════════════════════════════════════════════</span><br><span class="line">两个线程并发执行：</span><br><span class="line"></span><br><span class="line">中断线程:                             		  触发器线程:</span><br><span class="line"><span class="title function_">hx9023s_irq_thread_handler</span>()                 <span class="title function_">hx9023s_trigger_handler</span>()</span><br><span class="line">│                                            │</span><br><span class="line">├── <span class="title function_">hx9023s_push_events</span>()                    ├── <span class="title function_">hx9023s_sample</span>()</span><br><span class="line">│       │                                    ├── 遍历活跃通道，打包数据</span><br><span class="line">│       └── <span class="title function_">iio_push_event</span>()                 ├── <span class="title function_">iio_push_to_buffers_with_timestamp</span>()<span class="comment">//推送数据和时间戳</span></span><br><span class="line">│						                     │</span><br><span class="line">└── <span class="keyword">return</span> IRQ_HANDLED                       └── <span class="keyword">return</span> IRQ_HANDLED</span><br><span class="line"></span><br><span class="line">═══════════════════════════════════════════════════════════════════════════════</span><br><span class="line">用户空间</span><br><span class="line"></span><br><span class="line"><span class="number">1.</span> 可以通过读/sys/bus/iio/devices/iio:deviceX/in_voltage0_raw获取raw数据，走read_raw回调</span><br><span class="line"><span class="number">2.</span> 通过<span class="title function_">read</span>() /dev/iio:device0获取缓冲区数据</span><br><span class="line"></span><br><span class="line">├── 事件模式：读到 <span class="title function_">iio_push_event</span>() 推送的事件</span><br><span class="line">│       └── (通道=<span class="number">0</span>, 方向=RISING, 时间戳)</span><br><span class="line">│</span><br><span class="line">└── 缓冲模式：读到 <span class="title function_">iio_push_to_buffers_with_timestamp</span>() 推送的数据帧</span><br><span class="line">        └── (ch0_diff, ch2_diff, 时间戳)</span><br></pre></td></tr></table></figure>
+
+<p><strong>API差别</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">6.12</span></span><br><span class="line">在作用域结束后自动解锁</span><br><span class="line"><span class="title function_">guard</span>(mutex)(&amp;data-&gt;mutex);                     </span><br><span class="line"></span><br><span class="line"><span class="number">6.6</span></span><br><span class="line">需要手动加锁解锁</span><br><span class="line"><span class="title function_">mutex_lock</span>(&amp;data-&gt;mutex);</span><br><span class="line">...</span><br><span class="line"><span class="title function_">mutex_unlock</span>(&amp;data-&gt;mutex);</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-lt9611ex-驱动"><a href="#6-3-lt9611ex-驱动" class="headerlink" title="6.3 lt9611ex 驱动"></a>6.3 <a href="/2026/09/10/lt9611-driver/">lt9611ex 驱动</a></h3><h3 id="6-4-suspend"><a href="#6-4-suspend" class="headerlink" title="6.4 suspend"></a>6.4 suspend</h3><h2 id="七、一个问题"><a href="#七、一个问题" class="headerlink" title="七、一个问题"></a>七、一个问题</h2><p>7.1 加速度传感器失灵<br><strong>问题现象</strong>：<br>这是一个平板设备项目，工厂生产中出现个别设备无法翻转。</p>
+<p><strong>调试</strong>：<br>具体现象：</p>
+<ol>
+<li>检查了自动旋转开关正常</li>
+<li>系统也处于平板模式</li>
+<li>手动读取（ectool）G-sensor实时数据也正常</li>
+<li>重启可恢复，放置一段时间偶尔也能恢复</li>
+</ol>
+<p>复现手法：<br>不联网停留在 OOBE 界面，然后长时间 suspend（&gt; 35.8 分钟）</p>
+<p><strong>根本原因</strong>：</p>
+<ol>
+<li>有一个ChromeOS EC传感器中枢的环形缓冲区驱动cros_ec_sensorhub_ring.c，专门处理 EC 上报的传感器数据。</li>
+<li>而EC的时间戳为 32 位微秒计数，驱动中的 bench_date 会检查时间戳，并把 32 位溢出值还原为 64 位连续时间（和处理器对齐）。</li>
+<li>suspend 超过一定时间时，会触发溢出判断的边界条件，这个时间刚好是35.8分钟（≈ 2^31 / 1MHz）</li>
+<li>驱动侧的溢出补偿逻辑存在问题，导致时间戳回退。最终被传感器框架判定为乱序数据，导致 G-sensor 数据被丢弃</li>
+</ol>
+<p><strong>解决办法</strong>：<br>chromeos内核团队修复溢出还原逻辑。</p>
+<p>7.2 LTE probe不到</p>
+<p><strong>问题描述</strong>：<br>在生产过程中，针对 LTE 跑检测项时，出现大量 runtime_probe 检测 Modem 节点失败、报错”Modem 节点不存在”的问题</p>
+<p><strong>调试</strong>：</p>
+<ol>
+<li>runtime_probe 由上层服务调用，用于检测 Modem 节点。log 一直显示 Modem 节点不存在，但写脚本循环检查发现 wwan0 网络接口一直存在，说明底层 Modem 硬件和驱动加载正常</li>
+<li>怀疑 LTE 加载流程较慢，于是增加 runtime_probe 的探测延时，让它晚点 probe。效果好了一些，但问题仍然存在</li>
+<li>通读整个加载流程的log，发现在runtime_probe执行检测前, Hermesh 为初始化 eSIM 会临时抑制 Modem/0 节点。而 runtime_probe 恰好在这个窗口期通过 Shill 检测 Modem 节点，导致找不到节点而超时报错。</li>
+</ol>
+<p><strong>解决</strong><br> Shill 中新增 Cellular.PrimaryMultiplexedInterface 属性，暴露稳定的 wwan0 接口，让 runtime_probe 基于 Shill 提供的接口探测，不再受 ModemManager 节点状态影响。</p>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%AD%E6%96%AD"><span class="toc-text">一、中断</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81DMA"><span class="toc-text">二、DMA</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Uboot%E5%92%8CKernel%E5%90%AF%E5%8A%A8"><span class="toc-text">三、Uboot和Kernel启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD%E5%B7%A5%E5%85%B7"><span class="toc-text">四、问题诊断工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE"><span class="toc-text">五、通信协议</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#i2c"><span class="toc-text">i2c</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spi"><span class="toc-text">spi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uart"><span class="toc-text">uart</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EtherCAT"><span class="toc-text">EtherCAT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CANopen"><span class="toc-text">CANopen</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E9%A1%B9%E7%9B%AE"><span class="toc-text">六、项目</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-imx219-%E9%A9%B1%E5%8A%A8"><span class="toc-text">6.1 imx219 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-hx9023s-%E9%A9%B1%E5%8A%A8"><span class="toc-text">6.2 hx9023s 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-lt9611ex-%E9%A9%B1%E5%8A%A8"><span class="toc-text">6.3 lt9611ex 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-suspend"><span class="toc-text">6.4 suspend</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E4%B8%80%E4%B8%AA%E9%97%AE%E9%A2%98"><span class="toc-text">七、一个问题</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+    <nav class="post-nav">
+      
+      
+        <a class="next" href="/2026/09/27/%E9%97%AE%E9%A2%98%E9%9B%86/">问题集 &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+  
+<script src="/js/image-zoom.js"></script>
+
+</body>
+</html>
