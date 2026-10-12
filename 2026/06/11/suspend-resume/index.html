@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
 <meta property="article:published_time" content="2026-06-11T06:19:55.000Z">
-<meta property="article:modified_time" content="2026-09-13T08:22:08.338Z">
+<meta property="article:modified_time" content="2026-10-12T05:03:17.400Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
@@ -214,8 +214,67 @@ mjx-container[display="true"] + br {
 </blockquote>
 <h1 id="总览图"><a href="#总览图" class="headerlink" title="总览图"></a>总览图</h1><img src="whiteboard_exported_image.png" alt="whiteboard_exported_image">
 
-
-
+<h1 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h1><h2 id="suspend问题排查："><a href="#suspend问题排查：" class="headerlink" title="suspend问题排查："></a>suspend问题排查：</h2><ol>
+<li>先分类现象</li>
+</ol>
+<ul>
+<li>根本无法进入 suspend</li>
+<li>进入后立刻被唤醒</li>
+<li>卡在 suspend 过程中</li>
+<li>resume 卡死/黑屏/外设失效</li>
+<li>suspend/resume 耗时异常</li>
+</ul>
+<ol start="2">
+<li>检查日志和状态</li>
+</ol>
+<ul>
+<li>看dmesg</li>
+<li>cat /proc/interrupts</li>
+<li>检查wakeup_sources</li>
+</ul>
+<ol start="3">
+<li>用 pm_test 分层定位<br>它会走到某阶段后自动返回，不会真正休眠。依次测试：<br>freezer -&gt; devices -&gt; platform -&gt; processors -&gt; core，看看在哪一层失败<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> devices &gt; /sys/power/pm_test <span class="comment"># 这次 suspend 不要真的睡下去，只走到devices</span></span><br><span class="line"><span class="built_in">echo</span> mem &gt; /sys/power/state <span class="comment"># 开始睡眠</span></span><br></pre></td></tr></table></figure></li>
+<li>查唤醒源/阻止源<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /sys/devices/.../power/wakeup  <span class="comment"># 看某个设备是否允许唤醒</span></span><br><span class="line"><span class="built_in">echo</span> disabled &gt; /sys/devices/.../power/wakeup <span class="comment"># 关闭某个设备的唤醒源后再休眠看会不会正常</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><strong>常见根因</strong></p>
+<ol>
+<li><p>未正确屏蔽中断<br>suspend 前未禁用设备中断，导致中断持续触发。<br>中断处理程序在 suspend 过程中访问已关闭的时钟/电源，导致崩溃。</p>
+</li>
+<li><p>未清中断标志<br>寄存器未清除，导致刚 suspend 就产生中断。<br>GPIO 中断未清，引发 IRQ 风暴。</p>
+</li>
+<li><p>未停止 DMA/工作队列/定时器<br>DMA 仍在传输，工作队列仍在调度，定时器未取消，导致设备无法进入低功耗，或 suspend 后立即唤醒</p>
+</li>
+</ol>
+<h2 id="resume问题排查"><a href="#resume问题排查" class="headerlink" title="resume问题排查"></a>resume问题排查</h2><ol>
+<li>问题分类：</li>
+</ol>
+<ul>
+<li>无法唤醒，卡在睡眠状态</li>
+<li>唤醒后无功能</li>
+<li>唤醒耗时异常</li>
+</ul>
+<ol start="2">
+<li><p>检查日志和状态</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dmesg <span class="comment"># 看哪个驱动resume失败</span></span><br><span class="line"><span class="built_in">cat</span> /proc/interrupts <span class="comment"># 查看中断计数，对比恢复前后</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/wakeup_sources <span class="comment"># 查看唤醒源统计</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/suspend_stats <span class="comment"># 查看 suspend/resume 统计信息</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>pm_test 分层定位</p>
+</li>
+<li><p>查唤醒源/阻止源</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /sys/devices/.../power/wakeup <span class="comment"># 查看设备是否允许唤醒</span></span><br><span class="line"><span class="built_in">echo</span> disabled &gt; /sys/devices/.../power/wakeup <span class="comment"># 临时禁用某个设备的唤醒能力，再试 suspend/resume</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><strong>常见原因</strong></p>
+<ol>
+<li>中断/唤醒源问题<blockquote>
+<p>resume 时没有重新使能中断，设备无法工作<br>中断未屏蔽或未清，resume 后立即触发 IRQ 风暴</p>
+</blockquote>
+</li>
+<li>设备依赖顺序错误<blockquote>
+<p>父设备未恢复，子设备先恢复</p>
+</blockquote>
+</li>
+<li>寄存器读写超时</li>
+<li>resume 时未重新配置硬件状态或配置错误</li>
+</ol>
 <h1 id="Suspend流程"><a href="#Suspend流程" class="headerlink" title="Suspend流程"></a>Suspend流程</h1><p>用户空间执行如下操作，会通过sysfs触发suspend的执行：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">echo <span class="string">"freeze"</span> &gt; /sys/power/state</span><br><span class="line">echo <span class="string">"standby"</span> &gt; /sys/power/state</span><br><span class="line">echo <span class="string">"mem"</span> &gt; /sys/power/state</span><br></pre></td></tr></table></figure>
 
@@ -245,7 +304,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Suspend%E6%B5%81%E7%A8%8B"><span class="toc-text">Suspend流程</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">问题排查</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#suspend%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%EF%BC%9A"><span class="toc-text">suspend问题排查：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resume%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">resume问题排查</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Suspend%E6%B5%81%E7%A8%8B"><span class="toc-text">Suspend流程</span></a></li></ol>
   </div>
 </aside>
 
