@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Linux BSP 面试题总结（基础篇） | Welodi</title>
-  <meta name="description" content="一、C 语言基础1. volatile 关键字详解答：volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中 123456789101112131415161718&#x2F;&#x2F; 场景1：硬件寄存器（MMIO）volatile uint32_t *reg &#x3D; (volatile uint32_t *)ioremap(0xfec80000,">
+  <meta name="description" content="一、C 语言基础1. volatile 关键字详解答：volatile 告诉编译器：这个变量的 value 可能会被意外改变——即使程序没显式修改，它也可能被外部因素改变。编译器就会放弃对该变量的优化。 为什么编译器要优化：编译器为了优化性能，在生成汇编语言时候，会对代码执行顺序做一些“调整”。 使用场景：  硬件寄存器读写（最核心场景） 中断服务程序与主程序共享变量 多线程共享变量  典型反例（">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux BSP 面试题总结（基础篇）">
 <meta property="og:url" content="http://example.com/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/index.html">
 <meta property="og:site_name" content="Welodi">
-<meta property="og:description" content="一、C 语言基础1. volatile 关键字详解答：volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中 123456789101112131415161718&#x2F;&#x2F; 场景1：硬件寄存器（MMIO）volatile uint32_t *reg &#x3D; (volatile uint32_t *)ioremap(0xfec80000,">
+<meta property="og:description" content="一、C 语言基础1. volatile 关键字详解答：volatile 告诉编译器：这个变量的 value 可能会被意外改变——即使程序没显式修改，它也可能被外部因素改变。编译器就会放弃对该变量的优化。 为什么编译器要优化：编译器为了优化性能，在生成汇编语言时候，会对代码执行顺序做一些“调整”。 使用场景：  硬件寄存器读写（最核心场景） 中断服务程序与主程序共享变量 多线程共享变量  典型反例（">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/08/05/linux%E9%9D%A2%E8%AF%95%E9%A2%98(%E5%9F%BA%E7%A1%80)/%E5%86%85%E5%AD%98%E5%88%86%E5%8C%BA.png">
 <meta property="article:published_time" content="2026-08-04T22:55:10.000Z">
-<meta property="article:modified_time" content="2026-09-13T08:22:08.341Z">
+<meta property="article:modified_time" content="2026-10-13T10:46:01.660Z">
 <meta property="article:author" content="Welodi">
 <meta property="article:tag" content="驱动开发">
 <meta property="article:tag" content="Linux">
@@ -213,9 +213,14 @@ mjx-container[display="true"] + br {
 
   <div class="post-body-wrapper">
     <div class="post-content">
-      <h2 id="一、C-语言基础"><a href="#一、C-语言基础" class="headerlink" title="一、C 语言基础"></a>一、C 语言基础</h2><h3 id="1-volatile-关键字详解"><a href="#1-volatile-关键字详解" class="headerlink" title="1. volatile 关键字详解"></a>1. volatile 关键字详解</h3><p><strong>答：</strong><br>volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 场景1：硬件寄存器（MMIO）</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">uint32_t</span> *reg = (<span class="keyword">volatile</span> <span class="type">uint32_t</span> *)<span class="title function_">ioremap</span>(<span class="number">0xfec80000</span>, <span class="number">4</span>);</span><br><span class="line">*reg = <span class="number">0x01</span>;  <span class="comment">// 强制写入硬件</span></span><br><span class="line">val = *reg;   <span class="comment">// 强制从硬件读取</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 场景2：中断中修改的全局变量</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">int</span> irq_flag = <span class="number">0</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">interrupt_handler</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    irq_flag = <span class="number">1</span>;  <span class="comment">// 中断中修改</span></span><br><span class="line">}</span><br><span class="line"><span class="keyword">while</span> (!irq_flag);  <span class="comment">// 主循环必须每次都重新读取</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 场景3：多线程共享变量</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">int</span> running = <span class="number">1</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">worker_thread</span><span class="params">(<span class="type">void</span>)</span> {</span><br><span class="line">    <span class="keyword">while</span> (running) { <span class="comment">/* 工作 */</span> }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
-
+      <h2 id="一、C-语言基础"><a href="#一、C-语言基础" class="headerlink" title="一、C 语言基础"></a>一、C 语言基础</h2><h3 id="1-volatile-关键字详解"><a href="#1-volatile-关键字详解" class="headerlink" title="1. volatile 关键字详解"></a>1. volatile 关键字详解</h3><p><strong>答：</strong><br>volatile 告诉编译器：这个变量的 value 可能会被意外改变——即使程序没显式修改，它也可能被外部因素改变。编译器就会放弃对该变量的优化。</p>
+<p>为什么编译器要优化：编译器为了优化性能，在生成汇编语言时候，会对代码执行顺序做一些“调整”。</p>
+<p>使用场景：</p>
+<ol>
+<li>硬件寄存器读写（最核心场景）</li>
+<li>中断服务程序与主程序共享变量</li>
+<li>多线程共享变量</li>
+</ol>
 <p><strong>典型反例（不加 volatile 的后果）：</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 假设想让 LED 闪烁</span></span><br><span class="line">*led_reg = <span class="number">0x01</span>;</span><br><span class="line">*led_reg = <span class="number">0x00</span>;</span><br><span class="line">*led_reg = <span class="number">0x01</span>;</span><br><span class="line"><span class="comment">// 编译器优化后可能只执行最后一次赋值！</span></span><br></pre></td></tr></table></figure>
 

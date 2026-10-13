@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg">
 <meta property="article:published_time" content="2026-09-28T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-10-13T10:16:51.204Z">
+<meta property="article:modified_time" content="2026-10-13T10:37:19.691Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg">
@@ -361,10 +361,10 @@ mjx-container[display="true"] + br {
 <li>半双工 串行 同步总线 </li>
 <li>上拉电阻作用：iic总线开漏输出，无法输出高电平</li>
 </ul>
-<p><strong>i2c不通排查步骤：</strong></p>
+<p><strong>i2c不通排查步骤：</strong><br>先确认 I2C 能不能访问到它</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i2cdetect -y -r &lt;bus&gt; <span class="comment"># 扫总线，检查设备地址是否存在</span></span><br></pre></td></tr></table></figure>
+<p>分三种情况：</p>
 <ol>
-<li>先确认 I2C 能不能访问到它<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i2cdetect -y -r &lt;bus&gt; <span class="comment"># 扫总线，检查设备地址是否存在</span></span><br></pre></td></tr></table></figure>
-分三种情况：</li>
 <li>完全扫不到新设备地址：</li>
 </ol>
 <ul>
