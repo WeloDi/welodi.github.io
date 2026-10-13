@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>面试问题 | Welodi</title>
-  <meta name="description" content="一、中断 为什么中断不能睡眠？   进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 如果中断中使用睡眠，">
+  <meta name="description" content="一、中断 为什么中断不能睡眠？   进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，睡眠会导致死锁。只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 如果中断中使用睡眠，后续没人能把">
 <meta property="og:type" content="article">
 <meta property="og:title" content="面试问题">
 <meta property="og:url" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/index.html">
 <meta property="og:site_name" content="Welodi">
-<meta property="og:description" content="一、中断 为什么中断不能睡眠？   进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 如果中断中使用睡眠，">
+<meta property="og:description" content="一、中断 为什么中断不能睡眠？   进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。 中断上下文不属于任何任务，没有task_struct，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，睡眠会导致死锁。只能用自旋锁并要求尽快返回，慢活交给下半部或线程化处理。 如果中断中使用睡眠，后续没人能把">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg">
 <meta property="article:published_time" content="2026-09-28T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-10-12T06:15:57.994Z">
+<meta property="article:modified_time" content="2026-10-13T10:16:51.204Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/ethercat_frame.svg">
@@ -210,10 +210,10 @@ mjx-container[display="true"] + br {
 </ol>
 <ul>
 <li>进程上下文有明确的 task_struct，可以睡眠、被调度。他包含进程的所有属性：状态、调度信息、内存映射、文件描述符、信号处理、资源统计等。</li>
-<li>中断上下文不属于任何任务，<strong>没有task_struct</strong>，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，也不可直接访问用户空间地址，<strong>只能用自旋锁</strong>并要求尽快返回，慢活交给下半部或线程化处理。</li>
+<li>中断上下文不属于任何任务，<strong>没有task_struct</strong>，因此不能睡眠、不能用 mutex、不能调用可能睡眠的函数，睡眠会导致死锁。<strong>只能用自旋锁</strong>并要求尽快返回，慢活交给下半部或线程化处理。</li>
 <li>如果中断中使用睡眠，后续没人能把它再调度回来，系统直接死锁。</li>
 </ul>
-<ol start="2">
+<ol>
 <li><p>中断的完整流程：<a href="/2026/06/12/Interview/#%E4%B8%AD%E6%96%AD%E6%B5%81%E7%A8%8B">中断流程</a></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">外设拉中断</span><br><span class="line">  → GIC 路由到目标cpu</span><br><span class="line">  → CPU 切 IRQ 模式，保存硬件现场：PC → LR_irq、CPSR → SPSR_irq，跳向量表</span><br><span class="line">  → 汇编入口保存现场：把 R0–R12、LR、SPSR 压入 IRQ 栈</span><br><span class="line">  → 通用中断处理函数do_IRQ 查 irq_desc找到对应的中断处理函数handler</span><br><span class="line">  → 写 EOI 通知 GIC 中断处理完毕</span><br><span class="line">  → 弹栈恢复现场 SPSR→CPSR、LR→PC、R0–R12</span><br><span class="line">  → 检查 pending 软中断/tasklet，执行 do_softirq</span><br><span class="line">  → 返回源程序</span><br></pre></td></tr></table></figure>
 </li>
@@ -238,6 +238,9 @@ mjx-container[display="true"] + br {
 <li>循环等待：线程之间形成环状等待。 – 不可变对象、无锁结构、消息队列、单线程处理。<br>这是最根本但往往最难完全做到。</li>
 </ul>
 <p>破坏任意一个即可避免死锁。</p>
+<h3 id="RCU"><a href="#RCU" class="headerlink" title="RCU"></a>RCU</h3><p>全拼Read-Copy-Update，他是一种同步机制，主要用于读多写少的并发场景。</p>
+<p><strong>机制：</strong><br>读者直接读，不加锁。写者要修改时，复制一份副本，修改副本，然后把指针切换到新副本。等所有读操作都退出后，再释放原来的内存。</p>
+<p><strong>代价</strong><br>写的成本高：要复制、替换、等待读操作退出<br>内存延迟释放：旧数据不能马上 free<br>多个写者之间通常还要额外互斥：RCU 主要保证读侧无锁，不保证写者之间无锁。<br>读者可能读到旧数据：RCU 不保证你立刻看到最新值。</p>
 <h2 id="三、DMA"><a href="#三、DMA" class="headerlink" title="三、DMA"></a>三、<a target="_blank" rel="noopener" href="https://welodi.github.io/2026/09/13/mt7925-02-pcie-bus/#4-1-DMA%E7%BB%93%E6%9E%84%E4%BD%93-%E5%88%9D%E5%A7%8B%E5%8C%96%E9%93%BE%E8%B7%AF">DMA</a></h2><p>3.1 怎么保证缓存一致性(CPU与DMA)？</p>
 <ul>
 <li><strong>硬件方法</strong> - 总线监听：Cache 控制器监听总线，发现 DMA 访问的地址在自己 Cache 里，则标记cache无效，让cpu直接访问内存</li>
@@ -262,8 +265,8 @@ mjx-container[display="true"] + br {
 <h2 id="五、Uboot和Kernel启动"><a href="#五、Uboot和Kernel启动" class="headerlink" title="五、Uboot和Kernel启动"></a>五、Uboot和Kernel启动</h2><p><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#1-%E5%85%A8%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%93%BE%E6%A6%82%E8%A7%88">启动流程</a></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">上电</span><br><span class="line">  ├──→ CPU 复位，PC 指向 BootROM 地址, </span><br><span class="line">  ▼</span><br><span class="line">BootROM</span><br><span class="line">  ├──→ 初始化基本时钟，读取 BOOT_MODE 引脚, 选择从哪启动（eMMC/SD/NAND/USB）</span><br><span class="line">  ├──→ 将SPL加载到SRAM</span><br><span class="line">  ▼</span><br><span class="line"><span class="title function_">SPL</span> (U-Boot 的精简版前置加载器,核心作用：芯片内部 SRAM 太小装不下U-Boot，需要先初始化 DDR 才能运行完整 U-Boot)</span><br><span class="line">  ├──→ 初始化 DDR 控制器、串口、时钟（DDR需要）</span><br><span class="line">  ├──→ 初始化存储设备驱动，从存储设备的 U-Boot 分区读取完整 U-Boot 到 DDR, 并跳转到 U-boot</span><br><span class="line">  ▼</span><br><span class="line">U-Boot</span><br><span class="line">  ├──→ 初始化外设（网卡、USB、MMC 等）</span><br><span class="line">  ├──→ 读取内核镜像、设备树、initrd</span><br><span class="line">  ├──→ 设置 bootargs，跳转到内核入口（网络加载、存储加载、文件系统加载）</span><br><span class="line">  ▼</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line"><span class="title function_">Kernel</span> (start_kernel)</span><br><span class="line">  ├──→ 初始化 CPU、内存管理、调度器、中断、定时器等</span><br><span class="line">  ├──→ 解析设备树，初始化各子系统, 注册平台设备与驱动</span><br><span class="line">  ├──→ 挂载 rootfs，启动 init（PID <span class="number">1</span>）</span><br><span class="line">  ▼</span><br><span class="line">init</span><br><span class="line">  ├──→ systemd 或 SysV init 读取配置</span><br><span class="line">  ├──→ 按依赖关系启动各类服务</span><br><span class="line">  ▼</span><br><span class="line">服务/应用</span><br></pre></td></tr></table></figure>
 
-<h2 id="六、ROS2"><a href="#六、ROS2" class="headerlink" title="六、ROS2"></a>六、ROS2</h2><p>ROS2 是一个分布式计算框架</p>
-<h3 id="6-1-ROS2核心概念"><a href="#6-1-ROS2核心概念" class="headerlink" title="6.1 ROS2核心概念"></a>6.1 ROS2核心概念</h3><ol>
+<h2 id="六、suspend-resume"><a href="#六、suspend-resume" class="headerlink" title="六、suspend-resume"></a>六、<a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/11/suspend-resume/">suspend-resume</a></h2><h2 id="七、ROS2"><a href="#七、ROS2" class="headerlink" title="七、ROS2"></a>七、ROS2</h2><p>ROS2 是一个分布式计算框架</p>
+<h3 id="7-1-ROS2核心概念"><a href="#7-1-ROS2核心概念" class="headerlink" title="7.1 ROS2核心概念"></a>7.1 ROS2核心概念</h3><ol>
 <li><p><strong>节点</strong>（Node）: 节点是ROS2中最小的计算单元，类似于一个独立的进程。一个节点通常负责一项专门功能</p>
 </li>
 <li><p><strong>话题</strong>（Topic）: 话题是节点间的<strong>异步</strong>通信通道，采用<strong>发布-订阅</strong>（Pub-Sub）模式<br>特点：</p>
@@ -286,19 +289,120 @@ mjx-container[display="true"] + br {
 <li><strong>消息</strong>（Message）: 消息是节点间通信的数据载体。</li>
 <li><strong>动作</strong>（Action）: 动作用于需要长时间执行的任务，提供目标、反馈和结果。</li>
 </ol>
-<h3 id="6-2-DDS"><a href="#6-2-DDS" class="headerlink" title="6.2 DDS"></a>6.2 DDS</h3><p>DDS的全称是Data  Distribution Service，也就是数据分发服务。他采用以数据为中心的发布-订阅模型：DCPS<br>基本结构是Domain，他的作用是控制通信范围：只有同一个 Domain 内的节点才能互相通信</p>
+<h3 id="7-2-DDS"><a href="#7-2-DDS" class="headerlink" title="7.2 DDS"></a>7.2 DDS</h3><p>DDS的全称是Data  Distribution Service，也就是数据分发服务。他采用以数据为中心的发布-订阅模型：DCPS<br>基本结构是Domain，他的作用是控制通信范围：只有同一个 Domain 内的节点才能互相通信</p>
 <p>质量服务策略QoS （Quality of Service）：是 DDS 中用于约束发布-订阅通信行为的一组策略。<br>通信建立的前提是：Topic 名一致、消息类型一致、QoS 兼容</p>
-<h2 id="七、suspend-resume"><a href="#七、suspend-resume" class="headerlink" title="七、suspend-resume"></a>七、<a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/11/suspend-resume/">suspend-resume</a></h2><h2 id="八、问题诊断工具"><a href="#八、问题诊断工具" class="headerlink" title="八、问题诊断工具"></a>八、问题诊断工具</h2><p><strong>kdump</strong><br>获取一份完整的内存转储vmcore</p>
+<h2 id="八、RTOS"><a href="#八、RTOS" class="headerlink" title="八、RTOS"></a>八、RTOS</h2><p><strong>定义</strong><br>RTOS：能在<strong>确定的时间</strong>内完成指定任务、并对外部事件做出响应的操作系统。<br>实时不等于“快”，而是<strong>确定性</strong>（时延可预测、有上界），即最坏情况下的响应时间可以分析出来。</p>
+<p><strong>rtos特性</strong></p>
+<ul>
+<li>抢占式调度：高优先级任务一旦就绪，立刻抢占 CPU</li>
+<li>多任务：任务（task/thread）是最小调度单位，每个任务有独立栈和优先级</li>
+<li>确定性：调度延迟、中断延迟、上下文切换时间有上界，最坏执行时间(WCET)可分析</li>
+<li>任务间同步与通信：信号量、互斥量、事件标志组、消息队列、邮箱</li>
+<li>中断管理：ISR 要短，慢活交给任务处理（和 Linux 中断下半部的思想一致）</li>
+<li>高精度定时器：系统 tick、软件定时器、超时机制</li>
+<li>资源管理：互斥量支持优先级继承/天花板，解决优先级反转</li>
+<li>体量小、可裁剪：内核几 KB ~ 几十 KB，可跑在无 MMU 的 MCU 上</li>
+</ul>
+<p><strong>rtos和linux区别</strong></p>
+<blockquote>
+<p>标准 Linux 的不可抢占区（关中断、关抢占、自旋锁、中断处理程序等）比较多、而且有些可能比较长，导致最坏调度延迟大且不确定，所以实时性可能不好；RTOS 的不可抢占区通常很少、很短，并且有明确上限，所以高优先级任务能在有界时间内抢占，实时性好</p>
+</blockquote>
+<ul>
+<li>实时性：RTOS 是硬实时；主线 Linux 是软实时，需 PREEMPT_RT 补丁才接近硬实时</li>
+<li>调度策略：RTOS 按固定优先级抢占（同级可时间片轮转）；Linux 默认 CFS，追求吞吐与公平，不保证单个任务的延迟上界</li>
+<li>内存管理：RTOS 多无 MMU、无虚拟内存，所有任务共享同一地址空间；Linux 必须有 MMU，进程独立地址空间，内核态/用户态隔离</li>
+<li>内核结构：RTOS 是高度可裁剪的小内核，通常和应用编成一个固件；Linux 是宏内核 + 可动态加载模块，支持多进程</li>
+<li>抢占粒度：RTOS 内核基本全程可抢占，关中断时间很短；Linux 存在不可抢占区（自旋锁、关中断临界区）</li>
+<li>体量与生态：RTOS 为 KB 级，协议栈/文件系统常常外挂；Linux 为 MB 级，网络、文件系统、多用户等生态完整</li>
+<li>典型场景：RTOS 用于单一用途、资源受限、确定性要求高的场合（电机、穿戴、Sensor Hub）；Linux 用于复杂多功能（网关、HMI、摄像头）</li>
+<li>补充：二者也常组合使用，例如异构多核 A 核跑 Linux + M 核跑 RTOS，各有分工</li>
+</ul>
+<h3 id="8-1-freeRTOS通信机制"><a href="#8-1-freeRTOS通信机制" class="headerlink" title="8.1 freeRTOS通信机制"></a>8.1 <strong>freeRTOS通信机制</strong></h3><p>FreeRTOS 给任务间同步与数据交换提供的机制，按”从重到轻”排列：</p>
+<ul>
+<li><p><strong>队列 Queue</strong>：最核心也最常用的机制。FIFO 传数据，任务与任务、任务与中断都能用，支持阻塞超时<br>发送的是数据本身（按值拷贝），传大块数据时传指针以避免拷贝开销</p>
+</li>
+<li><p><strong>信号量 Semaphore</strong>：不传数据，只传”事件/资源可用”这个信号</p>
+<ul>
+<li>二值信号量：用于同步（如 ISR 通知任务”数据来了”），<strong>不能当互斥量用</strong>，因为它没有优先级继承</li>
+<li>计数信号量：管理多个同类资源（缓冲区槽位、连接池），也可做事件计数</li>
+</ul>
+</li>
+<li><p><strong>互斥量 Mutex</strong>：保护共享资源，<strong>带优先级继承</strong>，是解决优先级反转的默认手段<br>递归互斥量允许同一任务多次获取（自嵌套）</p>
+</li>
+<li><p><strong>事件标志组 Event Group</strong>：一个 bit 表示一个事件，可以同时等待多个事件（按位与/按位或），也能一次通知多个任务，适合”多条件组合触发”</p>
+</li>
+<li><p><strong>任务通知</strong>：最轻量，每个任务自带一个 32 位通知值，不需要创建任何内核对象，速度和 RAM 开销都优于信号量和队列<br>可替代二值信号量、计数信号量、事件组；但只能”一对一”（发给指定任务），也不缓存数据</p>
+</li>
+<li><p><strong>流缓冲区 / 消息缓冲区</strong>：面向”数据流”场景</p>
+<ul>
+<li>Stream Buffer：连续字节流，适合串口、DMA、音频等</li>
+<li>Message Buffer：带长度前缀的离散报文，一次读写一条完整消息</li>
+</ul>
+</li>
+</ul>
+<h3 id="8-2-什么是优先级反转？"><a href="#8-2-什么是优先级反转？" class="headerlink" title="8.2 什么是优先级反转？"></a>8.2 <strong>什么是优先级反转？</strong></h3><p>举例：低优先级任务持有锁 → 中优先级任务抢占 CPU → 高优先级任务在等这把锁，却被那个中优先级任务压着，导致“高优先级反而最后才执行”。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">高优先级 H ───── 等锁（被阻塞）</span><br><span class="line">中优先级 M ───────── 运行（不依赖这把锁，纯抢占）</span><br><span class="line">低优先级 L ── 持锁 ── 被抢占，锁释放不掉</span><br><span class="line">=&gt; H 的等待时间取决于 M 的运行时长，优先级关系被“反转”</span><br></pre></td></tr></table></figure>
+<p>危害：破坏实时性，且多个中优先级任务时等待时间无界。</p>
+<p>解决办法：</p>
+<ol>
+<li><strong>优先级继承</strong>：<br>当高优先级 阻塞在 低优先级 持有的锁上时，L 临时继承 H 的优先级, 释放后，L 恢复原来的低优先级。FreeRTOS 的 mutex 默认支持，Linux rt_mutex 也支持</li>
+<li><strong>优先级天花板</strong>：<br>给每把锁预先设定一个“天花板优先级”，任何持有者立刻提升到该优先级，也能顺带避免死锁。但对优先级规划要求高</li>
+<li><strong>避免共享资源</strong>：<br>用无锁结构（无锁队列/无锁环形缓冲区/无锁链表/RCU）代替互斥。</li>
+<li><strong>缩短临界区</strong><br>锁持有时间越短，反转影响越小</li>
+</ol>
+<h2 id="九、问题诊断工具"><a href="#九、问题诊断工具" class="headerlink" title="九、问题诊断工具"></a>九、问题诊断工具</h2><p><strong>kdump</strong><br>获取一份完整的内存转储vmcore</p>
 <p><strong>pstore</strong><br>在崩溃瞬间，将最关键的信息快速写入一块非易失性存储中，并在重启后保留下来</p>
 <p><strong>perf</strong><br>性能分析,火焰图</p>
 <p><strong>ftrace</strong><br>跟踪指定函数的执行情况，确认它是否被调用、被谁调用、耗时多久</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用 function_graph 跟踪器（推荐新手）</span></span><br><span class="line"><span class="built_in">echo</span> function_graph &gt; current_tracer</span><br><span class="line"></span><br><span class="line"><span class="comment">#跟踪 do_sys_open 的调用链</span></span><br><span class="line"><span class="built_in">echo</span> do_sys_open &gt; set_graph_function</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始记录</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; tracing_on</span><br><span class="line"></span><br><span class="line"><span class="comment"># ... 此时执行想要分析的操作 ...</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 停止记录</span></span><br><span class="line"><span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看结果</span></span><br><span class="line"><span class="built_in">cat</span> trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># tracer: function_graph</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># CPU  DURATION                  FUNCTION CALLS</span></span><br><span class="line"><span class="comment"># |     |   |                     |   |   |   |</span></span><br><span class="line"><span class="comment"># 0)   1.234 us    |  do_sys_open();</span></span><br><span class="line"><span class="comment"># 0)   0.123 us    |  getname_flags();</span></span><br><span class="line"><span class="comment"># 0)   0.456 us    |  do_filp_open();</span></span><br><span class="line"><span class="comment"># 0)   2.345 us    |  }</span></span><br></pre></td></tr></table></figure>
 
 
-<h2 id="九、通信协议"><a href="#九、通信协议" class="headerlink" title="九、通信协议"></a>九、通信协议</h2><h3 id="i2c"><a href="#i2c" class="headerlink" title="i2c"></a><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#IIC">i2c</a></h3><ul>
+<h2 id="十、通信协议"><a href="#十、通信协议" class="headerlink" title="十、通信协议"></a>十、通信协议</h2><h3 id="i2c"><a href="#i2c" class="headerlink" title="i2c"></a><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#IIC">i2c</a></h3><ul>
 <li>半双工 串行 同步总线 </li>
 <li>上拉电阻作用：iic总线开漏输出，无法输出高电平</li>
 </ul>
+<p><strong>i2c不通排查步骤：</strong></p>
+<ol>
+<li>先确认 I2C 能不能访问到它<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i2cdetect -y -r &lt;bus&gt; <span class="comment"># 扫总线，检查设备地址是否存在</span></span><br></pre></td></tr></table></figure>
+分三种情况：</li>
+<li>完全扫不到新设备地址：</li>
+</ol>
+<ul>
+<li>先确认器件上电情况：量 VCC、上拉电阻是否焊接、上电时序与延时是否满足手册要求</li>
+<li>确认设备树中的地址 与 手册地址是否一致，是否地址冲突</li>
+<li>物理层：示波器/逻辑分析仪看 SCL/SDA 有没有波形；速率过高或走线太长</li>
+</ul>
+<ol start="2">
+<li>能扫到地址，但驱动 probe 失败</li>
+</ol>
+<ul>
+<li>先手动读寄存器（比如CHIP ID），确认链路本身没问题，把问题缩小到驱动侧<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">i2ctransfer -y 1 w1@0x10 0x00 r1   <span class="comment"># 在 bus 1、地址 0x10 上读 0x00 寄存器</span></span><br></pre></td></tr></table></figure></li>
+<li>常见原因：<ul>
+<li><code>compatible</code> 与驱动的 of_device_id 不匹配。</li>
+<li>probe 里访问寄存器失败：供电/时钟还没开就去读写</li>
+<li>资源申请失败：gpio / regulator / clock / irq 拿不到；返回 <code>-EPROBE_DEFER</code> 属正常，表示依赖资源还没就绪，内核稍后会重新 probe</li>
+<li>上电时序不满足：复位释放后需要的延时没加够</li>
+</ul>
+</li>
+</ul>
+<ol start="3">
+<li>能扫到，也能 probe，但“无功能”或者读写超时</li>
+</ol>
+<ul>
+<li><p>寄存器没真正写进去：需要解锁/写使能、时序不对、或被别处覆盖 —— 用 <code>i2ctransfer</code> 回读确认</p>
+</li>
+<li><p>中断不工作：dts 里 interrupt-parent / 触发类型（边沿 vs 电平）配错，或没清中断状态导致只触发一次</p>
+</li>
+<li><p>电源管理：设备被 runtime PM 下电了，访问前没上电；或 suspend/resume 后寄存器没恢复</p>
+</li>
+<li><p>看总线是否被“死锁”？测量 SDA 和 SCL 的对地电压，如果某条线一直低，就是死锁了</p>
+</li>
+<li><p>核对i2c频率是否与手册匹配</p>
+</li>
+<li><p>上拉电阻不合适：上拉电阻太大导致上升沿太慢，高速下波形还没到高电平就被采样了，导致超时。</p>
+</li>
+</ul>
+<p>MCU 一直 BUSY / NACK / TIMEOUT？</p>
 <h3 id="spi"><a href="#spi" class="headerlink" title="spi"></a><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/06/12/Interview/#SPI">spi</a></h3><ul>
 <li>高速、全双工、同步的串行通信总线</li>
 <li>时钟极性 和 时钟相位定义4种模式<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Mode <span class="number">0</span>：空闲低，上升沿采样  ← 最常用</span><br><span class="line">Mode <span class="number">1</span>：空闲低，下降沿采样</span><br><span class="line">Mode <span class="number">2</span>：空闲高，下降沿采样</span><br><span class="line">Mode <span class="number">3</span>：空闲高，上升沿采样  ← 常用</span><br></pre></td></tr></table></figure></li>
@@ -360,7 +464,7 @@ mjx-container[display="true"] + br {
 <li>中断传输：周期性小数据（键盘鼠标、HID）</li>
 <li>等时传输：实时音视频，保证带宽但不重传</li>
 </ul>
-<h2 id="十、项目"><a href="#十、项目" class="headerlink" title="十、项目"></a>十、项目</h2><h3 id="10-1-imx219-驱动"><a href="#10-1-imx219-驱动" class="headerlink" title="10.1 imx219 驱动"></a>10.1 <a href="/2026/08/08/imx219-driver/">imx219 驱动</a></h3><blockquote>
+<h2 id="十一、项目"><a href="#十一、项目" class="headerlink" title="十一、项目"></a>十一、项目</h2><h3 id="11-1-imx219-驱动"><a href="#11-1-imx219-驱动" class="headerlink" title="11.1 imx219 驱动"></a>11.1 <a href="/2026/08/08/imx219-driver/">imx219 驱动</a></h3><blockquote>
 <p><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/09/04/MIPI-CSI2/">mipi-csi2</a><br><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/09/06/color-encoding/#4-2-YUV-%E7%9A%84%E5%88%86%E9%87%8F%E4%B8%8E%E5%90%8D%E8%AF%8D">色彩编码格式</a></p>
 </blockquote>
 <p><strong>usb camera与mipi camera区别</strong><br>操作系统自带 UVC 类通用驱动，摄像头通过标准描述符告诉主机“我是摄像头、支持哪些分辨率、格式、控制项”<br>MIPI 摄像头没有等价的 UVC 标准，MIPI CSI-2 只在“传输层”规定怎么把图像数据从摄像头传到 SoC，需要针对传感器和平台做适配。</p>
@@ -396,7 +500,7 @@ mjx-container[display="true"] + br {
 <li>读Clock Lane Status寄存器：发现不是LP11状态</li>
 <li>查看数据手册上电时序，发现是链路层问题<br>根因：<br>IMX219 的<a target="_blank" rel="noopener" href="https://welodi.github.io/2026/09/04/MIPI-CSI2/#%E5%9B%9B%E3%80%81D-PHY-%E4%BF%A1%E5%8F%B7%E4%B8%8E-HS-%E6%97%B6%E5%BA%8F">D-PHY</a> 在 standby 模式下不会自动进入 LP-11，必须先进 streaming 再退回 standby 让 D-PHY 状态机初始化一次。host 的 clock lane 检测超时，所以 CSI 永远收不到同步</li>
 </ol>
-<h3 id="10-2-hx9023s-驱动"><a href="#10-2-hx9023s-驱动" class="headerlink" title="10.2 hx9023s 驱动"></a>10.2 <a href="/2026/08/22/hx9023s-driver/#2-2-dts">hx9023s 驱动</a></h3><p><strong>probe</strong></p>
+<h3 id="11-2-hx9023s-驱动"><a href="#11-2-hx9023s-驱动" class="headerlink" title="11.2 hx9023s 驱动"></a>11.2 <a href="/2026/08/22/hx9023s-driver/#2-2-dts">hx9023s 驱动</a></h3><p><strong>probe</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1.</span> 分配/初始化IIO设备：devm_iio_device_alloc 获取 indio_dev 和私有数据 hx9023s_data。</span><br><span class="line"><span class="number">2.</span> 硬件初始化：复位芯片、配置寄存器</span><br><span class="line"><span class="number">3.</span> 填充 indio_dev：</span><br><span class="line">    indio_dev-&gt;num_channels = <span class="title function_">ARRAY_SIZE</span>(hx9023s_channels);</span><br><span class="line">    indio_dev-&gt;info = &amp;hx9023s_info;</span><br><span class="line">    ...</span><br><span class="line"><span class="number">4.</span> 注册中断和iio_trigger</span><br><span class="line"><span class="number">5.</span> 注册触发缓冲区：<span class="title function_">devm_iio_triggered_buffer_setup</span>()，绑定触发回调：(缓冲区由iio子系统创建)</span><br><span class="line">    iio_pollfunc_store_time（存时间戳）</span><br><span class="line">    hx9023s_trigger_handler（推数据）</span><br><span class="line">    hx9023s_buffer_setup_ops（preenable/postdisable）<span class="comment">//开关缓冲区的回调</span></span><br><span class="line"><span class="number">6.</span> 注册 IIO 设备 → 生成 /sys/bus/iio/devices/iio:deviceX 和 /dev/iio:deviceX。</span><br></pre></td></tr></table></figure>
 
 <p><strong>中断</strong></p>
@@ -405,7 +509,7 @@ mjx-container[display="true"] + br {
 <p><strong>API差别</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">6.12</span></span><br><span class="line">在作用域结束后自动解锁</span><br><span class="line"><span class="title function_">guard</span>(mutex)(&amp;data-&gt;mutex);                     </span><br><span class="line"></span><br><span class="line"><span class="number">6.6</span></span><br><span class="line">需要手动加锁解锁</span><br><span class="line"><span class="title function_">mutex_lock</span>(&amp;data-&gt;mutex);</span><br><span class="line">...</span><br><span class="line"><span class="title function_">mutex_unlock</span>(&amp;data-&gt;mutex);</span><br></pre></td></tr></table></figure>
 
-<h3 id="10-3-lt9611ex-驱动"><a href="#10-3-lt9611ex-驱动" class="headerlink" title="10.3 lt9611ex 驱动"></a>10.3 <a href="/2026/09/10/lt9611-driver/">lt9611ex 驱动</a></h3><p><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/#2-3-%E4%B8%80%E6%AC%A1%E5%AE%8C%E6%95%B4%E7%9A%84%E6%98%BE%E7%A4%BA%E6%B5%81%E7%A8%8B">drm</a></p>
+<h3 id="11-3-lt9611ex-驱动"><a href="#11-3-lt9611ex-驱动" class="headerlink" title="11.3 lt9611ex 驱动"></a>11.3 <a href="/2026/09/10/lt9611-driver/">lt9611ex 驱动</a></h3><p><a target="_blank" rel="noopener" href="https://welodi.github.io/2026/09/11/DRM%E6%98%BE%E7%A4%BA%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/#2-3-%E4%B8%80%E6%AC%A1%E5%AE%8C%E6%95%B4%E7%9A%84%E6%98%BE%E7%A4%BA%E6%B5%81%E7%A8%8B">drm</a></p>
 <p>问题：<br>概率HPD不识别，/sys/class/drm/card0-HDMI-A-1/status 一直显示 disconnected。<br>手动重新插拔 HDMI 线，有时能恢复，有时仍不识别。<br>日志中偶发出现：EDID read timeout<br>部分显示器必现</p>
 <p>调试：</p>
 <ol>
@@ -413,7 +517,7 @@ mjx-container[display="true"] + br {
 <li>读取 Bridge 芯片的 HPD 状态寄存器为1（已连接）但是中断状态寄存器未置位，且 INT 引脚无脉冲<br>推测Bridge 芯片内部未把这次 HPD 变化上报为中断</li>
 </ol>
 <p>结果：<br>dts中中断引脚配置为边沿触发，但 Bridge 芯片的 INT 引脚是电平输出</p>
-<h2 id="十一、案例"><a href="#十一、案例" class="headerlink" title="十一、案例"></a>十一、案例</h2><h3 id="11-1-加速度传感器失灵"><a href="#11-1-加速度传感器失灵" class="headerlink" title="11.1 加速度传感器失灵"></a>11.1 加速度传感器失灵</h3><p><strong>问题现象</strong>：<br>这是一个平板设备项目，工厂生产中出现个别设备无法翻转。</p>
+<h2 id="十二、案例"><a href="#十二、案例" class="headerlink" title="十二、案例"></a>十二、案例</h2><h3 id="12-1-加速度传感器失灵"><a href="#12-1-加速度传感器失灵" class="headerlink" title="12.1 加速度传感器失灵"></a>12.1 加速度传感器失灵</h3><p><strong>问题现象</strong>：<br>这是一个平板设备项目，工厂生产中出现个别设备无法翻转。</p>
 <p><strong>调试</strong>：<br>具体现象：</p>
 <ol>
 <li>检查了自动旋转开关正常</li>
@@ -430,14 +534,14 @@ mjx-container[display="true"] + br {
 <li>驱动侧的溢出补偿逻辑存在问题，导致时间戳回退。最终被传感器框架判定为乱序数据，导致 G-sensor 数据被丢弃</li>
 </ol>
 <p><strong>解决办法</strong>：<br>chromeos内核团队修复溢出还原逻辑。</p>
-<h3 id="11-2-LT9611ex快速拔插黑屏"><a href="#11-2-LT9611ex快速拔插黑屏" class="headerlink" title="11.2 LT9611ex快速拔插黑屏"></a>11.2 LT9611ex快速拔插黑屏</h3><p><strong>问题现象</strong><br>设备冷启动后 HDMI 正常，但是快速拔插 HDMI 线，偶尔（低概率）出现检测不到显示器。<br>日志里偶尔会打印 “HPD 状态没变化”，但实际线是插着的。但是用 i2c 工具直接去读芯片，hpd状态位明明已经变了，驱动却认为没变。这个问题不是必现，插拔越快（1s）越容易出来。</p>
-<p><strong>调试过程</strong><br>一开始肯定先怀疑硬件，交叉验证线、显示器、板子，都没用。后来就在中断处理中加打印，看下中断触发次数。结果发现：中断其实来了，但中断处理线程有时候直接返回了，说不是 HPD 中断。再去查读中断状态的那段，发现驱动读到的老是旧值。原因是内核的寄存器映射开了缓存，而中断状态寄存器没有被标记成“volatile”，所以驱动读的是缓存，不是芯片实时状态。硬件已经报了中断，驱动却以为没有。</p>
-<p>继续往下查，看到中断线程判断是 HPD 之后，会去调度一个工作队列。但是那个调度接口设置了<code>WORK_STRUCT_PENDING_BIT</code> 特性：（防止同一个工作项被重复执行）。快速拔插的时候，拔掉时触发工作队列还没跑完，第二次插入来了，调度就被吞了。导致快速拔插没反应。</p>
+<h3 id="12-2-LT9611ex快速拔插黑屏"><a href="#12-2-LT9611ex快速拔插黑屏" class="headerlink" title="12.2 LT9611ex快速拔插黑屏"></a>12.2 LT9611ex快速拔插黑屏</h3><p><strong>问题现象</strong><br>设备冷启动后 HDMI 正常，但是快速拔插 HDMI 线，偶尔（低概率）出现检测不到显示器。<br>日志里偶尔会打印 “HPD 状态没变化”，但实际线是插着的。但是用 i2c 工具直接去读芯片，hpd状态位明明已经变了，驱动却认为没变。这个问题不是必现，插拔越快（1s）越容易出来。</p>
+<p><strong>调试过程</strong><br>一开始肯定先怀疑硬件，交叉验证线、显示器、板子，都没用。后来就在中断处理中加打印，看下中断触发次数。结果发现：中断其实来了，但中断处理线程有时候直接返回了，说不是 HPD 中断。再去查读中断状态的那段，发现驱动读到的老是旧值。原因是内核的寄存器映射开了缓存，而中断状态寄存器没有被标记成“volatile”，所以驱动读的是缓存，不是芯片实时状态。硬件已经报了中断，驱动却以为没有。但是加了这个以后，问题并没有消失，于是继续往下查：</p>
+<p>中断线程判断是 HPD 之后，会去调度一个工作队列。但是那个调度接口设置了<code>WORK_STRUCT_PENDING_BIT</code> 特性：（防止同一个工作项被重复执行）。快速拔插的时候，拔掉时触发工作队列还没跑完，第二次插入来了，调度就被吞了。导致快速拔插没反应。</p>
 <p><strong>根因</strong><br>第一，中断状态寄存器没被标记为volatile，寄存器映射缓存导致驱动读不到硬件实时值，误判中断源。<br>第二，工作队列调度用的语义是“不重复排队”，连续快速事件会丢，第二次插拔被忽略。</p>
 <p><strong>解决方法</strong><br>第一，把中断相关的寄存器标成易变、不缓存，保证驱动读的是硬件实时值。<br>第二，在数据结构中添加一个标志位lt9611ex-&gt;hpd_event,用来表示有新事件发生<br>中断线程里先把中断清掉，再置位这个标志位。然后在工作队列中循环判断这个标志位, 如果在队列执行期间有变化，当前队列也会知道，保证HPD状态永远都是最新。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (<span class="title function_">atomic_xchg</span>(&amp;lt9611c-&gt;hpd_event, <span class="number">0</span>)) {</span><br><span class="line">  读hpd</span><br><span class="line">  和驱动记录的状态对比，只有变了才处理</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 <p>这个问题难在它不是单一逻辑错误，而是缓存机制、工作队列调度语义两件事交织在一起。表面看是 HDMI 检测不到，实际是驱动状态和硬件状态不同步。排查时不能只盯显示链路，要去看中断、缓存。</p>
-<h3 id="11-3-LT9611ex外显分辨率异常"><a href="#11-3-LT9611ex外显分辨率异常" class="headerlink" title="11.3 LT9611ex外显分辨率异常"></a>11.3 LT9611ex外显分辨率异常</h3><p><strong>问题现象：</strong><br>在 LT9611EX 驱动开发调试阶段，设备连接某款 4K 显示器时，概率性出现 HDMI 输出锁定在默认分辨率（1024×768）。（概率大约30-40%），交叉验证发现跟着显示器走。有的显示器没问题，有的显示器就会概率出现。</p>
+<h3 id="12-3-LT9611ex外显分辨率异常"><a href="#12-3-LT9611ex外显分辨率异常" class="headerlink" title="12.3 LT9611ex外显分辨率异常"></a>12.3 LT9611ex外显分辨率异常</h3><p><strong>问题现象：</strong><br>在 LT9611EX 驱动开发调试阶段，设备连接某款 4K 显示器时，概率性出现 HDMI 输出锁定在默认分辨率（1024×768）。（概率大约30-40%），交叉验证发现跟着显示器走。有的显示器没问题，有的显示器就会概率出现。</p>
 <p>出问题时 dmesg 里能看到 EDID 读取失败，同时中断日志刷屏。</p>
 <p>反复插拔线缆有时能恢复，有时依旧锁定。</p>
 <p><strong>调试过程：</strong></p>
@@ -452,7 +556,7 @@ mjx-container[display="true"] + br {
 </li>
 </ol>
 <p><strong>问题根因</strong><br>主因：中断清除不完整，只清了 HPD，没清 EDID ready，导致低电平中断风暴发生。<br>诱因：EDID 等待超时偏短，部分显示器 EDID ready 到达晚。<br>中断风暴抢占 CPU，使 EDID 等待线程无法及时调度，形成恶性循环。</p>
-<h3 id="11-4-LTE-probe不到"><a href="#11-4-LTE-probe不到" class="headerlink" title="11.4 LTE probe不到"></a>11.4 LTE probe不到</h3><p><strong>问题描述</strong>：<br>在生产过程中，针对 LTE 跑检测项时，出现大量 runtime_probe 检测 Modem 节点失败、报错”Modem 节点不存在”的问题</p>
+<h3 id="12-4-LTE-probe不到"><a href="#12-4-LTE-probe不到" class="headerlink" title="12.4 LTE probe不到"></a>12.4 LTE probe不到</h3><p><strong>问题描述</strong>：<br>在生产过程中，针对 LTE 跑检测项时，出现大量 runtime_probe 检测 Modem 节点失败、报错”Modem 节点不存在”的问题</p>
 <p><strong>调试</strong>：</p>
 <ol>
 <li>runtime_probe 由上层服务调用，用于检测 Modem 节点。log 一直显示 Modem 节点不存在，但写脚本循环检查发现 wwan0 网络接口一直存在，说明底层 Modem 硬件和驱动加载正常</li>
@@ -460,7 +564,7 @@ mjx-container[display="true"] + br {
 <li>通读整个加载流程的log，发现在runtime_probe执行检测前, Hermesh 为初始化 eSIM 会临时抑制 Modem/0 节点。而 runtime_probe 恰好在这个窗口期通过 Shill 检测 Modem 节点，导致找不到节点而超时报错。</li>
 </ol>
 <p><strong>解决</strong><br> Shill 中新增 Cellular.PrimaryMultiplexedInterface 属性，暴露稳定的 wwan0 接口，让 runtime_probe 基于 Shill 提供的接口探测，不再受 ModemManager 节点状态影响。</p>
-<h3 id="11-5-MT7925蓝牙问题"><a href="#11-5-MT7925蓝牙问题" class="headerlink" title="11.5 MT7925蓝牙问题"></a>11.5 MT7925蓝牙问题</h3><p><strong>问题现象：</strong><br>系统开机后，蓝牙（MT7925）概率性显示为“关闭”，点击打开无反应。（冷重启恢复）</p>
+<h3 id="12-5-MT7925蓝牙问题"><a href="#12-5-MT7925蓝牙问题" class="headerlink" title="12.5 MT7925蓝牙问题"></a>12.5 MT7925蓝牙问题</h3><p><strong>问题现象：</strong><br>系统开机后，蓝牙（MT7925）概率性显示为“关闭”，点击打开无反应。（冷重启恢复）</p>
 <p><strong>分析：</strong></p>
 <ol>
 <li><p>一开始觉得应该是开机初始化问题，然后检查log，发现usb也已经枚举了，fw也加载成功了，但是他报WMT命令被打断：</p>
@@ -475,6 +579,51 @@ mjx-container[display="true"] + br {
 </li>
 </ol>
 <p><strong>根因：</strong><br>MT7925 蓝牙模块在关机时没有真正断电（USB 总线仍带电），模块内部状态寄存器可能卡在“半关闭”状态。<br>下次开机时，驱动重新初始化，发送 WMT 命令，但固件因为上次关机状态没清干净，不再响应，导致初始化失败。</p>
+<h2 id="十三、常见问题"><a href="#十三、常见问题" class="headerlink" title="十三、常见问题"></a>十三、常见问题</h2><h3 id="1-怎么排查栈溢出？什么情况下会导致栈溢出？"><a href="#1-怎么排查栈溢出？什么情况下会导致栈溢出？" class="headerlink" title="1. 怎么排查栈溢出？什么情况下会导致栈溢出？"></a>1. 怎么排查栈溢出？什么情况下会导致栈溢出？</h3><p>常见导致栈溢出的情况:</p>
+<ul>
+<li>递归过深或无限递归 / 调用链太深</li>
+<li>局部变量太大</li>
+<li>线程栈太小</li>
+</ul>
+<p>排查：<br>Linux 下先看 dmesg / coredumpctl，再用 GDB 看调用栈（命令：bt/bt full）和 栈指针寄存器（命令：info registers rsp），最后用 ASan、-fstack-protector-all、-Wframe-larger-than 定位具体代码。</p>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GDB 大量重复调用帧</td>
+<td>递归过深/无限递归</td>
+</tr>
+<tr>
+<td>栈指针 rsp 接近 [stack] 低地址</td>
+<td>调用栈耗尽</td>
+</tr>
+<tr>
+<td><code>*** stack smashing detected ***</code></td>
+<td>栈缓冲区溢出</td>
+</tr>
+<tr>
+<td>ASan 报 stack-overflow</td>
+<td>调用栈耗尽</td>
+</tr>
+<tr>
+<td>ASan 报 stack-buffer-overflow</td>
+<td>栈缓冲区越界写</td>
+</tr>
+<tr>
+<td>只有某线程崩溃</td>
+<td>线程栈太小或线程内大局部变量</td>
+</tr>
+</tbody></table>
+<h3 id="2-C语言字节对齐的规则，为什么要字节对齐？"><a href="#2-C语言字节对齐的规则，为什么要字节对齐？" class="headerlink" title="2. C语言字节对齐的规则，为什么要字节对齐？"></a>2. C语言字节对齐的规则，为什么要字节对齐？</h3><p>规则：按照所有成员变量的“对齐要求”中的最大值对齐。<br>CPU和内存之间通常按“字节”或总线宽度访问，比如 32 位总线一次读 4 字节。如果 int 放在地址 0x1001，未对齐，CPU 需要读两次再拼接，某些架构甚至直接触发异常。<br>对齐访问通常一次内存操作完成；未对齐访问可能跨缓存行、跨页，需要多次访问，速度明显下降。</p>
+<h3 id="3-为什么要分用户空间和内核空间？用户态怎么切到内核态？"><a href="#3-为什么要分用户空间和内核空间？用户态怎么切到内核态？" class="headerlink" title="3. 为什么要分用户空间和内核空间？用户态怎么切到内核态？"></a>3. 为什么要分用户空间和内核空间？用户态怎么切到内核态？</h3><p>本质是 CPU 特权级 + 虚拟内存权限 + 操作系统设计 共同决定的。核心目的就一个：<br>让不可信的应用程序和可信的内核隔离开，防止程序破坏系统、访问硬件、篡改其他进程。</p>
+<p>内核空间:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">0xFFFFFFFF  ┌─────────────────────┐</span><br><span class="line">            │ 固定映射区 (fixmap)  │  如 0xFFF00000 - 0xFFFFFFFF</span><br><span class="line">            ├─────────────────────┤</span><br><span class="line">            | 持久映射区           |  将高端内存（物理地址高于896MB的部分）中的页面长期映射到内核空间</span><br><span class="line">            ├─────────────────────┤</span><br><span class="line">            │ vmalloc 区           │  ~ 120 MB, 虚拟地址连续，物理地址不连续，每次都要操作页表。ioremap也映射到这里</span><br><span class="line">            ├─────────────────────┤</span><br><span class="line">            │ 隔离区 (Gap)         │  8 MB，作为“哨兵”，用于检测从一个区域到另一个区域的越界访问</span><br><span class="line">            ├─────────────────────┤</span><br><span class="line">            │ kmalloc区           │  地段内存，约 896 MB，讲物理地址线性映射到这里，基于 slab 分配器，有缓存，速度快</span><br><span class="line">0xC0000000  └─────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>用户空间通过：系统调用、异常（如缺页）、外设中断切到内核态</p>
 
     </div>
 
@@ -482,7 +631,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%AD%E6%96%AD"><span class="toc-text">一、中断</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%B9%B6%E5%8F%91%E4%B8%8E%E7%AB%9E%E4%BA%89"><span class="toc-text">二、并发与竞争</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81DMA"><span class="toc-text">三、DMA</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81PCIE"><span class="toc-text">四、PCIE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Uboot%E5%92%8CKernel%E5%90%AF%E5%8A%A8"><span class="toc-text">五、Uboot和Kernel启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81ROS2"><span class="toc-text">六、ROS2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-ROS2%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-text">6.1 ROS2核心概念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-DDS"><span class="toc-text">6.2 DDS</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81suspend-resume"><span class="toc-text">七、suspend-resume</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD%E5%B7%A5%E5%85%B7"><span class="toc-text">八、问题诊断工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE"><span class="toc-text">九、通信协议</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#i2c"><span class="toc-text">i2c</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spi"><span class="toc-text">spi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uart"><span class="toc-text">uart</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EtherCAT"><span class="toc-text">EtherCAT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CANopen"><span class="toc-text">CANopen</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#usb"><span class="toc-text">usb</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E9%A1%B9%E7%9B%AE"><span class="toc-text">十、项目</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#10-1-imx219-%E9%A9%B1%E5%8A%A8"><span class="toc-text">10.1 imx219 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-2-hx9023s-%E9%A9%B1%E5%8A%A8"><span class="toc-text">10.2 hx9023s 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-3-lt9611ex-%E9%A9%B1%E5%8A%A8"><span class="toc-text">10.3 lt9611ex 驱动</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E6%A1%88%E4%BE%8B"><span class="toc-text">十一、案例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#11-1-%E5%8A%A0%E9%80%9F%E5%BA%A6%E4%BC%A0%E6%84%9F%E5%99%A8%E5%A4%B1%E7%81%B5"><span class="toc-text">11.1 加速度传感器失灵</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-2-LT9611ex%E5%BF%AB%E9%80%9F%E6%8B%94%E6%8F%92%E9%BB%91%E5%B1%8F"><span class="toc-text">11.2 LT9611ex快速拔插黑屏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-3-LT9611ex%E5%A4%96%E6%98%BE%E5%88%86%E8%BE%A8%E7%8E%87%E5%BC%82%E5%B8%B8"><span class="toc-text">11.3 LT9611ex外显分辨率异常</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-4-LTE-probe%E4%B8%8D%E5%88%B0"><span class="toc-text">11.4 LTE probe不到</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-5-MT7925%E8%93%9D%E7%89%99%E9%97%AE%E9%A2%98"><span class="toc-text">11.5 MT7925蓝牙问题</span></a></li></ol></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%AD%E6%96%AD"><span class="toc-text">一、中断</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%B9%B6%E5%8F%91%E4%B8%8E%E7%AB%9E%E4%BA%89"><span class="toc-text">二、并发与竞争</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#RCU"><span class="toc-text">RCU</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81DMA"><span class="toc-text">三、DMA</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81PCIE"><span class="toc-text">四、PCIE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81Uboot%E5%92%8CKernel%E5%90%AF%E5%8A%A8"><span class="toc-text">五、Uboot和Kernel启动</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81suspend-resume"><span class="toc-text">六、suspend-resume</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81ROS2"><span class="toc-text">七、ROS2</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-ROS2%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-text">7.1 ROS2核心概念</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-DDS"><span class="toc-text">7.2 DDS</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81RTOS"><span class="toc-text">八、RTOS</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-freeRTOS%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6"><span class="toc-text">8.1 freeRTOS通信机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E4%BB%80%E4%B9%88%E6%98%AF%E4%BC%98%E5%85%88%E7%BA%A7%E5%8F%8D%E8%BD%AC%EF%BC%9F"><span class="toc-text">8.2 什么是优先级反转？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD%E5%B7%A5%E5%85%B7"><span class="toc-text">九、问题诊断工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE"><span class="toc-text">十、通信协议</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#i2c"><span class="toc-text">i2c</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#spi"><span class="toc-text">spi</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#uart"><span class="toc-text">uart</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EtherCAT"><span class="toc-text">EtherCAT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CANopen"><span class="toc-text">CANopen</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#usb"><span class="toc-text">usb</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E9%A1%B9%E7%9B%AE"><span class="toc-text">十一、项目</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#11-1-imx219-%E9%A9%B1%E5%8A%A8"><span class="toc-text">11.1 imx219 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-2-hx9023s-%E9%A9%B1%E5%8A%A8"><span class="toc-text">11.2 hx9023s 驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11-3-lt9611ex-%E9%A9%B1%E5%8A%A8"><span class="toc-text">11.3 lt9611ex 驱动</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E6%A1%88%E4%BE%8B"><span class="toc-text">十二、案例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#12-1-%E5%8A%A0%E9%80%9F%E5%BA%A6%E4%BC%A0%E6%84%9F%E5%99%A8%E5%A4%B1%E7%81%B5"><span class="toc-text">12.1 加速度传感器失灵</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12-2-LT9611ex%E5%BF%AB%E9%80%9F%E6%8B%94%E6%8F%92%E9%BB%91%E5%B1%8F"><span class="toc-text">12.2 LT9611ex快速拔插黑屏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12-3-LT9611ex%E5%A4%96%E6%98%BE%E5%88%86%E8%BE%A8%E7%8E%87%E5%BC%82%E5%B8%B8"><span class="toc-text">12.3 LT9611ex外显分辨率异常</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12-4-LTE-probe%E4%B8%8D%E5%88%B0"><span class="toc-text">12.4 LTE probe不到</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12-5-MT7925%E8%93%9D%E7%89%99%E9%97%AE%E9%A2%98"><span class="toc-text">12.5 MT7925蓝牙问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%89%E3%80%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-text">十三、常见问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%80%8E%E4%B9%88%E6%8E%92%E6%9F%A5%E6%A0%88%E6%BA%A2%E5%87%BA%EF%BC%9F%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5%E4%B8%8B%E4%BC%9A%E5%AF%BC%E8%87%B4%E6%A0%88%E6%BA%A2%E5%87%BA%EF%BC%9F"><span class="toc-text">1. 怎么排查栈溢出？什么情况下会导致栈溢出？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-C%E8%AF%AD%E8%A8%80%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90%E7%9A%84%E8%A7%84%E5%88%99%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90%EF%BC%9F"><span class="toc-text">2. C语言字节对齐的规则，为什么要字节对齐？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%88%86%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E5%92%8C%E5%86%85%E6%A0%B8%E7%A9%BA%E9%97%B4%EF%BC%9F%E7%94%A8%E6%88%B7%E6%80%81%E6%80%8E%E4%B9%88%E5%88%87%E5%88%B0%E5%86%85%E6%A0%B8%E6%80%81%EF%BC%9F"><span class="toc-text">3. 为什么要分用户空间和内核空间？用户态怎么切到内核态？</span></a></li></ol></li></ol>
   </div>
 </aside>
 

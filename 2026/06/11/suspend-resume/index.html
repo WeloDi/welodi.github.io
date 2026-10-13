@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
 <meta property="article:published_time" content="2026-06-11T06:19:55.000Z">
-<meta property="article:modified_time" content="2026-10-12T05:03:17.400Z">
+<meta property="article:modified_time" content="2026-10-13T06:35:50.898Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
@@ -214,6 +214,42 @@ mjx-container[display="true"] + br {
 </blockquote>
 <h1 id="总览图"><a href="#总览图" class="headerlink" title="总览图"></a>总览图</h1><img src="whiteboard_exported_image.png" alt="whiteboard_exported_image">
 
+<h1 id="suspend-resume-回调里通常做什么"><a href="#suspend-resume-回调里通常做什么" class="headerlink" title="suspend/resume 回调里通常做什么"></a>suspend/resume 回调里通常做什么</h1><p>驱动要接入系统休眠，就是填 <code>struct dev_pm_ops</code>，先明确几个回调的执行顺序：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">suspend</span> 方向：prepare → <span class="built_in">suspend</span> → suspend_late → suspend_noirq → [CPU 睡下去]</span><br><span class="line">resume  方向：[CPU 醒来] → resume_noirq → resume_early → resume → complete</span><br></pre></td></tr></table></figure>
+
+<p>各阶段的约束不同，决定了事情该放在哪个回调里做：</p>
+<ul>
+<li><code>prepare</code> / <code>suspend</code> / <code>complete</code>：进程上下文，<strong>可以睡眠</strong>，可以拿 mutex，可以正常用 i2c/spi 写寄存器 —— 绝大多数工作都在这里做</li>
+<li><code>suspend_late</code> / <code>resume_early</code>：过渡阶段，中断逐步收敛</li>
+<li><code>suspend_noirq</code> / <code>resume_noirq</code>：<strong>中断已经关闭</strong>，绝对不能睡眠，不能用 mutex，不能做可能睡眠的分配，只能自旋锁 + 少量寄存器读写</li>
+</ul>
+<h2 id="suspend-回调通常做什么"><a href="#suspend-回调通常做什么" class="headerlink" title="suspend 回调通常做什么"></a>suspend 回调通常做什么</h2><ol>
+<li><strong>先判断设备是否已经 runtime suspend</strong>：避免对已经下电的设备重复操作<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="title function_">pm_runtime_suspended</span>(dev))</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br></pre></td></tr></table></figure></li>
+<li><strong>停掉所有异步活动</strong>：DMA、工作队列、定时器、delayed work 只要还有一个在跑，设备就进不了低功耗，或者进去后立刻被唤醒<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">mutex_lock</span>(&amp;priv-&gt;lock);</span><br><span class="line">priv-&gt;suspended = <span class="literal">true</span>;      <span class="comment">// 让回调自己快速返回，不再发起新的传输</span></span><br><span class="line"><span class="title function_">mutex_unlock</span>(&amp;priv-&gt;lock);</span><br><span class="line"><span class="title function_">cancel_work_sync</span>(&amp;priv-&gt;work);</span><br><span class="line"><span class="title function_">del_timer_sync</span>(&amp;priv-&gt;timer);</span><br><span class="line"><span class="title function_">foo_stop_dma</span>(priv);          <span class="comment">// 等待最后一次传输真正结束</span></span><br></pre></td></tr></table></figure></li>
+<li><strong>屏蔽设备中断并清 pending</strong>：先关设备侧的中断使能，再清状态寄存器；否则挂起过程中一个残留中断就把系统唤醒了</li>
+<li><strong>保存断电/复位后会丢失的上下文</strong>：寄存器组、DMA 描述符、配置值，保存到驱动的私有结构里</li>
+<li><strong>让硬件进低功耗</strong>：写寄存器把芯片切到 sleep/standby 模式、关 PHY、拉低功耗脚等</li>
+<li><strong>再关时钟、下电</strong>：顺序必须是先停设备、后进低功耗、最后断供<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">foo_write</span>(priv, FOO_POWER, FOO_POWER_DOWN);</span><br><span class="line"><span class="title function_">clk_disable_unprepare</span>(priv-&gt;clk);</span><br><span class="line"><span class="title function_">regulator_disable</span>(priv-&gt;vdd);</span><br></pre></td></tr></table></figure></li>
+<li><strong>需要作为唤醒源时留一条路</strong><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="title function_">device_may_wakeup</span>(dev))</span><br><span class="line">    <span class="title function_">enable_irq_wake</span>(priv-&gt;irq);</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="resume-回调通常做什么"><a href="#resume-回调通常做什么" class="headerlink" title="resume 回调通常做什么"></a>resume 回调通常做什么</h2><p>严格按 suspend 的<strong>反序</strong>执行，这是电源管理的铁律：</p>
+<ol>
+<li><strong>先供电、开时钟</strong><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">regulator_enable</span>(priv-&gt;vdd);</span><br><span class="line"><span class="title function_">clk_prepare_enable</span>(priv-&gt;clk);</span><br></pre></td></tr></table></figure></li>
+<li><strong>恢复上下文 / 重新初始化硬件</strong>：写回保存的寄存器。很多平台掉过电或复位过硬件，这时不能假设硬件状态还在，要按“冷启动”处理，必要时重新下载固件<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">foo_write</span>(priv, FOO_CTRL, priv-&gt;saved_ctrl);</span><br><span class="line"><span class="title function_">foo_write</span>(priv, FOO_POWER, FOO_POWER_UP);</span><br><span class="line"><span class="title function_">foo_load_firmware</span>(priv);     <span class="comment">// 掉电过的芯片需要重下发</span></span><br></pre></td></tr></table></figure></li>
+<li><strong>处理中断</strong>：顺序与 suspend 相反，<strong>先清状态再使能</strong>，否则一开中断就是 IRQ 风暴<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">foo_write</span>(priv, FOO_INT_STA, <span class="number">0xff</span>);   <span class="comment">// 写 1 清</span></span><br><span class="line"><span class="title function_">foo_write</span>(priv, FOO_INT_EN, priv-&gt;int_en);</span><br><span class="line"><span class="title function_">enable_irq</span>(priv-&gt;irq);</span><br><span class="line"><span class="keyword">if</span> (<span class="title function_">device_may_wakeup</span>(dev))</span><br><span class="line">    <span class="title function_">disable_irq_wake</span>(priv-&gt;irq);</span><br></pre></td></tr></table></figure></li>
+<li><strong>重启数据流</strong>：重新配置 DMA、恢复缓冲区/队列、重启定时器，并把软件侧配置重新下发给硬件（如 IIO 采样率、V4L2 格式）</li>
+<li><strong>恢复软件状态</strong>：清 <code>suspended</code> 标志，让正常数据路径重新可用</li>
+<li><strong>若设备真的掉过电</strong>：还要重做校准、重新枚举下游设备、恢复内部状态机</li>
+</ol>
+<h2 id="常见坑"><a href="#常见坑" class="headerlink" title="常见坑"></a>常见坑</h2><ol>
+<li><strong>顺序反了会挂在寄存器访问上</strong>：时钟已关还去读写寄存器，总线 hang 或 data abort，现象通常是 resume 直接卡死</li>
+<li><strong>中断风暴</strong>：清状态寄存器的时机不对（先使能后清），或没处理挂起期间累计的多个事件，导致中断线程被反复唤醒</li>
+<li><strong>noirq 阶段不能睡眠</strong>：在 <code>suspend_noirq</code> 里用 mutex 或 i2c transfer（会睡眠）会直接 BUG</li>
+<li><strong>resume 要能容忍“硬件状态已丢”</strong>：不要只在部分分支才重放寄存器，宁可全量写回</li>
+<li><strong>回调返回值不要吞</strong>：返回非 0 会中止整个 suspend；既不能无故报错，也不能出错后把设备留在半初始化状态</li>
+<li><strong>回调要快</strong>：suspend/resume 里做耗时操作（大量 delay、重加载固件、重新枚举）会拖慢整个过程，用 <code>dpm_show_time</code>、PM trace 量化后再优化</li>
+<li><strong>runtime PM 与 system suspend 的交互</strong>：别重复下电/上电，开头判 <code>pm_runtime_suspended()</code>，或直接用 <code>DEFINE_RUNTIME_DEV_PM_OPS</code> + <code>pm_runtime_force_suspend/resume</code></li>
+</ol>
 <h1 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h1><h2 id="suspend问题排查："><a href="#suspend问题排查：" class="headerlink" title="suspend问题排查："></a>suspend问题排查：</h2><ol>
 <li>先分类现象</li>
 </ol>
@@ -304,7 +340,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">问题排查</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#suspend%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%EF%BC%9A"><span class="toc-text">suspend问题排查：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resume%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">resume问题排查</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Suspend%E6%B5%81%E7%A8%8B"><span class="toc-text">Suspend流程</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#suspend-resume-%E5%9B%9E%E8%B0%83%E9%87%8C%E9%80%9A%E5%B8%B8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-text">suspend&#x2F;resume 回调里通常做什么</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#suspend-%E5%9B%9E%E8%B0%83%E9%80%9A%E5%B8%B8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-text">suspend 回调通常做什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resume-%E5%9B%9E%E8%B0%83%E9%80%9A%E5%B8%B8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-text">resume 回调通常做什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E5%9D%91"><span class="toc-text">常见坑</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">问题排查</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#suspend%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%EF%BC%9A"><span class="toc-text">suspend问题排查：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resume%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">resume问题排查</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Suspend%E6%B5%81%E7%A8%8B"><span class="toc-text">Suspend流程</span></a></li></ol>
   </div>
 </aside>
 
