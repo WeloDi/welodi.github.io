@@ -199,6 +199,8 @@
 
     var ids = Object.keys(pointers);
     if (ids.length === 2 && pinch) {
+      // 双指捏合也是有效手势：置 moved，避免任一手指松开时被误判为"点空白"而关闭
+      state.moved = true;
       var d = dist(pointers[ids[0]], pointers[ids[1]]);
       if (pinch.d > 0) {
         var mid = {
@@ -223,6 +225,8 @@
     delete pointers[e.pointerId];
     if (Object.keys(pointers).length < 2) pinch = null;
     els.backdrop.classList.remove('is-panning');
+    // 还有手指未松开（双指手势中途抬一根）时，不执行关闭
+    if (Object.keys(pointers).length > 0) return;
     if (e.type === 'pointerup' && !state.moved && !e.target.closest('.wz-img, .wz-toolbar, .wz-close')) {
       close();   // 点空白处关闭
     }
