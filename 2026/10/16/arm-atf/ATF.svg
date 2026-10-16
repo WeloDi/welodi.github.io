@@ -90,10 +90,10 @@
   <rect x="630" y="320" width="380" height="130" rx="6" fill="#fbbf24" stroke="#b45309"/>
   <text x="650" y="342" font-weight="bold">BL2（Trusted Boot Firmware）</text>
   <text x="650" y="362">· 初始化 DDR、串口、时钟</text>
-  <text x="650" y="380">· 加载 BL31 / BL32(可选) / BL33</text>
-  <text x="650" y="398">· 验证各镜像签名</text>
-  <text x="650" y="416">· 交回 BL1，跳转到 BL31</text>
-  <text x="650" y="436" font-size="11" fill="#555">（信任链传递）</text>
+  <text x="650" y="380">· 加载并验签 BL31 / BL32 / BL33</text>
+  <text x="650" y="398">· 准备 bl31_params（各镜像入口地址）</text>
+  <text x="650" y="416">· SMC 交回 BL1，带参数包跳转 BL31</text>
+  <text x="650" y="436" font-size="11" fill="#555">（信任链传递，x1 传 bl31_params 指针）</text>
   <line x1="820" y1="450" x2="820" y2="475" stroke="#333" marker-end="url(#arrow)"/>
 
   <!-- BL31 -->
