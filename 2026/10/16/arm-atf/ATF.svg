@@ -1,0 +1,150 @@
+<svg width="1100" height="900" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 900" font-family="sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="275" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e3a5f">U-Boot 视角</text>
+  <text x="825" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#7c2d12">ATF 视角</text>
+
+  <!-- 中轴分隔线 -->
+  <line x1="550" y1="40" x2="550" y2="880" stroke="#ccc" stroke-dasharray="6,4"/>
+
+  <!-- ================= 左侧：U-Boot 视角 ================= -->
+
+  <!-- 上电 -->
+  <rect x="120" y="55" width="300" height="40" rx="6" fill="#e0f2fe" stroke="#0284c7"/>
+  <text x="140" y="80">上电</text>
+  <line x1="270" y1="95" x2="270" y2="120" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- CPU 复位 -->
+  <rect x="120" y="120" width="300" height="40" rx="6" fill="#e0f2fe" stroke="#0284c7"/>
+  <text x="140" y="140">CPU 复位，PC → BootROM</text>
+  <line x1="270" y1="160" x2="270" y2="185" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- BootROM -->
+  <rect x="80" y="185" width="380" height="110" rx="6" fill="#bfdbfe" stroke="#1d4ed8"/>
+  <text x="100" y="207" font-weight="bold">BootROM</text>
+  <text x="100" y="227">· 初始化基本时钟</text>
+  <text x="100" y="245">· 读取 BOOT_MODE 引脚，选择启动介质</text>
+  <text x="100" y="263">· 加载并验签 SPL 到 SRAM，跳转执行</text>
+  <text x="100" y="281" font-size="11" fill="#555">（即 ATF 视角的 BL1，固化不可改）</text>
+  <line x1="270" y1="295" x2="270" y2="320" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- SPL -->
+  <rect x="80" y="320" width="380" height="130" rx="6" fill="#93c5fd" stroke="#1d4ed8"/>
+  <text x="100" y="342" font-weight="bold">SPL（U-Boot 精简前置加载器）</text>
+  <text x="100" y="362">· 初始化 DDR 控制器、串口、时钟</text>
+  <text x="100" y="380">· 初始化存储设备驱动</text>
+  <text x="100" y="398">· 从存储读取完整 U-Boot 到 DDR</text>
+  <text x="100" y="416">· 跳转到 U-Boot</text>
+  <text x="100" y="436" font-size="11" fill="#555">（SRAM 太小，需先初始化 DDR）</text>
+  <line x1="270" y1="450" x2="270" y2="475" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- U-Boot -->
+  <rect x="80" y="475" width="380" height="130" rx="6" fill="#60a5fa" stroke="#1d4ed8"/>
+  <text x="100" y="497" font-weight="bold">U-Boot</text>
+  <text x="100" y="517">· 初始化外设（网卡、USB、MMC 等）</text>
+  <text x="100" y="535">· 读取内核镜像、设备树、initrd</text>
+  <text x="100" y="553">· 设置 bootargs</text>
+  <text x="100" y="571">· 跳转到内核入口</text>
+  <text x="100" y="591" font-size="11" fill="#555">（网络 / 存储 / 文件系统加载）</text>
+  <line x1="270" y1="605" x2="270" y2="630" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- Kernel -->
+  <rect x="80" y="630" width="380" height="130" rx="6" fill="#34d399" stroke="#059669"/>
+  <text x="100" y="652" font-weight="bold">Kernel (start_kernel)</text>
+  <text x="100" y="672">· 初始化 CPU、内存管理、调度器、中断</text>
+  <text x="100" y="690">· 解析设备树，初始化各子系统</text>
+  <text x="100" y="708">· 注册平台设备与驱动</text>
+  <text x="100" y="726">· 挂载 rootfs，启动 init（PID 1）</text>
+
+
+  <!-- ================= 右侧：ATF 视角 ================= -->
+
+  <!-- 上电 -->
+  <rect x="670" y="55" width="300" height="40" rx="6" fill="#fef3c7" stroke="#d97706"/>
+  <text x="690" y="80">上电</text>
+  <line x1="820" y1="95" x2="820" y2="120" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- CPU 复位 -->
+  <rect x="670" y="120" width="300" height="40" rx="6" fill="#fef3c7" stroke="#d97706"/>
+  <text x="690" y="140">CPU 复位，PC → BootROM</text>
+  <line x1="820" y1="160" x2="820" y2="185" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- BL1 -->
+  <rect x="630" y="185" width="380" height="110" rx="6" fill="#fde68a" stroke="#b45309"/>
+  <text x="650" y="207" font-weight="bold">BL1（BootROM 内，信任根）</text>
+  <text x="650" y="227">· 初始化基本时钟</text>
+  <text x="650" y="245">· 读取 BOOT_MODE 引脚，选择启动介质</text>
+  <text x="650" y="263">· 加载并验签 BL2 到 SRAM，跳转执行</text>
+  <text x="650" y="283" font-size="11" fill="#555">（即 U-Boot 视角的 BootROM，信任根）</text>
+  <line x1="820" y1="295" x2="820" y2="320" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- BL2 -->
+  <rect x="630" y="320" width="380" height="130" rx="6" fill="#fbbf24" stroke="#b45309"/>
+  <text x="650" y="342" font-weight="bold">BL2（Trusted Boot Firmware）</text>
+  <text x="650" y="362">· 初始化 DDR、串口、时钟</text>
+  <text x="650" y="380">· 加载 BL31 / BL32(可选) / BL33</text>
+  <text x="650" y="398">· 验证各镜像签名</text>
+  <text x="650" y="416">· 交回 BL1，跳转到 BL31</text>
+  <text x="650" y="436" font-size="11" fill="#555">（信任链传递）</text>
+  <line x1="820" y1="450" x2="820" y2="475" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- BL31 -->
+  <rect x="630" y="475" width="380" height="110" rx="6" fill="#f97316" stroke="#9a3412"/>
+  <text x="650" y="497" font-weight="bold" fill="#fff">BL31（EL3 运行时固件，常驻）</text>
+  <text x="650" y="517" fill="#fff">· 初始化 GIC、PSCI</text>
+  <text x="650" y="535" fill="#fff">· 安全/非安全世界切换</text>
+  <text x="650" y="553" fill="#fff">· 启动 BL32（如有）</text>
+  <text x="650" y="571" fill="#fff">· 跳转到 BL33</text>
+  <line x1="820" y1="585" x2="820" y2="605" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- BL32 -->
+  <rect x="680" y="605" width="280" height="45" rx="6" fill="#fdba74" stroke="#9a3412" stroke-dasharray="5,3"/>
+  <text x="700" y="625">BL32（可选，OP-TEE 等安全 OS）</text>
+  <text x="700" y="642" font-size="11" fill="#555">（可选，仅启用安全 OS 时存在）</text>
+  <line x1="820" y1="650" x2="820" y2="670" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- BL33 -->
+  <rect x="630" y="670" width="380" height="110" rx="6" fill="#fb923c" stroke="#9a3412"/>
+  <text x="650" y="692" font-weight="bold">BL33（非安全世界引导器，通常即 U-Boot）</text>
+  <text x="650" y="712">· 初始化外设（网卡、USB、MMC 等）</text>
+  <text x="650" y="730">· 读取内核镜像、设备树、initrd</text>
+  <text x="650" y="748">· 设置 bootargs，跳转到内核入口</text>
+  <line x1="820" y1="780" x2="820" y2="805" stroke="#333" marker-end="url(#arrow)"/>
+
+  <!-- Kernel -->
+  <rect x="630" y="805" width="380" height="55" rx="6" fill="#34d399" stroke="#059669"/>
+  <text x="650" y="827" font-weight="bold">Kernel (start_kernel)</text>
+  <text x="650" y="847">· 初始化子系统，挂载 rootfs，启动 init</text>
+
+
+  <!-- ================= 中间对应关系 ================= -->
+
+  <!-- 对应箭头：BootROM ↔ BL1 -->
+  <line x1="460" y1="240" x2="630" y2="240" stroke="#2563eb" stroke-dasharray="5,3" marker-end="url(#arrow-blue)"/>
+  <text x="545" y="232" text-anchor="middle" font-size="11" fill="#2563eb">≈</text>
+
+  <!-- 对应箭头：SPL ↔ BL2 -->
+  <line x1="460" y1="385" x2="630" y2="385" stroke="#2563eb" stroke-dasharray="5,3" marker-end="url(#arrow-blue)"/>
+  <text x="545" y="377" text-anchor="middle" font-size="11" fill="#2563eb">≈</text>
+
+  <!-- 对应箭头：U-Boot ↔ BL33 -->
+  <line x1="460" y1="540" x2="630" y2="725" stroke="#2563eb" stroke-dasharray="5,3" marker-end="url(#arrow-blue)"/>
+  <text x="530" y="640" text-anchor="middle" font-size="11" fill="#2563eb">=</text>
+
+  <!-- Kernel 对应 -->
+  <line x1="460" y1="695" x2="630" y2="832" stroke="#2563eb" stroke-dasharray="5,3" marker-end="url(#arrow-blue)"/>
+
+  <!-- 图例 -->
+  <rect x="40" y="855" width="1020" height="35" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="60" y="877" font-size="12" fill="#334155">
+    ≈ 角色相近但不完全等同　　= 基本是同一个东西　　BL31 是 ATF 视角多出来的 EL3 常驻固件
+  </text>
+</svg>

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARM ATF | Welodi</title>
+  <meta name="description" content="ARM Trusted Firmware-A 详解：异常等级、BL1~BL33 启动链、BL31 运行时服务、SMCCC 调用约定、PSCI 实现与 TBBR 安全启动。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ARM ATF">
+<meta property="og:url" content="http://example.com/2026/10/16/arm-atf/index.html">
+<meta property="og:site_name" content="Welodi">
+<meta property="og:description" content="ARM Trusted Firmware-A 详解：异常等级、BL1~BL33 启动链、BL31 运行时服务、SMCCC 调用约定、PSCI 实现与 TBBR 安全启动。">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2026/10/16/arm-atf/EL-SecureWorld.svg">
+<meta property="og:image" content="http://example.com/2026/10/16/arm-atf/ATF.svg">
+<meta property="article:published_time" content="2026-10-16T06:30:00.000Z">
+<meta property="article:modified_time" content="2026-10-16T14:06:52.127Z">
+<meta property="article:author" content="Welodi">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2026/10/16/arm-atf/EL-SecureWorld.svg">
+  <link rel="icon" href="/images/logo.svg">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
+  <link rel="stylesheet" href="/css/style.css?v=7ef16e4b">
+  <link rel="stylesheet" href="/css/image-zoom.css?v=7ef16e4b">
+  
+  
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('warmpaper-theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+<meta name="generator" content="Hexo 7.3.0"><style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body>
+  <div class="site-wrapper">
+    <header class="site-header">
+  <div class="header-inner">
+    <a class="site-title" href="/"><img class="site-logo" src="/images/logo.svg" alt="Logo">Welodi</a>
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span class="nav-toggle-icon"></span>
+    </button>
+    <nav class="site-nav">
+      
+      
+        
+        <a class="nav-link" href="/">Home</a>
+      
+        
+        <a class="nav-link" href="/categories">Categories</a>
+      
+        
+        <a class="nav-link" href="/tags">Tags</a>
+      
+        
+        <a class="nav-link" href="/about">About</a>
+      
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
+      <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+    <main class="main-content">
+      <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">ARM ATF</h1>
+    <div class="post-meta">
+      <time datetime="2026-10-16T06:30:00.000Z">2026-10-16</time>
+      
+        <span class="separator">&middot;</span>
+        <a href="/categories/ARM/">ARM</a><span class="separator">/</span><a href="/categories/ARM/ATF/">ATF</a>
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-body-wrapper">
+    <div class="post-content">
+      <h1 id="一、ATF-是什么"><a href="#一、ATF-是什么" class="headerlink" title="一、ATF 是什么"></a>一、ATF 是什么</h1><p>ATF = ARM Trusted Firmware (现称 TF-A)<br>它是 ARM 定义的一套<strong>安全启动与运行时固件规范</strong>，它由多个独立固件模块组成，分别运行在不同异常等级（EL）上，分工不同。所以：</p>
+<ul>
+<li><strong>规范层面</strong>：ATF 定义了 BL1、BL2、BL31、BL32、BL33 这套启动链和接口；</li>
+<li><strong>实现层面</strong>：ATF 项目提供了 BL1、BL2、BL31 的代码，以及可选的 BL32（如 OP-TEE）；</li>
+<li><strong>BL33 通常不属于 ATF</strong>：BL33 一般就是 U-Boot，是独立项目</li>
+</ul>
+<p>一句话定位：<strong>Linux 想做但没权限做的事（开核、断电、复位、切世界），全部通过 SMC 交给 ATF 完成。</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Normal World                          Secure World</span><br><span class="line">EL0   App                             S-EL0  TA（可信应用）</span><br><span class="line">EL1   Linux Kernel                    S-EL1  OP-TEE（可信 OS）</span><br><span class="line">EL2   Hypervisor（KVM，可选）</span><br><span class="line">------------------------------------------------------------------</span><br><span class="line">EL3   ATF / BL31（Secure Monitor）  ← 两个世界唯一的通路</span><br></pre></td></tr></table></figure>
+
+<h1 id="二、异常等级与安全世界"><a href="#二、异常等级与安全世界" class="headerlink" title="二、异常等级与安全世界"></a>二、异常等级与安全世界</h1><p>异常等级（Exception Level，EL） 是 ARMv8-A 架构引入的一个<strong>特权层级</strong>概念，用来划分代码运行时能访问的硬件资源和能执行的指令，核心目的是<strong>隔离与安全</strong></p>
+<h2 id="2-1-四个异常等级"><a href="#2-1-四个异常等级" class="headerlink" title="2.1 四个异常等级"></a>2.1 四个异常等级</h2><table>
+<thead>
+<tr>
+<th>EL</th>
+<th>名称</th>
+<th>运行内容</th>
+<th>权限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>EL0</td>
+<td>非特权</td>
+<td>用户态应用程序</td>
+<td>最低，不能访问系统寄存器、不能执行特权指令</td>
+</tr>
+<tr>
+<td>EL1</td>
+<td>特权</td>
+<td>操作系统内核（Linux、OP-TEE）</td>
+<td>能管理内存、中断、进程</td>
+</tr>
+<tr>
+<td>EL2</td>
+<td>虚拟化</td>
+<td>KVM / Hypervisor</td>
+<td>能虚拟化、管理多个 OS</td>
+</tr>
+<tr>
+<td>EL3</td>
+<td>安全监控</td>
+<td>安全监控固件（ATF 的 BL31）</td>
+<td>最高，负责安全世界与非安全世界切换</td>
+</tr>
+</tbody></table>
+<h2 id="2-2-安全世界与非安全世界"><a href="#2-2-安全世界与非安全世界" class="headerlink" title="2.2 安全世界与非安全世界"></a>2.2 安全世界与非安全世界</h2><p>安全世界 和 非安全世界 是 ARMv8 在 CPU 内部划出的两个并行运行环境。它们共享同一颗芯片，但彼此隔离。<br><strong>目的</strong>：<strong>保护敏感操作</strong>，如指纹识别、人脸识别、移动支付、DRM 版权保护、密钥存储、加密运算等等。<br>这些操作如果放在普通 Linux 里，一旦内核被攻破，密钥和指纹数据就泄露了。所以 ARM 把它们放到一个隔离的、普通世界无法访问的环境里运行。</p>
+<p><strong>关键点</strong>：</p>
+<ul>
+<li>两个世界可以同时存在，CPU 可以在两者之间切换；</li>
+<li>非安全世界不能访问安全世界的内存和外设；</li>
+<li>安全世界可以访问非安全世界的资源（权限更高）。</li>
+</ul>
+<p>「异常等级」和「两个世界」的关系图：</p>
+<img src="EL-SecureWorld.svg" alt="EL 与安全世界" style="width:68%; display:block; margin:1em auto;">
+
+
+<h1 id="三、启动阶段-BL1-→-BL33"><a href="#三、启动阶段-BL1-→-BL33" class="headerlink" title="三、启动阶段 BL1 → BL33"></a>三、启动阶段 BL1 → BL33</h1><h2 id="3-1-两种视角下的启动链（对比图）"><a href="#3-1-两种视角下的启动链（对比图）" class="headerlink" title="3.1 两种视角下的启动链（对比图）"></a>3.1 两种视角下的启动链（对比图）</h2><img src="ATF.svg" alt="ATF" style="width:96%; display:block; margin:1em auto;">
+
+<p>左边是 <strong>U-Boot 视角</strong>（BootROM → SPL → U-Boot → Kernel），右边是 <strong>ATF 视角</strong>（BL1 → BL2 → BL31 → BL32 → BL33 → Kernel）。</p>
+<p>它们描述的是<strong>同一段上电过程</strong>，只是切分与命名不同：</p>
+<h2 id="3-2-各阶段职责"><a href="#3-2-各阶段职责" class="headerlink" title="3.2 各阶段职责"></a>3.2 各阶段职责</h2><p><strong>BL1（Trusted Boot ROM Firmware）</strong></p>
+<ul>
+<li>位置：芯片 ROM 或 SRAM，芯片出厂后不可改，是<strong>信任根</strong>的一部分</li>
+<li>做最小的初始化：异常向量、CPU 特定 errata、串口（调试用）、SRAM</li>
+<li>从存储（eMMC/NAND/SPI-NOR）加载 <strong>FIP</strong> 中的 BL2 并验签</li>
+<li>决定后续是冷启动还是 warm reset 路径（<code>warm boot</code> 走 CPU 上电分支）</li>
+</ul>
+<p><strong>BL2（Trusted Boot Firmware）</strong></p>
+<ul>
+<li>跑在 Secure-EL1，初始化 DDR、存储控制器、时钟等“重活”</li>
+<li>从 FIP 里加载 BL31 / BL32 / BL33 到各自的目标地址</li>
+<li>建立页表（xlat tables）、传递参数（<code>bl_params</code>）</li>
+<li>验签每一级镜像（CoT 的一环）</li>
+</ul>
+<p><strong>BL31（EL3 Runtime Firmware）</strong></p>
+<ul>
+<li><strong>唯一常驻到运行时的阶段</strong>，永远不退出，提供 Secure Monitor</li>
+<li>初始化 EL3 运行时环境：异常向量、上下文管理、SMC 分发框架</li>
+<li>注册运行时服务（std_svc 的 PSCI、厂商 SiP、SDEI 等）</li>
+<li>初始化 BL32（SPD 负责），然后 <code>eret</code> 到 BL33</li>
+</ul>
+<p><strong>BL32（Secure-EL1 Payload，可选）</strong></p>
+<ul>
+<li>常见是 <strong>OP-TEE</strong>，也可以是 TSP（TF-A 自带的测试安全载荷）或 SPM</li>
+<li>由 <strong>SPD</strong>（Secure Payload Dispatcher，如 <code>opteed</code>/<code>tspd</code>）负责加载与后续的世界切换</li>
+<li>Normal World 通过 SMC 进入 Secure World 的服务（如密钥、DRM、指纹）</li>
+</ul>
+<p><strong>BL33（Non-trusted Firmware）</strong></p>
+<ul>
+<li>U-Boot / UEFI，也可以是直接是 Linux（TF-A 支持 <code>BL33=kernel</code>）</li>
+<li>ATF 把控制权交给它后，就只剩「被调用」的角色（SMC 进来才执行）</li>
+</ul>
+<h2 id="3-3-FIP（Firmware-Image-Package）"><a href="#3-3-FIP（Firmware-Image-Package）" class="headerlink" title="3.3 FIP（Firmware Image Package）"></a>3.3 FIP（Firmware Image Package）</h2><p>把各阶段镜像打包成一个容器的工具叫 <strong>fiptool</strong>：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fiptool create --tb-fw bl2.bin --soc-fw bl31.bin \</span><br><span class="line">               --tos-fw bl32.bin --nt-fw bl33.bin fip.bin</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>每个镜像带 UUID，BL2 按 UUID 从 FIP 里取</li>
+<li>证书/签名由 <code>cert_create</code> 生成（可信启动时使用）</li>
+</ul>
+<h1 id="四、BL31-运行时服务框架"><a href="#四、BL31-运行时服务框架" class="headerlink" title="四、BL31 运行时服务框架"></a>四、BL31 运行时服务框架</h1><h2 id="4-1-三类服务"><a href="#4-1-三类服务" class="headerlink" title="4.1 三类服务"></a>4.1 三类服务</h2><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>OEN</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Standard Service</strong>（std_svc）</td>
+<td>0x4</td>
+<td>PSCI、SDEI、TRNG、SPM 等 Arm 标准定义的服务</td>
+</tr>
+<tr>
+<td><strong>SiP Service</strong></td>
+<td>0x2</td>
+<td>芯片厂商私有（MTK、QCOM、Rockchip 各种私有 SMC）</td>
+</tr>
+<tr>
+<td><strong>OEM Service</strong></td>
+<td>0x3</td>
+<td>设备厂商私有</td>
+</tr>
+</tbody></table>
+<p>注册方式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">DECLARE_RT_SVC</span>(</span><br><span class="line">    std_svc,</span><br><span class="line">    OEN_STD_START, OEN_STD_END,</span><br><span class="line">    SMC_TYPE_FAST,</span><br><span class="line">    std_svc_setup,      <span class="comment">/* 初始化 */</span></span><br><span class="line">    std_svc_smc_handler <span class="comment">/* 分发处理 */</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>新增一个自己的 SMC 服务，就是照抄 <code>services/std_svc/</code> 的套路加一个 <code>DECLARE_RT_SVC</code>。</p>
+<h2 id="4-2-SMC-处理路径"><a href="#4-2-SMC-处理路径" class="headerlink" title="4.2 SMC 处理路径"></a>4.2 SMC 处理路径</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Normal World 执行 smc <span class="comment">#0</span></span><br><span class="line">  → VBAR_EL3 的 SMC 向量异常入口（ATF 汇编）</span><br><span class="line">  → 保存通用寄存器到 CPU 上下文</span><br><span class="line">  → 按 SMC FID 的 OEN 找到注册的 rt_svc</span><br><span class="line">  → 调用 handler（C 代码）</span><br><span class="line">  → 设置返回寄存器 x0~x3</span><br><span class="line">  → 恢复上下文，eret 返回</span><br></pre></td></tr></table></figure>
+
+<p>要点：</p>
+<ul>
+<li>handler 里不能睡眠、不能做复杂业务，<strong>要快</strong></li>
+<li>需要跨世界传数据时走共享内存（<code>smc</code> 只传 64bit 参数 x0~x7）</li>
+<li>返回值约定：成功返回正数语义，失败返回负的错误码（PSCI 用 <code>PSCI_E_INVALID_PARAMS</code> 等）</li>
+</ul>
+<h1 id="五、SMCCC（SMC-调用约定）"><a href="#五、SMCCC（SMC-调用约定）" class="headerlink" title="五、SMCCC（SMC 调用约定）"></a>五、SMCCC（SMC 调用约定）</h1><h2 id="5-1-Function-ID-格式"><a href="#5-1-Function-ID-格式" class="headerlink" title="5.1 Function ID 格式"></a>5.1 Function ID 格式</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bit[31]     Fast(1) / Yielding(0)</span><br><span class="line">bit[30]     SMC64(1) / SMC32(0)</span><br><span class="line">bit[29:24]  Owning Entity Number, OEN</span><br><span class="line">bit[23:0]   Function Number</span><br></pre></td></tr></table></figure>
+
+<p>举例：<code>PSCI_VERSION = 0x84000000</code></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">0x84000000</span><br><span class="line"> = 1&lt;&lt;<span class="string">31         → Fast Call，不可被中断、返回快</span></span><br><span class="line"><span class="string"> | (0&lt;&lt;30)       → SMC32（用 32 位参数语义）</span></span><br><span class="line"><span class="string"> | (0x4 &lt;&lt; 24)   → OEN=4，Standard Service</span></span><br><span class="line"><span class="string"> | 0x000000      → function 0 → PSCI_VERSION</span></span><br></pre></td></tr></table></figure>
+
+<p>Fast vs Yielding：</p>
+<ul>
+<li><strong>Fast Call</strong>：原子、不可中断，用于短平快操作（如 <code>CPU_ON</code>、<code>PSCI_VERSION</code>）</li>
+<li><strong>Yielding Call</strong>：可被中断，用于耗时/可阻塞的服务（如 Trusted OS 的调用）</li>
+</ul>
+<h2 id="5-2-寄存器约定"><a href="#5-2-寄存器约定" class="headerlink" title="5.2 寄存器约定"></a>5.2 寄存器约定</h2><ul>
+<li>入参：<code>x0</code> = FID，<code>x1</code>~`x7` = 参数（SMC32 只用低 32 位，高 32 位必须清零）</li>
+<li>返回：<code>x0</code> = 状态/返回值，<code>x1</code>~`x3` 可选</li>
+<li><strong>x8~x17、x29、x30、SP 等由被调用方（EL3）负责保存</strong>，Normal World 不用管</li>
+<li>Linux 侧封装在 <code>include/linux/arm-smccc.h</code>：<code>arm_smccc_smc(fid, a1..a7, &amp;res)</code></li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">arm_smccc_res</span> <span class="title">res</span>;</span></span><br><span class="line"><span class="title function_">arm_smccc_smc</span>(<span class="title function_">PSCI_FN_NATIVE</span>(<span class="number">1</span>_0, SYSTEM_SUSPEND), entrypoint, ctx_id, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, &amp;res);</span><br></pre></td></tr></table></figure>
+<p>内核里更常见的是直接走 <code>psci_ops</code>（<code>drivers/firmware/psci/psci.c</code>）。</p>
+<h1 id="六、PSCI-在-ATF-中的实现"><a href="#六、PSCI-在-ATF-中的实现" class="headerlink" title="六、PSCI 在 ATF 中的实现"></a>六、PSCI 在 ATF 中的实现</h1><h2 id="6-1-分层"><a href="#6-1-分层" class="headerlink" title="6.1 分层"></a>6.1 分层</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Linux 驱动   drivers/firmware/psci/     → 组 SMC 参数</span><br><span class="line">       ↕ SMC</span><br><span class="line">ATF 公共层   lib/psci/                  → 状态机、拓扑、锁、缓存一致性处理</span><br><span class="line">       ↕ 回调</span><br><span class="line">ATF 平台层   plat/xxx/plat_psci_ops.c   → 真正写寄存器 / 发 SCMI / 通知 SCP</span><br><span class="line">       ↕</span><br><span class="line">硬件         CPU/Cluster 电源控制、SCP</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-2-平台必须实现的回调（plat-psci-ops）"><a href="#6-2-平台必须实现的回调（plat-psci-ops）" class="headerlink" title="6.2 平台必须实现的回调（plat_psci_ops）"></a>6.2 平台必须实现的回调（<code>plat_psci_ops</code>）</h2><table>
+<thead>
+<tr>
+<th>回调</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pwr_domain_on(target_cpu)</code></td>
+<td>给指定核上电、释放复位、设置入口</td>
+</tr>
+<tr>
+<td><code>pwr_domain_off(state)</code></td>
+<td>当前核下电</td>
+</tr>
+<tr>
+<td><code>pwr_domain_suspend(state)</code></td>
+<td>让当前域进入指定低功耗状态</td>
+</tr>
+<tr>
+<td><code>pwr_domain_on_finish(state)</code></td>
+<td>上电返回后的核级初始化</td>
+</tr>
+<tr>
+<td><code>pwr_domain_suspend_finish(state)</code></td>
+<td>resume 返回后的核级恢复</td>
+</tr>
+<tr>
+<td><code>validate_power_state(state)</code></td>
+<td>校验 OS 传来的 power_state 是否合法</td>
+</tr>
+<tr>
+<td><code>get_sys_suspend_power_state()</code></td>
+<td>返回 SYSTEM_SUSPEND 用的 power_state</td>
+</tr>
+<tr>
+<td><code>system_off()</code> / <code>system_reset()</code></td>
+<td>整机下电 / 复位</td>
+</tr>
+<tr>
+<td><code>validate_ns_entrypoint()</code></td>
+<td>校验 warm boot 入口地址合法性（防跳到非法内存）</td>
+</tr>
+</tbody></table>
+<h2 id="6-3-power-domain-拓扑"><a href="#6-3-power-domain-拓扑" class="headerlink" title="6.3 power domain 拓扑"></a>6.3 power domain 拓扑</h2><ul>
+<li>用 MPIDR 的 <code>affinity0/1/2/3</code> 描述层级：<code>PLAT_MAX_PWR_LVL</code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Level 0 : 单个 CPU</span><br><span class="line">Level 1 : Cluster</span><br><span class="line">Level 2 : System（有的平台还有 Level 3）</span><br></pre></td></tr></table></figure></li>
+<li>ATF 的 psci 层负责「<strong>最后一个核</strong>」判断：只有某 level 上的所有核都下电，才调用该 level 的 <code>pwr_domain_off</code>/<code>suspend</code></li>
+<li>这正是 genpd「域内最后一个设备 suspend 才断电」思想在 CPU 侧的对应</li>
+</ul>
+<h1 id="七、ATF-与-Linux-U-Boot-的接口"><a href="#七、ATF-与-Linux-U-Boot-的接口" class="headerlink" title="七、ATF 与 Linux / U-Boot 的接口"></a>七、ATF 与 Linux / U-Boot 的接口</h1><h2 id="7-1-设备树中的-psci-节点"><a href="#7-1-设备树中的-psci-节点" class="headerlink" title="7.1 设备树中的 psci 节点"></a>7.1 设备树中的 psci 节点</h2><figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">psci</span> <span class="punctuation">{</span></span><br><span class="line">    <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">"arm,psci-1.0"</span><span class="punctuation">;</span></span><br><span class="line">    <span class="attr">method</span> <span class="operator">=</span> <span class="string">"smc"</span><span class="punctuation">;</span>          <span class="comment">/* 或 "hvc"，与虚拟化场景有关 */</span></span><br><span class="line"><span class="punctuation">};</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>内核 <code>psci_dt_init()</code> 解析它 → 决定用 <code>arm_smccc_smc</code> 还是 <code>arm_smccc_hvc</code></li>
+<li>缺这个节点 → <code>psci: probing for conduit method from DT failed</code>，内核拿不到 <code>psci_ops</code>，开核和休眠全废</li>
+</ul>
+<h2 id="7-2-内核侧注册"><a href="#7-2-内核侧注册" class="headerlink" title="7.2 内核侧注册"></a>7.2 内核侧注册</h2><p><code>drivers/firmware/psci/psci.c</code>：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">psci_dt_init / psci_acpi_init</span><br><span class="line">  → psci_0_2_init：SMC PSCI_VERSION 探测版本</span><br><span class="line">  → 设置 psci_ops：cpu_on / cpu_off / cpu_suspend / system_suspend ...</span><br><span class="line">  → 注册 cpu_ops（psci_cpu_ops）供 SMP bringup 与 hotplug 使用</span><br><span class="line">  → set_kernel_suspend / 唤醒入口（cpu_resume）通过 SMC 传给 ATF</span><br></pre></td></tr></table></figure>
+
+<p>唤醒时 ATF 用 <code>CPU_ON(mpidr, entry)</code> 里那个 entry 地址把核拉起来，Linux 侧对应的就是 <code>secondary_entry</code> / <code>cpu_resume</code>。</p>
+<h2 id="7-3-U-Boot-侧"><a href="#7-3-U-Boot-侧" class="headerlink" title="7.3 U-Boot 侧"></a>7.3 U-Boot 侧</h2><ul>
+<li>U-Boot 作为 BL33 被 ATF 拉起，靠 <strong>设备树</strong> 与 ATF 约定（U-Boot 的 <code>armv8</code> 启动代码处理从 EL3/EL2 降到 EL2/EL1）</li>
+<li>U-Boot 里也有 <code>psci</code> 命令/驱动，用于自己开核</li>
+<li>关键：<strong>BL31 和 BL33 的地址、入口、设备树地址必须匹配</strong>，否则卡在跳转处无输出</li>
+</ul>
+<h1 id="八、安全启动（TBBR-CoT）"><a href="#八、安全启动（TBBR-CoT）" class="headerlink" title="八、安全启动（TBBR / CoT）"></a>八、安全启动（TBBR / CoT）</h1><h2 id="8-1-信任链（Chain-of-Trust）"><a href="#8-1-信任链（Chain-of-Trust）" class="headerlink" title="8.1 信任链（Chain of Trust）"></a>8.1 信任链（Chain of Trust）</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ROTPK（烧在 OTP/eFuse 里的根公钥 <span class="built_in">hash</span>）</span><br><span class="line">  │ 验签</span><br><span class="line">  ▼</span><br><span class="line">BL1（ROM，不可改） ──验签──► BL2 ──验签──► BL31 / BL32 / BL33</span><br><span class="line">                                              │</span><br><span class="line">                                              ▼</span><br><span class="line">                                   U-Boot ──验签──► Kernel / DTB（FIT/AVB）</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>ROTPK</strong>：Root of Trust Public Key，芯片出厂烧死</li>
+<li>每一级加载下一级前都做签名校验，失败就停机/进恢复模式</li>
+<li>反回滚：<code>TRUSTED_BOARD_BOOT</code> + anti-rollback counter，禁止刷回旧版本</li>
+</ul>
+<h2 id="8-2-关键编译开关"><a href="#8-2-关键编译开关" class="headerlink" title="8.2 关键编译开关"></a>8.2 关键编译开关</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make PLAT=xxx TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 \</span><br><span class="line">     ROT_KEY=rotpk.pem ... all fip</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>TRUSTED_BOARD_BOOT=1</code>：BL1/BL2 打开验签</li>
+<li><code>GENERATE_COT=1</code>：用 <code>cert_create</code> 生成证书链，fiptool 打包进 FIP</li>
+</ul>
+<h1 id="九、代码结构速查"><a href="#九、代码结构速查" class="headerlink" title="九、代码结构速查"></a>九、代码结构速查</h1><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">TF-A/</span><br><span class="line">├── bl1/ bl2/ bl31/ bl32/        各启动阶段代码</span><br><span class="line">├── lib/</span><br><span class="line">│   ├── psci/                    PSCI 公共实现（状态机、拓扑）</span><br><span class="line">│   ├── el3_runtime/             上下文管理、SMC 分发</span><br><span class="line">│   ├── xlat_tables/             页表</span><br><span class="line">│   ├── cpus/                    CPU errata、AArch64 CPU 特定代码</span><br><span class="line">│   ├── smccc/                   SMCCC 相关</span><br><span class="line">│   └── libc/ spinlock/ locks</span><br><span class="line">├── services/</span><br><span class="line">│   ├── std_svc/                 标准服务：psci / sdei / trng / spm</span><br><span class="line">│   └── spd/                     Secure Payload Dispatcher：opteed / tspd</span><br><span class="line">├── plat/                        各厂商平台实现（plat_psci_ops 在这层）</span><br><span class="line">├── drivers/                     gic、串口、存储控制器、scmi 等</span><br><span class="line">├── include/                     架构头文件（lib/ 下同步镜像）</span><br><span class="line">├── fdts/                        设备树源文件</span><br><span class="line">├── tools/fiptool cert_create    打包与证书工具</span><br><span class="line">└── make_helpers/                构建规则</span><br></pre></td></tr></table></figure>
+
+<p><strong>想改电源行为</strong> → <code>plat/&lt;vendor&gt;/...</code> 的 <code>plat_psci_ops.c</code><br><strong>想加私有 SMC</strong> → <code>services/std_svc/</code> 或 plat 下加 <code>DECLARE_RT_SVC</code><br><strong>想看为什么唤醒失败</strong> → <code>lib/psci/psci_main.c</code> + <code>plat</code> 的 suspend_finish</p>
+<h1 id="十、编译与调试"><a href="#十、编译与调试" class="headerlink" title="十、编译与调试"></a>十、编译与调试</h1><h2 id="10-1-编译"><a href="#10-1-编译" class="headerlink" title="10.1 编译"></a>10.1 编译</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> CROSS_COMPILE=aarch64-linux-gnu-</span><br><span class="line">make PLAT=qemu DEBUG=1 LOG_LEVEL=40 all fip</span><br><span class="line"><span class="comment"># 产物</span></span><br><span class="line">build/qemu/debug/bl1.bin bl2.bin bl31.bin</span><br><span class="line">build/qemu/debug/fip.bin</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>LOG_LEVEL</code>：10 ERROR / 20 NOTICE / 30 WARNING / 40 INFO / 50 VERBOSE</li>
+<li><code>DEBUG=1</code> 会带上断言、更多日志、crash 输出</li>
+<li><code>make help</code> / <code>make PLAT=xxx help</code> 可看平台支持的所有选项</li>
+</ul>
+<h2 id="10-2-调试手段"><a href="#10-2-调试手段" class="headerlink" title="10.2 调试手段"></a>10.2 调试手段</h2><ul>
+<li><strong>串口日志</strong>：最核心。卡在哪一级，看最后一行 log 就知道</li>
+<li><strong>crash console</strong>：ATF 崩溃时 <code>plat_crash_console_flush()</code> 强行刷串口</li>
+<li><strong>常见现象与定位</strong><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>通常原因</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>完全无 log</td>
+<td>串口基址/时钟配置错、BL1 就挂了</td>
+</tr>
+<tr>
+<td>BL2 后无输出</td>
+<td>DDR 初始化失败、FIP 里镜像地址冲突</td>
+</tr>
+<tr>
+<td>BL31 后无输出</td>
+<td>BL33 入口地址错、U-Boot 串口配置与 ATF 不一致</td>
+</tr>
+<tr>
+<td>SMC 返回 unknown/not supported</td>
+<td>该 OEN 服务没注册，或 FID 拼错</td>
+</tr>
+<tr>
+<td>唤不醒</td>
+<td><code>validate_ns_entrypoint</code> 校验不过、resume 入口没传、plat 的 suspend_finish 没恢复时钟/内存</td>
+</tr>
+<tr>
+<td>开核卡死</td>
+<td><code>pwr_domain_on</code> 没释放复位、没写正确的 entry</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h1 id="十一、面试常问"><a href="#十一、面试常问" class="headerlink" title="十一、面试常问"></a>十一、面试常问</h1><ul>
+<li><strong>ATF 有哪几个阶段，各自做什么？</strong> BL1 加载 BL2；BL2 加载 BL31/32/33；BL31 常驻提供运行时服务；BL32 是 OP-TEE（可选）；BL33 是 U-Boot</li>
+<li><strong>为什么 Linux 开核要发 SMC？</strong> 因为电源控制寄存器是 Secure 资源，NS-EL1 无权访问，必须 EL3 代理，PSCI 就是这套标准接口</li>
+<li><strong>SMC 的 FID 怎么编码？</strong> bit31 fast/yielding、bit30 64/32、bit29:24 OEN、bit23:0 function number</li>
+<li><strong>fast call 和 yielding call 区别？</strong> fast 原子不可中断、用于短操作；yielding 可被中断、用于可能阻塞的安全服务</li>
+<li><strong>ATF 和 OP-TEE 什么关系？</strong> ATF 在 EL3 负责世界切换与监控，OP-TEE 在 S-EL1 提供可信服务；ATF 通过 SPD 加载并调度 OP-TEE</li>
+<li><strong>CPU_ON 之后核从哪里开始执行？</strong> 从 OS 传入的 entry point（<code>secondary_entry</code>），ATF 会给它设置好上下文并 <code>eret</code> 到 NS-EL1/EL2</li>
+</ul>
+
+    </div>
+
+    
+        <aside class="toc-sidebar">
+  <div class="toc-wrapper">
+    <h3 class="toc-title">Contents</h3>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81ATF-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-text">一、ATF 是什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7%E4%B8%8E%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C"><span class="toc-text">二、异常等级与安全世界</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-%E5%9B%9B%E4%B8%AA%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7"><span class="toc-text">2.1 四个异常等级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C%E4%B8%8E%E9%9D%9E%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C"><span class="toc-text">2.2 安全世界与非安全世界</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5-BL1-%E2%86%92-BL33"><span class="toc-text">三、启动阶段 BL1 → BL33</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E4%B8%A4%E7%A7%8D%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84%E5%90%AF%E5%8A%A8%E9%93%BE%EF%BC%88%E5%AF%B9%E6%AF%94%E5%9B%BE%EF%BC%89"><span class="toc-text">3.1 两种视角下的启动链（对比图）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%90%84%E9%98%B6%E6%AE%B5%E8%81%8C%E8%B4%A3"><span class="toc-text">3.2 各阶段职责</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-FIP%EF%BC%88Firmware-Image-Package%EF%BC%89"><span class="toc-text">3.3 FIP（Firmware Image Package）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81BL31-%E8%BF%90%E8%A1%8C%E6%97%B6%E6%9C%8D%E5%8A%A1%E6%A1%86%E6%9E%B6"><span class="toc-text">四、BL31 运行时服务框架</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#4-1-%E4%B8%89%E7%B1%BB%E6%9C%8D%E5%8A%A1"><span class="toc-text">4.1 三类服务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-2-SMC-%E5%A4%84%E7%90%86%E8%B7%AF%E5%BE%84"><span class="toc-text">4.2 SMC 处理路径</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81SMCCC%EF%BC%88SMC-%E8%B0%83%E7%94%A8%E7%BA%A6%E5%AE%9A%EF%BC%89"><span class="toc-text">五、SMCCC（SMC 调用约定）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-Function-ID-%E6%A0%BC%E5%BC%8F"><span class="toc-text">5.1 Function ID 格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2-%E5%AF%84%E5%AD%98%E5%99%A8%E7%BA%A6%E5%AE%9A"><span class="toc-text">5.2 寄存器约定</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81PSCI-%E5%9C%A8-ATF-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-text">六、PSCI 在 ATF 中的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#6-1-%E5%88%86%E5%B1%82"><span class="toc-text">6.1 分层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-2-%E5%B9%B3%E5%8F%B0%E5%BF%85%E9%A1%BB%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%9B%9E%E8%B0%83%EF%BC%88plat-psci-ops%EF%BC%89"><span class="toc-text">6.2 平台必须实现的回调（plat_psci_ops）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-3-power-domain-%E6%8B%93%E6%89%91"><span class="toc-text">6.3 power domain 拓扑</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%83%E3%80%81ATF-%E4%B8%8E-Linux-U-Boot-%E7%9A%84%E6%8E%A5%E5%8F%A3"><span class="toc-text">七、ATF 与 Linux &#x2F; U-Boot 的接口</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#7-1-%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E7%9A%84-psci-%E8%8A%82%E7%82%B9"><span class="toc-text">7.1 设备树中的 psci 节点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-2-%E5%86%85%E6%A0%B8%E4%BE%A7%E6%B3%A8%E5%86%8C"><span class="toc-text">7.2 内核侧注册</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-3-U-Boot-%E4%BE%A7"><span class="toc-text">7.3 U-Boot 侧</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%AE%89%E5%85%A8%E5%90%AF%E5%8A%A8%EF%BC%88TBBR-CoT%EF%BC%89"><span class="toc-text">八、安全启动（TBBR &#x2F; CoT）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#8-1-%E4%BF%A1%E4%BB%BB%E9%93%BE%EF%BC%88Chain-of-Trust%EF%BC%89"><span class="toc-text">8.1 信任链（Chain of Trust）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-2-%E5%85%B3%E9%94%AE%E7%BC%96%E8%AF%91%E5%BC%80%E5%85%B3"><span class="toc-text">8.2 关键编译开关</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E9%80%9F%E6%9F%A5"><span class="toc-text">九、代码结构速查</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E7%BC%96%E8%AF%91%E4%B8%8E%E8%B0%83%E8%AF%95"><span class="toc-text">十、编译与调试</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#10-1-%E7%BC%96%E8%AF%91"><span class="toc-text">10.1 编译</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-2-%E8%B0%83%E8%AF%95%E6%89%8B%E6%AE%B5"><span class="toc-text">10.2 调试手段</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E9%9D%A2%E8%AF%95%E5%B8%B8%E9%97%AE"><span class="toc-text">十一、面试常问</span></a></li></ol>
+  </div>
+</aside>
+
+      
+  </div>
+
+  <footer class="post-footer">
+    
+    <nav class="post-nav">
+      
+      
+        <a class="next" href="/2026/09/28/%E9%9D%A2%E8%AF%95%E9%97%AE%E9%A2%98/">面试问题 &raquo;</a>
+      
+    </nav>
+  </footer>
+</article>
+
+    </main>
+    <footer class="site-footer">
+  <div class="footer-inner">
+    
+      <p>&copy; 2026 Welodi</p>
+    
+    <p>Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &middot; Theme <a href="https://github.com/finch-xu/hexo-theme-warmpaper" target="_blank" rel="noopener">Warmpaper</a></p>
+    <p class="footer-links"><a href="/archives/">全部文章归档</a></p>
+  </div>
+</footer>
+
+  </div>
+  <div class="search-overlay" id="search-overlay" data-search-url="/search.json" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-box">
+      <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.5-3.5"/>
+      </svg>
+      <input id="search-input" class="search-input" type="search" placeholder="搜索文章标题、正文、标签…" autocomplete="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+    <div class="search-results" id="search-results" role="listbox"></div>
+    <div class="search-hint">
+      <span><kbd>/</kbd> 唤起</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>Enter</kbd> 打开</span>
+      <span><kbd>Esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+  
+<script src="/js/main.js"></script>
+
+  
+<script src="/js/search.js"></script>
+
+  
+<script src="/js/image-zoom.js"></script>
+
+</body>
+</html>

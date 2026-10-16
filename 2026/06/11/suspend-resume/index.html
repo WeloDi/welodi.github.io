@@ -13,7 +13,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
 <meta property="article:published_time" content="2026-06-11T06:19:55.000Z">
-<meta property="article:modified_time" content="2026-10-14T06:36:47.257Z">
+<meta property="article:modified_time" content="2026-10-15T08:21:58.524Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/06/11/suspend-resume/whiteboard_exported_image.png">
@@ -214,7 +214,237 @@ mjx-container[display="true"] + br {
 </blockquote>
 <h1 id="一、总览图"><a href="#一、总览图" class="headerlink" title="一、总览图"></a>一、总览图</h1><img src="whiteboard_exported_image.png" alt="whiteboard_exported_image">
 
-<h1 id="二、suspend-resume-回调里通常做什么"><a href="#二、suspend-resume-回调里通常做什么" class="headerlink" title="二、suspend/resume 回调里通常做什么"></a>二、suspend/resume 回调里通常做什么</h1><p>驱动要接入系统休眠，就是填 <code>struct dev_pm_ops</code>，先明确几个回调的执行顺序：</p>
+<ol>
+<li><p>🧊 <strong>冻结进程 (Freeze Tasks)</strong><br>冻结用户空间进程、部分内核线程。<br><strong>目的</strong>：防止在后续设备挂起过程中，用户空间进程通过直接内存访问或 I/O 寄存器访问硬件，从而引发不可预知的问题</p>
+</li>
+<li><p>🔌 <strong>挂起设备 (Suspend Devices)</strong><br>在进程冻结后，内核会按照依赖关系来挂起系统中的所有设备。</p>
+</li>
+</ol>
+<ul>
+<li><strong>四个阶段</strong>：设备的挂起分 prepare、suspend、late suspend 和 noirq suspend 四个阶段进行</li>
+<li><strong>IRQ 处理</strong>：<br>在 late suspend 阶段，运行时电源管理（Runtime PM）会被禁用；<br>在 noirq suspend 阶段，高层中断处理程序会被阻止。此时，中断仍会被响应，但只会被确认，不会执行设备相关的操作。</li>
+</ul>
+<ol start="3">
+<li><p>⚙️ <strong>关闭非启动 CPU</strong><br>在设备挂起后，内核会将所有非启动 CPU 关闭</p>
+</li>
+<li><p>🌙 <strong>进入低功耗状态</strong><br>这是最后一步，具体操作取决于目标睡眠状态（idle或者RAM）</p>
+</li>
+</ol>
+<ul>
+<li><p><strong>Suspend-to-Idle</strong>：所有 CPU 进入空闲循环，并“冻结”自己的调度器时钟，停止高精度定时器。系统只能被非定时器硬件中断（如唤醒设备）唤醒。</p>
+</li>
+<li><p><strong>Suspend-to-RAM</strong> (STR)：在完成上述所有步骤后，内核会调用平台相关的挂起操作（platform_suspend_ops）。平台驱动会执行最后的硬件操作。（例如在 ACPI 系统上，内核会将控制权交给平台固件（BIOS），由固件将内存置于自刷新模式，并关闭大部分系统组件。）</p>
+</li>
+</ul>
+<h1 id="二、基础概念"><a href="#二、基础概念" class="headerlink" title="二、基础概念"></a>二、基础概念</h1><p>电源管理分层：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">应用/策略层    用户态策略、Power HAL、wakelock / autosuspend 策略</span><br><span class="line">     ↓</span><br><span class="line">内核框架层     CPUIdle / CPUFreq / DevFreq / Runtime PM / genpd / PM QoS / Thermal / System Sleep</span><br><span class="line">     ↓</span><br><span class="line">固件接口层     PSCI（SMC → EL3/ATF）          SCMI（mailbox → SCP）</span><br><span class="line">     ↓</span><br><span class="line">硬件           CPU/Cluster、电源域、时钟与 Regulator（PMIC）、SCP 微控制器</span><br></pre></td></tr></table></figure>
+<p>框架层负责决定“何时进低功耗”，固件层负责“怎么真正开关电源”，设备驱动只填回调。</p>
+<h2 id="2-2-启动-CPU-和非启动CPU"><a href="#2-2-启动-CPU-和非启动CPU" class="headerlink" title="2.2 启动 CPU 和非启动CPU"></a>2.2 启动 CPU 和非启动CPU</h2><p><strong>启动CPU</strong>：在多核系统中，系统上电启动时，并不是所有 CPU 核心同时开始工作。硬件或固件会先指定一个 CPU 核心来执行最初的引导代码，这个核心就是启动 CPU（通常是 CPU0）。<br><strong>非启动 CPU</strong>：所有被启动 CPU 唤醒并加入系统的其他核心的CPU</p>
+<h2 id="2-3-cpuidle"><a href="#2-3-cpuidle" class="headerlink" title="2.3 cpuidle"></a>2.3 cpuidle</h2><p>cpuidle不是一种单一的状态，而是一个内核子系统，它负责<strong>管理 CPU 在空闲时可以进入的各种低功耗状态</strong>。<br>这些低功耗状态有专门的名称，叫做 C-states（C 状态），常见状态有：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">C0：正常运行状态，CPU 完全活跃。</span><br><span class="line">C1：停止时钟，但保持所有状态。唤醒极快。</span><br><span class="line">C2：停止时钟，可能关闭部分缓存或总线。</span><br><span class="line">C3：关闭 L1/L2 缓存，更深度的省电</span><br><span class="line">更深状态：如 C6、C7 等，会关闭更多核心内部组件，甚至把核心电压降到接近 0，但唤醒延迟也更大。</span><br></pre></td></tr></table></figure>
+<p><strong>与 suspend 的区别</strong></p>
+<ul>
+<li>cpuidle：运行时的毫秒/微秒级行为，单个 CPU 打盹，OS 照常运行</li>
+<li>system suspend：系统级，冻结进程 + 挂起全部设备 + 以秒计，所有 CPU 都停</li>
+</ul>
+<p><strong>查看</strong>：<code>/sys/devices/system/cpu/cpuN/cpuidle/state*/</code>、<code>cpupower idle-info</code></p>
+<h2 id="2-4-cpufreq"><a href="#2-4-cpufreq" class="headerlink" title="2.4 cpufreq"></a>2.4 cpufreq</h2><p>Linux 内核中负责动态调整 CPU 运行频率和电压的子系统。<br>目的是根据当前系统负载，在性能和功耗之间做权衡：</p>
+<ul>
+<li>负载高时，提高频率，让任务跑得更快；</li>
+<li>负载低时，降低频率和电压，节省功耗</li>
+</ul>
+<p>这个技术也叫 DVFS（Dynamic Voltage and Frequency Scaling），动态电压频率调整。</p>
+<p><strong>cpufreq 的组成：</strong></p>
+<ul>
+<li><p><strong>cpufreq driver</strong>：平台/硬件相关的驱动，负责真正去写寄存器改频率。比如 intel_pstate、acpi-cpufreq、arm_big_little 等。</p>
+</li>
+<li><p><strong>cpufreq governor</strong>（调频策略）：决定“什么时候该升频、什么时候该降频”。常见的有：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">performance：一直跑最高频。</span><br><span class="line">powersave：一直跑最低频。</span><br><span class="line">ondemand：负载超过阈值就升频。</span><br><span class="line">conservative：比 ondemand 更平缓地升降频。</span><br><span class="line">schedutil：⭐ 现代内核默认，直接结合调度器的负载信息来调频，响应更精准。</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>sysfs 接口</strong>：用户层可以通过 /sys/devices/system/cpu/cpuX/cpufreq/ 查看和设置频率、策略等</p>
+</li>
+</ul>
+<h2 id="2-5-DVFS"><a href="#2-5-DVFS" class="headerlink" title="2.5 DVFS"></a>2.5 DVFS</h2><p>调节过程:</p>
+<ol>
+<li><strong>第一步：决策 —— Governor判断该用多快</strong><br>Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并依据预设的策略来选择最合适的“性能点”（Operating Performance Point，简称 OPP）。一个 OPP 通常定义为一个 (<strong>频率, 电压</strong>) 的组合。不同的 Governor 有不同的判断逻辑。</li>
+<li><strong>第二步：执行 —— 驱动来操作硬件</strong><br>一旦 Governor 决定了目标 OPP（比如需要从 1.0GHz/800mV 切换到 1.5GHz/900mV），它就会请求 <strong>cpufreq 驱动</strong>去执行这个切换。驱动的执行遵循严格的安全顺序，核心原则是：<strong>升频先升压，降频先降频</strong>，具体操作如下：</li>
+</ol>
+<ul>
+<li><strong>改频率</strong>：驱动通过修改 CPU 内部的 PLL 的倍频参数，来改变输出给 CPU 的时钟频率。</li>
+<li><strong>调电压</strong>：驱动通过 I2C 等总线向电源管理芯片（PMIC）发送指令，让电压调节器输出目标电压。</li>
+</ul>
+<h2 id="2-6-Runtime-PM"><a href="#2-6-Runtime-PM" class="headerlink" title="2.6 Runtime PM"></a>2.6 Runtime PM</h2><p>与上方的cpu电源管理不同，Runtime PM 针对的是外设的运行时电源管理。</p>
+<p><strong>核心思想</strong>：引用计数与自动挂起</p>
+<ul>
+<li>当驱动需要操作设备时，调用 pm_runtime_get()，计数加一，设备保持活跃（active）。</li>
+<li>用完后调用 pm_runtime_put()，计数减一。</li>
+<li>当计数降到零，且没有活跃的子设备时，PM 核心就会触发 idle 回调，挂起设备。（当一个驱动没有定义idle回调时，PM 核心或子系统会用一个通用的默认实现来代替）</li>
+</ul>
+<h2 id="2-7-电源域（Generic-Power-Domain，genpd）"><a href="#2-7-电源域（Generic-Power-Domain，genpd）" class="headerlink" title="2.7 电源域（Generic Power Domain，genpd）"></a>2.7 电源域（Generic Power Domain，genpd）</h2><p><strong>做什么</strong>：把共享同一路电源开关的一组 IP 统一管理，<strong>只有域内最后一个设备进入 suspend，整个域才真正断电</strong>。</p>
+<p><strong>结构</strong></p>
+<ul>
+<li>域可级联：parent domain / subdomain，父域下电前先确保子域都已下电</li>
+<li>设备通过设备树 <code>power-domains</code> 属性挂到某个域</li>
+<li>provider 端实现 <code>power_on</code> / <code>power_off</code> 回调，真正执行时往往再往下调到 PSCI 或 SCMI</li>
+</ul>
+<p><strong>与性能联动</strong></p>
+<ul>
+<li>genpd performance state 会联动 OPP：让 domain 知道当前该供多少电压，避免“只能按最高压供电”</li>
+</ul>
+<p><strong>查看</strong>：<code>cat /sys/kernel/debug/pm_genpd/pm_genpd_summary</code></p>
+<h2 id="2-8-Clock-与-Regulator-框架"><a href="#2-8-Clock-与-Regulator-框架" class="headerlink" title="2.8 Clock 与 Regulator 框架"></a>2.8 Clock 与 Regulator 框架</h2><p><strong>Clock 框架</strong></p>
+<ul>
+<li>统一管理 SoC 时钟树，<code>clk_prepare_enable()</code> / <code>clk_disable_unprepare()</code></li>
+<li>绝大多数“某模块省电”最终就是关掉它的时钟门控（gate）</li>
+</ul>
+<p><strong>Regulator 框架</strong></p>
+<ul>
+<li>管理 PMIC 出来的各路电源轨：<code>regulator_enable/disable</code>、<code>get_voltage/set_voltage</code></li>
+<li>约束（电压范围、允许的 mode）写死在设备树的 regulator 节点</li>
+</ul>
+<p><strong>二者与上层的关系</strong>（执行层的最后一公里）</p>
+<ul>
+<li>genpd / Runtime PM 的回调内部，最终调用的就是关时钟 + 断 regulator</li>
+<li>顺序：停设备 → 关 clock → 断 regulator；上电时严格反序</li>
+</ul>
+<h2 id="2-9-TF-A-与异常等级（BL1-→-BL33）"><a href="#2-9-TF-A-与异常等级（BL1-→-BL33）" class="headerlink" title="2.9 TF-A 与异常等级（BL1 → BL33）"></a>2.9 TF-A 与异常等级（BL1 → BL33）</h2><p><strong>异常等级（TrustZone）</strong></p>
+<ul>
+<li>EL0 应用 → EL1 OS → EL2 虚拟机监控 → EL3 固件/安全监控</li>
+<li>另有 Secure World / Normal World 之分；Linux 跑在 Normal World 的 EL1/EL2</li>
+</ul>
+<p><strong>启动阶段</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">BL1 (ROM, EL3) → 最小初始化，加载 BL2</span><br><span class="line">BL2            → 初始化 DDR 等，加载 BL31/BL32/BL33</span><br><span class="line">BL31           → EL3 Runtime Firmware，常驻内存</span><br><span class="line">BL32           → 安全世界载荷（OP-TEE 等，可选）</span><br><span class="line">BL33           → Normal World 的 bootloader（U-Boot/UEFI）→ Kernel</span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么和电源管理强相关</strong></p>
+<ul>
+<li>CPU 上下电、Cluster 断电、系统休眠这类动作，Linux 在 NS-EL1 没有权限直接做</li>
+<li>必须 <strong>SMC 陷入 EL3</strong>，由固件完成真正的寄存器操作</li>
+</ul>
+<h2 id="2-10-BL31（EL3-Runtime-Firmware）"><a href="#2-10-BL31（EL3-Runtime-Firmware）" class="headerlink" title="2.10 BL31（EL3 Runtime Firmware）"></a>2.10 BL31（EL3 Runtime Firmware）</h2><p><strong>定位</strong>：TF-A 里唯一常驻到运行时的阶段，接管 Secure Monitor 与各类 Runtime Service。</p>
+<p><strong>职责</strong></p>
+<ul>
+<li>SMC 的分发与处理（OS → 固件的唯一入口）</li>
+<li>Secure / Normal 世界的上下文切换</li>
+<li>中断路由配置（IRQ/FIQ 归谁处理）</li>
+</ul>
+<p><strong>与 PSCI 的关系</strong></p>
+<ul>
+<li>PSCI 的具体实现就在这一层：<code>lib/psci</code> + 平台相关 <code>plat_xxx</code> 回调（真正写寄存器，或转发给 SCP）</li>
+</ul>
+<p><strong>调试意义</strong></p>
+<ul>
+<li>它是 Linux 电源管理请求的最终执行者，休眠出在固件侧的问题往往要到这里看 log（TF-A 的 <code>LOG_LEVEL</code>）</li>
+</ul>
+<h2 id="2-11-PSCI（Power-State-Coordination-Interface）"><a href="#2-11-PSCI（Power-State-Coordination-Interface）" class="headerlink" title="2.11 PSCI（Power State Coordination Interface）"></a>2.11 PSCI（Power State Coordination Interface）</h2><p><strong>做什么</strong>：ARM 定义的标准接口，规定 Normal World OS（Linux）与 EL3 固件之间如何协调 CPU/系统电源，调用方式是 SMC/HVC。</p>
+<p><strong>Linux 侧落点</strong></p>
+<ul>
+<li><code>drivers/firmware/psci.c</code> 注册 <code>psci_ops</code></li>
+<li>向上提供：cpu_ops（<code>CPU_ON/OFF</code>）、cpuidle backend（<code>CPU_SUSPEND</code>）、system suspend（<code>SYSTEM_SUSPEND</code>）</li>
+</ul>
+<p><strong>常用调用</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PSCI_VERSION          查询版本（0.2 / 1.0 / 1.1）</span><br><span class="line">CPU_ON(mpidr, entry)  启动指定的 secondary CPU（SMP bringup、hotplug up）</span><br><span class="line">CPU_OFF               关闭当前 CPU</span><br><span class="line">CPU_SUSPEND           让 CPU 进入某个低功耗状态（深 idle、cluster down）</span><br><span class="line">SYSTEM_SUSPEND        整个系统下电到最低（对应 <span class="built_in">echo</span> mem &gt; /sys/power/state）</span><br><span class="line">SYSTEM_OFF / RESET    整机下电 / 复位</span><br><span class="line">AFFINITY_INFO         查询某个 CPU/Cluster 的电源状态</span><br></pre></td></tr></table></figure>
+
+<p><strong>意义</strong>：让 BSP 不必在内核里写私有 pm ops，CPU 开关与系统休眠的接口标准化。</p>
+<h2 id="2-12-SCP（System-Control-Processor）"><a href="#2-12-SCP（System-Control-Processor）" class="headerlink" title="2.12 SCP（System Control Processor）"></a>2.12 SCP（System Control Processor）</h2><p><strong>是什么</strong>：SoC 里一颗独立的小微控制器（常见 Cortex-M），专职负责整颗芯片的电源、时钟、复位、传感器管理。</p>
+<p><strong>关键特性：始终在线（always-on）</strong></p>
+<ul>
+<li>即使所有 AP 核都睡了甚至关机了，SCP 还在跑</li>
+<li>能响应唤醒事件、管理 SoC 的唤醒时序，并重新给 AP 供电</li>
+</ul>
+<p><strong>它掌控什么</strong></p>
+<ul>
+<li>电源域控制器、时钟源、DVFS 策略（部分平台）、温度传感器、风扇、复位序列</li>
+</ul>
+<p><strong>调用路径</strong></p>
+<ul>
+<li>Linux 发起 SCMI 请求 → SCP 收到后真正执行那一串复杂的上下电 sequence</li>
+</ul>
+<h2 id="2-13-SCMI（System-Control-and-Management-Interface）"><a href="#2-13-SCMI（System-Control-and-Management-Interface）" class="headerlink" title="2.13 SCMI（System Control and Management Interface）"></a>2.13 SCMI（System Control and Management Interface）</h2><p><strong>做什么</strong>：ARM 定义的协议，定义 Agent（AP 侧 OS）与 Platform（SCP）之间的标准化消息接口。</p>
+<p><strong>传输层</strong>：通常是 MHU doorbell + 共享内存 mailbox，也有走 SMC 的通道</p>
+<p><strong>协议族</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Base            版本协商、协议发现</span><br><span class="line">Power Domain    查询/开关某个电源域</span><br><span class="line">Performance     DVFS：设定/限制性能等级</span><br><span class="line">Clock           时钟的开停与频率设置</span><br><span class="line">Sensor          读温度等传感器值</span><br><span class="line">Reset           复位某个域</span><br><span class="line">Voltage         电压域控制（较新版本）</span><br></pre></td></tr></table></figure>
+
+<p><strong>Linux 侧落点</strong></p>
+<ul>
+<li><code>drivers/firmware/arm_scmi</code> 把协议翻译成通用 provider：clock、genpd、sensor、scmi-cpufreq 等，通用框架直接消费</li>
+</ul>
+<p><strong>与 PSCI 的分工</strong></p>
+<ul>
+<li>PSCI：面向“CPU/系统级”的开关，走 SMC 到 EL3（BL31）</li>
+<li>SCMI：面向“平台资源”（时钟、性能、传感器、电源域），是 OS 与 SCP 之间的双向协议</li>
+<li>二者常配合使用</li>
+</ul>
+<h2 id="2-14-唤醒机制（wakeup-source）"><a href="#2-14-唤醒机制（wakeup-source）" class="headerlink" title="2.14 唤醒机制（wakeup source）"></a>2.14 唤醒机制（wakeup source）</h2><p><strong>作用</strong>：决定系统能不能睡、能被谁唤醒 —— suspend 前会调用 <code>pm_wakeup_pending()</code> 检查有没有 pending 唤醒事件。</p>
+<p><strong>谁来声明</strong></p>
+<ul>
+<li>设备侧：<code>device_init_wakeup(dev, true)</code> 声明可唤醒；<code>enable_irq_wake(irq)</code> 把中断标记为唤醒中断（配 <code>disable_irq_wake</code>）</li>
+<li>用户态侧：wake_lock / wake_unlock（内核 wakeup_source 的封装），持有期间系统不会睡</li>
+</ul>
+<p><strong>唤醒顺序</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">唤醒中断 → 固件复电 → boot CPU 起来 → online 非启动 CPU → 逐个 resume 设备</span><br></pre></td></tr></table></figure>
+
+<p><strong>调试</strong></p>
+<ul>
+<li><code>cat /sys/kernel/debug/wakeup_sources</code>：<code>active_count</code>、<code>last_change</code>、<code>prevent_suspend_time</code></li>
+<li>用途：回答“为什么睡不下去” / “待机谁在耗电”</li>
+</ul>
+<h2 id="2-15-PM-QoS（延迟-性能约束）"><a href="#2-15-PM-QoS（延迟-性能约束）" class="headerlink" title="2.15 PM QoS（延迟/性能约束）"></a>2.15 PM QoS（延迟/性能约束）</h2><p><strong>做什么</strong>：允许子系统声明“我不能忍受什么” —— CPU DMA 延迟上限、频率下限/上限、内存带宽下限。</p>
+<p><strong>常见用法</strong></p>
+<ul>
+<li><code>PM_QOS_CPU_DMA_LATENCY</code>：约束 cpuidle 不能进太深的 state（音频、USB 传输等场景）</li>
+<li>cpufreq 的 min / max 频率约束</li>
+</ul>
+<p><strong>影响</strong></p>
+<ul>
+<li>governor 决策时把 QoS 作为硬性边界</li>
+<li>“明明该进深 idle 却没进”往往是有人在持 QoS</li>
+</ul>
+<p><strong>入口</strong>：<code>/dev/cpu_dma_latency</code>（用户态）</p>
+<h2 id="2-16-温升策略（thermal）"><a href="#2-16-温升策略（thermal）" class="headerlink" title="2.16 温升策略（thermal）"></a>2.16 温升策略（thermal）</h2><p><strong>三要素</strong></p>
+<ul>
+<li><strong>thermal_zone</strong>：一个温度传感器区域 + 若干 trip point（触发阈值）</li>
+<li><strong>cooling_device</strong>：降温手段 —— cpufreq cooling（限 CPU 最高频）、devfreq cooling（限 GPU 等）、fan、严重的用 hotplug cooling 直接拔核</li>
+<li><strong>governor</strong>：降温策略</li>
+</ul>
+<p><strong>trip point 分级</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">active   → 主动散热（开风扇）</span><br><span class="line">passive  → 降频</span><br><span class="line">hot      → 通知用户态</span><br><span class="line">critical → 强制关机</span><br></pre></td></tr></table></figure>
+
+<p><strong>governor</strong></p>
+<ul>
+<li><code>step_wise</code>：一档一档加 / 退措施</li>
+<li><code>power_allocator</code> / IPA：按 PID 控制器 + power model 动态分配功耗预算，现代 SoC 常用</li>
+</ul>
+<p><strong>与 SCMI 的连接</strong>：SoC 温度通常就是 SCP 通过 SCMI Sensor 协议上报的</p>
+<p><strong>查看</strong>：<code>cat /sys/class/thermal/thermal_zone*/{temp,type,policy}</code>、<code>/sys/class/thermal/cooling_device*/cur_state</code></p>
+<h2 id="2-17-功耗优化（落地清单）"><a href="#2-17-功耗优化（落地清单）" class="headerlink" title="2.17 功耗优化（落地清单）"></a>2.17 功耗优化（落地清单）</h2><p><strong>原则：先测再改</strong> —— 没有基线数据，一切优化都是猜</p>
+<ul>
+<li>手段：功耗分析仪 / 电流表、<code>powertop</code>、<code>turbostat</code>、power 相关 trace event、厂商工具</li>
+</ul>
+<p><strong>按收益从大到小</strong></p>
+<ol>
+<li><strong>待机</strong>：查 <code>wakeup_sources</code> 找耗电大户，治理无故的 timer / GPIO / 网络唤醒</li>
+<li><strong>Runtime PM 全覆盖</strong>：不用的设备一律 autosuspend，配合 genpd 才能真正断电</li>
+<li><strong>时钟与电源轨</strong>：关掉不用模块的时钟和电源轨，避免 IP 漏电</li>
+<li><strong>Idle</strong>：开 <code>CONFIG_NO_HZ</code>（tickless），减少轮询、合并短周期定时器</li>
+<li><strong>DVFS</strong>：用 schedutil + 合理 OPP，避免“最高频跑轻量任务”</li>
+<li><strong>外设</strong>：DDR 自刷新/低频、屏幕刷新率与背光、sensor 批量上报与中断合并</li>
+<li><strong>温升</strong>：调 thermal governor 与 cdev 权重，避免过早降频影响体验</li>
+</ol>
+<p><strong>常见坑</strong></p>
+<ul>
+<li>某个外设没关导致漏电</li>
+<li>QoS 被长期持有导致进不了深 idle</li>
+<li>调试日志 / 串口输出占着时钟</li>
+<li>suspend 成功率低导致反复重试</li>
+</ul>
+<h2 id="2-18-调试接口速查"><a href="#2-18-调试接口速查" class="headerlink" title="2.18 调试接口速查"></a>2.18 调试接口速查</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CPU idle / 频率</span></span><br><span class="line">cpupower idle-info</span><br><span class="line">cpupower frequency-info</span><br><span class="line"><span class="built_in">cat</span> /sys/devices/system/cpu/cpu0/cpuidle/state*/{name,latency,residency,usage,<span class="keyword">time</span>}</span><br><span class="line"><span class="built_in">cat</span> /sys/devices/system/cpu/cpu*/cpufreq/{scaling_governor,scaling_cur_freq}</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设备 Runtime PM</span></span><br><span class="line"><span class="built_in">cat</span> /sys/devices/.../power/{control,runtime_status,runtime_usage,runtime_active_time}</span><br><span class="line"></span><br><span class="line"><span class="comment"># 电源域</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/pm_genpd/pm_genpd_summary</span><br><span class="line"></span><br><span class="line"><span class="comment"># 唤醒源 / suspend 统计</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/wakeup_sources</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/suspend_stats</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/power/pm_print_times     <span class="comment"># 打印每个设备 suspend/resume 的耗时</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 温度</span></span><br><span class="line"><span class="built_in">cat</span> /sys/class/thermal/thermal_zone*/temp</span><br><span class="line"><span class="built_in">cat</span> /sys/class/thermal/thermal_zone*/type</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+<h1 id="三、suspend-resume-回调里通常做什么"><a href="#三、suspend-resume-回调里通常做什么" class="headerlink" title="三、suspend/resume 回调里通常做什么"></a>三、suspend/resume 回调里通常做什么</h1><p>驱动要接入系统休眠，就是填 <code>struct dev_pm_ops</code>，先明确几个回调的执行顺序：</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">suspend</span> 方向：prepare → <span class="built_in">suspend</span> → suspend_late → suspend_noirq → [CPU 睡下去]</span><br><span class="line">resume  方向：[CPU 醒来] → resume_noirq → resume_early → resume → complete</span><br></pre></td></tr></table></figure>
 
 <p>各阶段的约束不同，决定了事情该放在哪个回调里做：</p>
@@ -332,7 +562,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">一、总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81suspend-resume-%E5%9B%9E%E8%B0%83%E9%87%8C%E9%80%9A%E5%B8%B8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-text">二、suspend&#x2F;resume 回调里通常做什么</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-suspend-%E5%9B%9E%E8%B0%83%E5%86%85%E5%AE%B9"><span class="toc-text">2.1 suspend 回调内容</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-resume-%E5%9B%9E%E8%B0%83%E5%86%85%E5%AE%B9"><span class="toc-text">2.2 resume 回调内容</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">三、问题排查</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-suspend%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%EF%BC%9A"><span class="toc-text">3.1 suspend问题排查：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-resume%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">3.2 resume问题排查</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Suspend%E5%85%B7%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="toc-text">四、Suspend具体流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%A1%88%E4%BE%8B"><span class="toc-text">五、案例</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-%E7%B3%BB%E7%BB%9F%E6%97%B6%E9%97%B4%E6%88%B3%E5%9B%9E%E9%80%80%E5%AF%BC%E8%87%B4suspend%E5%88%9A%E5%BC%80%E5%A7%8B%E5%B0%B1%E8%A2%AB%E5%94%A4%E9%86%92"><span class="toc-text">5.1 系统时间戳回退导致suspend刚开始就被唤醒</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2"><span class="toc-text">5.2</span></a></li></ol></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%80%BB%E8%A7%88%E5%9B%BE"><span class="toc-text">一、总览图</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="toc-text">二、基础概念</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-%E5%90%AF%E5%8A%A8-CPU-%E5%92%8C%E9%9D%9E%E5%90%AF%E5%8A%A8CPU"><span class="toc-text">2.2 启动 CPU 和非启动CPU</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-3-cpuidle"><span class="toc-text">2.3 cpuidle</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-4-cpufreq"><span class="toc-text">2.4 cpufreq</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-5-DVFS"><span class="toc-text">2.5 DVFS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-6-Runtime-PM"><span class="toc-text">2.6 Runtime PM</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-7-%E7%94%B5%E6%BA%90%E5%9F%9F%EF%BC%88Generic-Power-Domain%EF%BC%8Cgenpd%EF%BC%89"><span class="toc-text">2.7 电源域（Generic Power Domain，genpd）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-8-Clock-%E4%B8%8E-Regulator-%E6%A1%86%E6%9E%B6"><span class="toc-text">2.8 Clock 与 Regulator 框架</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-9-TF-A-%E4%B8%8E%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7%EF%BC%88BL1-%E2%86%92-BL33%EF%BC%89"><span class="toc-text">2.9 TF-A 与异常等级（BL1 → BL33）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-10-BL31%EF%BC%88EL3-Runtime-Firmware%EF%BC%89"><span class="toc-text">2.10 BL31（EL3 Runtime Firmware）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-11-PSCI%EF%BC%88Power-State-Coordination-Interface%EF%BC%89"><span class="toc-text">2.11 PSCI（Power State Coordination Interface）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-12-SCP%EF%BC%88System-Control-Processor%EF%BC%89"><span class="toc-text">2.12 SCP（System Control Processor）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-13-SCMI%EF%BC%88System-Control-and-Management-Interface%EF%BC%89"><span class="toc-text">2.13 SCMI（System Control and Management Interface）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-14-%E5%94%A4%E9%86%92%E6%9C%BA%E5%88%B6%EF%BC%88wakeup-source%EF%BC%89"><span class="toc-text">2.14 唤醒机制（wakeup source）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-15-PM-QoS%EF%BC%88%E5%BB%B6%E8%BF%9F-%E6%80%A7%E8%83%BD%E7%BA%A6%E6%9D%9F%EF%BC%89"><span class="toc-text">2.15 PM QoS（延迟&#x2F;性能约束）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-16-%E6%B8%A9%E5%8D%87%E7%AD%96%E7%95%A5%EF%BC%88thermal%EF%BC%89"><span class="toc-text">2.16 温升策略（thermal）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-17-%E5%8A%9F%E8%80%97%E4%BC%98%E5%8C%96%EF%BC%88%E8%90%BD%E5%9C%B0%E6%B8%85%E5%8D%95%EF%BC%89"><span class="toc-text">2.17 功耗优化（落地清单）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-18-%E8%B0%83%E8%AF%95%E6%8E%A5%E5%8F%A3%E9%80%9F%E6%9F%A5"><span class="toc-text">2.18 调试接口速查</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81suspend-resume-%E5%9B%9E%E8%B0%83%E9%87%8C%E9%80%9A%E5%B8%B8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-text">三、suspend&#x2F;resume 回调里通常做什么</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-suspend-%E5%9B%9E%E8%B0%83%E5%86%85%E5%AE%B9"><span class="toc-text">2.1 suspend 回调内容</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-resume-%E5%9B%9E%E8%B0%83%E5%86%85%E5%AE%B9"><span class="toc-text">2.2 resume 回调内容</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">三、问题排查</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-suspend%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%EF%BC%9A"><span class="toc-text">3.1 suspend问题排查：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-resume%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5"><span class="toc-text">3.2 resume问题排查</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Suspend%E5%85%B7%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="toc-text">四、Suspend具体流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%A1%88%E4%BE%8B"><span class="toc-text">五、案例</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-%E7%B3%BB%E7%BB%9F%E6%97%B6%E9%97%B4%E6%88%B3%E5%9B%9E%E9%80%80%E5%AF%BC%E8%87%B4suspend%E5%88%9A%E5%BC%80%E5%A7%8B%E5%B0%B1%E8%A2%AB%E5%94%A4%E9%86%92"><span class="toc-text">5.1 系统时间戳回退导致suspend刚开始就被唤醒</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2"><span class="toc-text">5.2</span></a></li></ol></li></ol>
   </div>
 </aside>
 

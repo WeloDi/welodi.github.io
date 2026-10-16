@@ -1,0 +1,87 @@
+<svg width="900" height="640" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 640" font-family="sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#6b7f94"/>
+    </marker>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="450" y="30" text-anchor="middle" font-size="17" font-weight="bold" fill="#2c3e50">
+    ARMv8 异常等级 × 安全世界 × BL 阶段
+  </text>
+
+  <!-- ===== 背景分区 ===== -->
+  <rect x="150" y="70" width="300" height="480" fill="#eaf3fb" stroke="#a8c8e8"/>
+  <rect x="450" y="70" width="300" height="480" fill="#fdf0e0" stroke="#e8c8a0"/>
+
+  <!-- ===== 列标题 ===== -->
+  <text x="300" y="95" text-anchor="middle" font-size="15" font-weight="bold" fill="#2e6da4">安全世界 (Secure)</text>
+  <text x="600" y="95" text-anchor="middle" font-size="15" font-weight="bold" fill="#b06a2a">非安全世界 (Non-Secure)</text>
+
+  <!-- ===== 行标题 / EL ===== -->
+  <text x="75" y="145" text-anchor="middle" font-size="14" font-weight="bold" fill="#2c3e50">EL0</text>
+  <text x="75" y="265" text-anchor="middle" font-size="14" font-weight="bold" fill="#2c3e50">EL1</text>
+  <text x="75" y="385" text-anchor="middle" font-size="14" font-weight="bold" fill="#2c3e50">EL2</text>
+  <text x="75" y="505" text-anchor="middle" font-size="14" font-weight="bold" fill="#2c3e50">EL3</text>
+
+  <!-- 行分隔线 -->
+  <line x1="150" y1="190" x2="750" y2="190" stroke="#c8d4e0" stroke-dasharray="4,3"/>
+  <line x1="150" y1="310" x2="750" y2="310" stroke="#c8d4e0" stroke-dasharray="4,3"/>
+  <line x1="150" y1="430" x2="750" y2="430" stroke="#c8d4e0" stroke-dasharray="4,3"/>
+
+  <!-- 列分隔线（中间） -->
+  <line x1="450" y1="70" x2="450" y2="550" stroke="#b0b8c0" stroke-width="1.5"/>
+
+  <!-- 外框 -->
+  <rect x="150" y="70" width="600" height="480" fill="none" stroke="#7f8c9a" stroke-width="1.5"/>
+
+  <!-- ===== EL0 行 ===== -->
+  <!-- 安全侧：可信应用 -->
+  <rect x="170" y="110" width="260" height="60" rx="6" fill="#dcecf9" stroke="#6ba3d6" stroke-dasharray="4,3"/>
+  <text x="300" y="135" text-anchor="middle" font-weight="bold" fill="#1a4d80">可信应用（TA）</text>
+  <text x="300" y="155" text-anchor="middle" font-size="11" fill="#22588a">Secure EL0（如 OP-TEE TA）</text>
+
+  <!-- 非安全侧：应用程序 -->
+  <rect x="470" y="110" width="260" height="60" rx="6" fill="#fad9a8" stroke="#cc7a28"/>
+  <text x="600" y="135" text-anchor="middle" font-weight="bold" fill="#8a4412">应用程序</text>
+  <text x="600" y="155" text-anchor="middle" font-size="11" fill="#96501a">Non-Secure EL0</text>
+
+  <!-- ===== EL1 行 ===== -->
+  <!-- 安全侧：BL32 / OP-TEE -->
+  <rect x="170" y="210" width="260" height="60" rx="6" fill="#a8d0f0" stroke="#2e7bc4"/>
+  <text x="300" y="235" text-anchor="middle" font-weight="bold" fill="#1a4d80">BL32 / OP-TEE</text>
+  <text x="300" y="255" text-anchor="middle" font-size="11" fill="#22588a">安全 OS（Secure EL1）</text>
+
+  <!-- 非安全侧：BL33 / Linux 内核 -->
+  <rect x="470" y="210" width="260" height="60" rx="6" fill="#f0a848" stroke="#a85a10"/>
+  <text x="600" y="230" text-anchor="middle" font-weight="bold" fill="#ffffff">BL33 / U-Boot</text>
+  <text x="600" y="248" text-anchor="middle" font-weight="bold" fill="#ffffff">Linux Kernel</text>
+  <text x="600" y="264" text-anchor="middle" font-size="11" fill="#fff4e6">Non-Secure EL1</text>
+
+  <!-- ===== EL2 行 ===== -->
+  <!-- 安全侧：留空 -->
+  <!-- 非安全侧：Hypervisor -->
+  <rect x="470" y="330" width="260" height="60" rx="6" fill="#f7c988" stroke="#c06e1e"/>
+  <text x="600" y="355" text-anchor="middle" font-weight="bold" fill="#7a3c0e">Hypervisor</text>
+  <text x="600" y="375" text-anchor="middle" font-size="11" fill="#884814">KVM / Xen（可选）</text>
+
+  <!-- ===== EL3 行 ===== -->
+  <!-- 安全侧：BL31 -->
+  <rect x="170" y="450" width="260" height="60" rx="6" fill="#7fbceb" stroke="#1f6cb5"/>
+  <text x="300" y="475" text-anchor="middle" font-weight="bold" fill="#0f3d6b">BL31（ATF 常驻）</text>
+  <text x="300" y="495" text-anchor="middle" font-size="11" fill="#1b5187">PSCI / SMC / 安全切换</text>
+
+  <!-- 非安全侧：留空 -->
+
+  <!-- ===== 底部说明 ===== -->
+  <text x="450" y="575" text-anchor="middle" font-size="12" fill="#5a6a7a">
+    BL31 常驻 EL3，是安全世界与非安全世界之间的唯一守门人
+  </text>
+  <text x="450" y="595" text-anchor="middle" font-size="12" fill="#5a6a7a">
+    Linux 通过 SMC 指令陷入 EL3，请求 BL31 提供 PSCI 等服务
+  </text>
+
+  <!-- ===== 左侧 EL 箭头 ===== -->
+  <line x1="110" y1="520" x2="110" y2="110" stroke="#6b7f94" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="100" y="320" text-anchor="middle" font-size="11" fill="#6b7f94" transform="rotate(-90,100,320)">权限升高</text>
+</svg>
