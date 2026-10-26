@@ -54,11 +54,11 @@ categories:
 ```
 框架层负责决定“何时进低功耗”，固件层负责“怎么真正开关电源”，设备驱动只填回调。
 
-## 2.2 启动 CPU 和非启动CPU
+## 2.1 启动 CPU 和非启动CPU
 **启动CPU**：在多核系统中，系统上电启动时，并不是所有 CPU 核心同时开始工作。硬件或固件会先指定一个 CPU 核心来执行最初的引导代码，这个核心就是启动 CPU（通常是 CPU0）。
 **非启动 CPU**：所有被启动 CPU 唤醒并加入系统的其他核心的CPU
 
-## 2.3 cpuidle
+## 2.2 cpuidle
 当调度器发现某个 CPU 上没有可运行的任务时，它会进入 idle 线程。cpuidle 框架负责在这个时机让 CPU 进入一个合适的低功耗状态（C-state），常见状态有：
 ```sh
 C0：正常运行状态，CPU 完全活跃。
@@ -72,7 +72,7 @@ C3：关闭 L1/L2 缓存，更深度的省电
 - Suspend-to-Idle 是系统级休眠的一种。它要先冻结所有用户进程、挂起所有设备、停止时间统计，然后才让 CPU 进入 idle。整个系统处于“睡眠”状态，不是某个核在打盹。
 
 
-## 2.4 cpufreq
+## 2.3 cpufreq
 Linux 内核中负责动态调整 CPU 运行频率和电压的子系统。
 目的是根据当前系统负载，在性能和功耗之间做权衡：
 - 负载高时，提高频率，让任务跑得更快；
@@ -93,7 +93,7 @@ schedutil：⭐ 现代内核默认，直接结合调度器的负载信息来调�
 ```
 - **sysfs 接口**：用户层可以通过 /sys/devices/system/cpu/cpuX/cpufreq/ 查看和设置频率、策略等
 
-## 2.5 DVFS
+## 2.4 DVFS
 调节过程:
 1. **第一步：决策 —— Governor判断该用多快**
 Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并依据预设的策略来选择最合适的“性能点”（Operating Performance Point，简称 OPP）。一个 OPP 通常定义为一个 (**频率, 电压**) 的组合。不同的 Governor 有不同的判断逻辑。
@@ -103,7 +103,7 @@ Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并
 - **调电压**：驱动通过 I2C 等总线向电源管理芯片（PMIC）发送指令，让电压调节器输出目标电压。
 
 
-## 2.6 Runtime PM
+## 2.5 Runtime PM
 与上方的cpu电源管理不同，Runtime PM 针对的是外设的运行时电源管理。
 
 **核心思想**：引用计数与自动挂起
@@ -111,7 +111,7 @@ Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并
 - 用完后调用 pm_runtime_put()，计数减一。
 - 当计数降到零，且没有活跃的子设备时，PM 核心就会触发 idle 回调，挂起设备。（当一个驱动没有定义idle回调时，PM 核心或子系统会用一个通用的默认实现来代替）
 
-## 2.7 电源域（Generic Power Domain，genpd）
+## 2.6 电源域（Generic Power Domain，genpd）
 
 **做什么**：把共享同一路电源开关的一组 IP 统一管理，**只有域内最后一个设备进入 suspend，整个域才真正断电**。
 
@@ -125,7 +125,7 @@ Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并
 
 **查看**：`cat /sys/kernel/debug/pm_genpd/pm_genpd_summary`
 
-## 2.8 Clock 与 Regulator 框架
+## 2.7 Clock 与 Regulator 框架
 
 **Clock 框架**
 - 统一管理 SoC 时钟树，`clk_prepare_enable()` / `clk_disable_unprepare()`
@@ -139,24 +139,7 @@ Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并
 - genpd / Runtime PM 的回调内部，最终调用的就是关时钟 + 断 regulator
 - 顺序：停设备 → 关 clock → 断 regulator；上电时严格反序
 
-## 2.14 唤醒机制（wakeup source）
-
-**作用**：决定系统能不能睡、能被谁唤醒 —— suspend 前会调用 `pm_wakeup_pending()` 检查有没有 pending 唤醒事件。
-
-**谁来声明**
-- 设备侧：`device_init_wakeup(dev, true)` 声明可唤醒；`enable_irq_wake(irq)` 把中断标记为唤醒中断（配 `disable_irq_wake`）
-- 用户态侧：wake_lock / wake_unlock（内核 wakeup_source 的封装），持有期间系统不会睡
-
-**唤醒顺序**
-```sh
-唤醒中断 → 固件复电 → boot CPU 起来 → online 非启动 CPU → 逐个 resume 设备
-```
-
-**调试**
-- `cat /sys/kernel/debug/wakeup_sources`：`active_count`、`last_change`、`prevent_suspend_time`
-- 用途：回答“为什么睡不下去” / “待机谁在耗电”
-
-## 2.15 PM QoS（延迟/性能约束）
+## 2.8 PM QoS（延迟/性能约束）
 
 **做什么**：允许子系统声明“我不能忍受什么” —— CPU DMA 延迟上限、频率下限/上限、内存带宽下限。
 
@@ -170,7 +153,7 @@ Governor 是 DVFS 的“大脑”，它会持续监控 CPU 的负载情况，并
 
 **入口**：`/dev/cpu_dma_latency`（用户态）
 
-## 2.16 温升策略（thermal）
+## 2.9 温升策略（thermal）
 
 **三要素**
 - **thermal_zone**：一个温度传感器区域 + 若干 trip point（触发阈值）
@@ -193,7 +176,7 @@ critical → 强制关机
 
 **查看**：`cat /sys/class/thermal/thermal_zone*/{temp,type,policy}`、`/sys/class/thermal/cooling_device*/cur_state`
 
-## 2.17 功耗优化（落地清单）
+## 2.10 功耗优化（落地清单）
 
 **原则：先测再改** —— 没有基线数据，一切优化都是猜
 - 手段：功耗分析仪 / 电流表、`powertop`、`turbostat`、power 相关 trace event、厂商工具
@@ -213,7 +196,7 @@ critical → 强制关机
 - 调试日志 / 串口输出占着时钟
 - suspend 成功率低导致反复重试
 
-## 2.18 调试接口速查
+## 2.11 调试接口速查
 ```sh
 # CPU idle / 频率
 cpupower idle-info
@@ -254,7 +237,7 @@ resume  方向：[CPU 醒来] → resume_noirq → resume_early → resume → c
 - `suspend_late` / `resume_early`：过渡阶段，中断逐步收敛
 - `suspend_noirq` / `resume_noirq`：**中断已经关闭**，绝对不能睡眠，不能用 mutex，不能做可能睡眠的分配，只能自旋锁 + 少量寄存器读写
 
-## 2.1 suspend 回调内容
+## 3.1 suspend 回调内容
 
 1. **先判断设备是否已经 runtime suspend**：避免对已经下电的设备重复操作
 ```c
@@ -285,7 +268,7 @@ if (device_may_wakeup(dev))
     enable_irq_wake(priv->irq);
 ```
 
-## 2.2 resume 回调内容
+## 3.2 resume 回调内容
 
 严格按 suspend 的**反序**执行，这是电源管理的铁律：
 
@@ -312,8 +295,8 @@ if (device_may_wakeup(dev))
 5. **恢复软件状态**：清 `suspended` 标志，让正常数据路径重新可用
 6. **若设备真的掉过电**：还要重做校准、重新枚举下游设备、恢复内部状态机
 
-# 三、问题排查
-## 3.1 suspend问题排查：
+# 四、问题排查
+## 4.1 suspend问题排查：
 1. 先分类现象
 - 根本无法进入 suspend
 - 进入后立刻被唤醒
@@ -352,7 +335,7 @@ GPIO 中断未清，引发 IRQ 风暴。
 DMA 仍在传输，工作队列仍在调度，定时器未取消，导致设备无法进入低功耗，或 suspend 后立即唤醒
 
 
-## 3.2 resume问题排查
+## 4.2 resume问题排查
 1. 问题分类：
 - 无法唤醒，卡在睡眠状态
 - 唤醒后无功能
@@ -383,7 +366,7 @@ echo disabled > /sys/devices/.../power/wakeup # 临时禁用某个设备的唤�
 3. 寄存器读写超时
 4. resume 时未重新配置硬件状态或配置错误
 
-# 四、Suspend具体流程
+# 五、Suspend具体流程
 
 用户空间执行如下操作，会通过sysfs触发suspend的执行：
 
@@ -883,8 +866,8 @@ Platform_finish:
     return error; // 返回错误码
 }
 ```
-# 五、案例
-## 5.1 系统时间戳回退导致suspend刚开始就被唤醒
+# 六、案例
+## 6.1 系统时间戳回退导致suspend刚开始就被唤醒
 RTC在bios阶段初始化异常，导致后续suspend失败
 
-## 5.2 
+## 6.2 

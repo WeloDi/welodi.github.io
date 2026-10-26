@@ -213,7 +213,7 @@ PSCI 的函数走 SMCCC 的 SMC32/SMC64 两种形式，SMC64 只是把 bit30 置
 | PSCI_FEATURES | 0x8400000A | 查询某个函数是否支持、以及其特性（如电源状态格式） |
 | SYSTEM_SUSPEND | 0x8400000E | 系统级挂起（整机休眠），唤醒后从 resume 入口继续 |
 
-## 5.4 两条典型路径
+## 5.3 两条典型路径
 
 **开核（CPU_ON）**
 ```sh
@@ -237,7 +237,7 @@ Linux 调 psci_ops.cpu_suspend(state, resume_entry)
 
 这也是调试"唤不醒"的主战场：`plat` 的 `suspend_finish` 没把时钟/内存控制器恢复回原状，Linux 一跑就崩。
 
-## 5.5 PSCI 与 SCMI 的分工
+## 5.4 PSCI 与 SCMI 的分工
 
 这两者最容易混，一句话区分：**PSCI 管 CPU/系统级开关，SCMI 管平台资源**。
 
@@ -249,7 +249,7 @@ Linux 调 psci_ops.cpu_suspend(state, resume_entry)
 
 实际系统里两者常串联：Linux 发 PSCI `CPU_SUSPEND` → BL31 仲裁后，通过 SCMI 让 SCP 真正去断 cluster 的电。
 
-## 5.6 Linux 侧与 TF-A 侧的落点
+## 5.5 Linux 侧与 TF-A 侧的落点
 
 - **Linux**：开机解析 DTB 的 `/psci` 节点（`method = "smc"` 或 `"hvc"`、`compatible = "arm,psci-1.0"`），探测成功后填充 `psci_ops`；驱动/内核只面对 `psci_ops`，不直接拼 FID。
 - **TF-A**：版本协商、状态机、拓扑等公共实现在 `lib/psci/`（`psci_main.c`、`psci_on.c`、`psci_suspend.c`）；真正写寄存器、上电下电的平台代码在 `plat/<vendor>/plat_psci_ops.c`。

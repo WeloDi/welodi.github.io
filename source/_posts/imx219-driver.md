@@ -181,7 +181,7 @@ imx219_probe(client)
 └─ pm_runtime_set_active/enable/idle()
 ```
 
-#### 1.2.2 **异步绑定**
+#### 1.3.2 **异步绑定**
 
 内核的 V4L2 框架采用了异步驱动模型。这是因为在系统启动时，sensor 驱动（通常是 I2C 设备）和 ISP/CSI 驱动（通常是平台设备，挂载在 SoC 内存总线上）的 probe 顺序是不确定的。为了解决这个问题，Linux 引入了 v4l2_async 异步框架：
 
@@ -228,7 +228,7 @@ v4l2_async_register_subdev_sensor(sd)
 
 
 
-#### 1.2.3 格式协商流程
+#### 1.3.3 格式协商流程
 
 `media-ctl --set-v4l2` 或被 `s_stream(1)` 之前调用。**此阶段不写传感器寄存器**，只更新软件状态。真正的寄存器写入推迟到 streaming 启动时。
 
@@ -245,7 +245,7 @@ imx219_set_pad_format(fmt)
         └── hblank: = PPL_DEFAULT - width (固定值)
 ```
 
-#### 1.2.4 Control 写入流程
+#### 1.3.4 Control 写入流程
 
 `s_fmt` 之后、`s_stream(1)` 之前或 streaming 期间均可调用。非 streaming 时仅更新值不写寄存器。
 
@@ -265,7 +265,7 @@ imx219_set_ctrl(ctrl)
 └─ pm_runtime_put()
 ```
 
-#### 1.2.5 Streaming 启停流程
+#### 1.3.5 Streaming 启停流程
 
 最终一步：`s_stream(1)` 才真正上电并写入整张寄存器表。
 
@@ -287,7 +287,7 @@ imx219_set_stream(enable=0)
    └─ pm_runtime_put()                     → imx219_power_off() 关闭 XVCLK
 ```
 
-#### 1.2.6 电源管理架构
+#### 1.3.6 电源管理架构
 
 ```c
 pm_runtime 状态机:
