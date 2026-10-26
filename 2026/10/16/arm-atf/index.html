@@ -13,8 +13,10 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/2026/10/16/arm-atf/EL-SecureWorld.svg">
 <meta property="og:image" content="http://example.com/2026/10/16/arm-atf/ATF.svg">
+<meta property="og:image" content="http://example.com/2026/10/16/arm-atf/bl31-runtime.svg">
+<meta property="og:image" content="http://example.com/2026/10/16/arm-atf/power-call-chain.svg">
 <meta property="article:published_time" content="2026-10-16T06:30:00.000Z">
-<meta property="article:modified_time" content="2026-10-16T14:06:52.127Z">
+<meta property="article:modified_time" content="2026-10-26T06:44:34.870Z">
 <meta property="article:author" content="Welodi">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/2026/10/16/arm-atf/EL-SecureWorld.svg">
@@ -216,8 +218,6 @@ mjx-container[display="true"] + br {
 <li><strong>BL33 通常不属于 ATF</strong>：BL33 一般就是 U-Boot，是独立项目</li>
 </ul>
 <p>一句话定位：<strong>Linux 想做但没权限做的事（开核、断电、复位、切世界），全部通过 SMC 交给 ATF 完成。</strong></p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Normal World                          Secure World</span><br><span class="line">EL0   App                             S-EL0  TA（可信应用）</span><br><span class="line">EL1   Linux Kernel                    S-EL1  OP-TEE（可信 OS）</span><br><span class="line">EL2   Hypervisor（KVM，可选）</span><br><span class="line">------------------------------------------------------------------</span><br><span class="line">EL3   ATF / BL31（Secure Monitor）  ← 两个世界唯一的通路</span><br></pre></td></tr></table></figure>
-
 <h1 id="二、异常等级与安全世界"><a href="#二、异常等级与安全世界" class="headerlink" title="二、异常等级与安全世界"></a>二、异常等级与安全世界</h1><p>异常等级（Exception Level，EL） 是 ARMv8-A 架构引入的一个<strong>特权层级</strong>概念，用来划分代码运行时能访问的硬件资源和能执行的指令，核心目的是<strong>隔离与安全</strong></p>
 <h2 id="2-1-四个异常等级"><a href="#2-1-四个异常等级" class="headerlink" title="2.1 四个异常等级"></a>2.1 四个异常等级</h2><table>
 <thead>
@@ -266,191 +266,257 @@ mjx-container[display="true"] + br {
 
 <h1 id="三、启动阶段-BL1-→-BL33"><a href="#三、启动阶段-BL1-→-BL33" class="headerlink" title="三、启动阶段 BL1 → BL33"></a>三、启动阶段 BL1 → BL33</h1><h2 id="3-1-两种视角下的启动链（对比图）"><a href="#3-1-两种视角下的启动链（对比图）" class="headerlink" title="3.1 两种视角下的启动链（对比图）"></a>3.1 两种视角下的启动链（对比图）</h2><img src="ATF.svg" alt="ATF" style="width:96%; display:block; margin:1em auto;">
 
-<p>左边是 <strong>U-Boot 视角</strong>（BootROM → SPL → U-Boot → Kernel），右边是 <strong>ATF 视角</strong>（BL1 → BL2 → BL31 → BL32 → BL33 → Kernel）。</p>
-<p>它们描述的是<strong>同一段上电过程</strong>，只是切分与命名不同：</p>
+<p>左边是 <strong>U-Boot 视角</strong>，右边是 <strong>ATF 视角</strong>。它们描述的是<strong>同一段上电过程</strong>，只是切分与命名不同：</p>
 <h2 id="3-2-各阶段职责"><a href="#3-2-各阶段职责" class="headerlink" title="3.2 各阶段职责"></a>3.2 各阶段职责</h2><p><strong>BL1（Trusted Boot ROM Firmware）</strong></p>
 <ul>
-<li>位置：芯片 ROM 或 SRAM，芯片出厂后不可改，是<strong>信任根</strong>的一部分</li>
-<li>做最小的初始化：异常向量、CPU 特定 errata、串口（调试用）、SRAM</li>
-<li>从存储（eMMC/NAND/SPI-NOR）加载 <strong>FIP</strong> 中的 BL2 并验签</li>
-<li>决定后续是冷启动还是 warm reset 路径（<code>warm boot</code> 走 CPU 上电分支）</li>
+<li><strong>位置</strong>：芯片 ROM，出厂后不可改，是<strong>信任根</strong>的一部分</li>
+<li><strong>初始化</strong>：执行最小的架构与平台初始化（异常向量、控制台、串口、使能Trusted Watchdog、配置MMU等）</li>
+<li><strong>核心任务</strong>：从存储介质加载 BL2 裸镜像（≈ SPL），并对其进行验签（安全启动时）</li>
+<li><strong>启动路径</strong>：BL1 通过平台特定的机制（plat_get_my_entrypoint()）来判断当前是冷启动还是热启动。</li>
 </ul>
 <p><strong>BL2（Trusted Boot Firmware）</strong></p>
 <ul>
-<li>跑在 Secure-EL1，初始化 DDR、存储控制器、时钟等“重活”</li>
-<li>从 FIP 里加载 BL31 / BL32 / BL33 到各自的目标地址</li>
-<li>建立页表（xlat tables）、传递参数（<code>bl_params</code>）</li>
-<li>验签每一级镜像（CoT 的一环）</li>
+<li><strong>位置</strong>：从存储介质加载到 SRAM 中运行。</li>
+<li><strong>核心职责</strong>：初始化 DRAM（DDR）控制器，因为 SRAM 空间有限。它是镜像加载器，负责从存储设备中读取 FIP（Firmware Image Package），把里面的 BL31、BL32（可选）、BL33 分别加载到各自的平台特定地址。</li>
+<li><strong>参数传递</strong>：向 BL31 传递一个 bl31_params 结构体（通过 X0 寄存器），里面包含 BL31、BL32、BL33 的入口地址和状态信息。</li>
+<li><strong>生命周期</strong>：完成加载和跳转后，BL2 的使命结束，不会常驻。</li>
 </ul>
-<p><strong>BL31（EL3 Runtime Firmware）</strong></p>
-<ul>
-<li><strong>唯一常驻到运行时的阶段</strong>，永远不退出，提供 Secure Monitor</li>
-<li>初始化 EL3 运行时环境：异常向量、上下文管理、SMC 分发框架</li>
-<li>注册运行时服务（std_svc 的 PSCI、厂商 SiP、SDEI 等）</li>
-<li>初始化 BL32（SPD 负责），然后 <code>eret</code> 到 BL33</li>
+<h3 id="3-2-1-BL31（EL3-Runtime-Firmware）"><a href="#3-2-1-BL31（EL3-Runtime-Firmware）" class="headerlink" title="3.2.1 BL31（EL3 Runtime Firmware）"></a>3.2.1 <strong>BL31（EL3 Runtime Firmware）</strong></h3><ul>
+<li><strong>位置</strong>：从 BL2 加载到 Trusted SRAM（或 DDR），常驻内存，运行在最高特权级 EL3。</li>
+<li><strong>核心职责</strong>：<ol>
+<li><strong>启动阶段：决定把控制权交给谁</strong><br>（如果存在BL32）先跳转到 BL32；BL32 初始化完成后通过 SMC 指令返回 BL31，BL31 再跳转到 BL33。否则直接跳转到BL33（Uboot）</li>
+<li><strong>运行阶段</strong><br>维持 EL3 安全环境，并解析非安全世界或安全世界的SMC请求，并分发给对应的服务处理函数：<br><strong>1)</strong> <strong>PSCI（电源状态协调接口）</strong>：Linux 通过 SMC 请求 BL31 执行 CPU 热插拔、CPU suspend、系统关机/复位等操作（详见第五章）<br><strong>2)</strong> <strong>SPD（安全监控调用）</strong>：如果系统存在 BL32，SPD 会处理非安全世界发来的安全服务请求，完成两个世界之间的上下文切换。</li>
+</ol>
+</li>
+<li><strong>生命周期</strong>：系统运行期间一直存在。</li>
 </ul>
+<p><strong>SMC 命令处理流程</strong>（以系统休眠为例，从内核一路走到 SCP）：</p>
+<img src="bl31-runtime.svg" alt="SMC 命令处理流程：内核 suspend → PSCI → BL31 → SCP" style="width:88%; display:block; margin:1em auto;">
+
+
+
 <p><strong>BL32（Secure-EL1 Payload，可选）</strong></p>
 <ul>
-<li>常见是 <strong>OP-TEE</strong>，也可以是 TSP（TF-A 自带的测试安全载荷）或 SPM</li>
-<li>由 <strong>SPD</strong>（Secure Payload Dispatcher，如 <code>opteed</code>/<code>tspd</code>）负责加载与后续的世界切换</li>
-<li>Normal World 通过 SMC 进入 Secure World 的服务（如密钥、DRM、指纹）</li>
+<li><strong>位置</strong>：和其他OS一样运行在内存（DDR）上，只是其内存被 TrustZone 硬件标记为安全世界专属。</li>
+<li><strong>典型实现</strong>：OP-TEE 等可信执行环境（TEE）操作系统。它内部可以调度多个可信应用（TA），TA 运行在 Secure EL0。</li>
+<li><strong>职责</strong>：处理敏感操作，如指纹比对、密钥管理、DRM 解密。非安全世界通过 SMC 调用 BL31，BL31 再路由请求到 BL32。</li>
+<li><strong>存在性</strong>：可选。如果平台不启用安全 OS，BL32 不存在，BL31 直接跳转 BL33。</li>
 </ul>
-<p><strong>BL33（Non-trusted Firmware）</strong></p>
+<p><strong>BL33（通常是Uboot）</strong></p>
 <ul>
-<li>U-Boot / UEFI，也可以是直接是 Linux（TF-A 支持 <code>BL33=kernel</code>）</li>
-<li>ATF 把控制权交给它后，就只剩「被调用」的角色（SMC 进来才执行）</li>
+<li><strong>位置</strong>：运行在非安全世界，通常位于 EL2（如果启用了 Hypervisor）或 EL1（如果没用多虚拟系统）。</li>
+<li><strong>典型实现</strong>：U-Boot、UEFI 等引导加载程序。</li>
+<li><strong>职责</strong>：初始化外设（网卡、USB、存储等），加载 Linux 内核镜像、设备树、initrd，设置 bootargs，最后跳转到内核入口。</li>
+<li><strong>启动流程角色</strong>：它是 ATF 启动链的最后一环，把控制权交给操作系统</li>
 </ul>
-<h2 id="3-3-FIP（Firmware-Image-Package）"><a href="#3-3-FIP（Firmware-Image-Package）" class="headerlink" title="3.3 FIP（Firmware Image Package）"></a>3.3 FIP（Firmware Image Package）</h2><p>把各阶段镜像打包成一个容器的工具叫 <strong>fiptool</strong>：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fiptool create --tb-fw bl2.bin --soc-fw bl31.bin \</span><br><span class="line">               --tos-fw bl32.bin --nt-fw bl33.bin fip.bin</span><br></pre></td></tr></table></figure>
+<h2 id="3-3-后续流程全局预览"><a href="#3-3-后续流程全局预览" class="headerlink" title="3.3 后续流程全局预览"></a>3.3 后续流程全局预览</h2><p>启动完成后，BL31 就常驻下来接管”Linux 没权限做的事”。接下来的三章讲的就是这条调用链上的各个接口：<strong>SMC/SMCCC</strong>（怎么陷入 EL3）、<strong>PSCI</strong>（请求什么）、<strong>SCP/SCPI/SCMI</strong>（谁来真正执行）。先用一张全景图看清它们各在哪一层、谁跟谁打交道：</p>
+<img src="power-call-chain.svg" alt="PSCI/SCP/SMC/SMCCC/SCPI/SCMI 作用场景" style="width:78%; display:block; margin:1em auto;">
 
+
+<h1 id="四、SMC-与-SMCCC"><a href="#四、SMC-与-SMCCC" class="headerlink" title="四、SMC 与 SMCCC"></a>四、SMC 与 SMCCC</h1><h2 id="4-1-SMC"><a href="#4-1-SMC" class="headerlink" title="4.1 SMC"></a>4.1 SMC</h2><p>SMC（Secure Monitor Call）是 AArch64 的一条<strong>指令</strong>。执行它会触发一个同步异常，CPU 陷入 <strong>EL3</strong>，交给 ATF（BL31）处理；处理完用 <code>eret</code> 返回原来的世界。</p>
+<p><strong>为什么需要它</strong></p>
 <ul>
-<li>每个镜像带 UUID，BL2 按 UUID 从 FIP 里取</li>
-<li>证书/签名由 <code>cert_create</code> 生成（可信启动时使用）</li>
+<li>电源控制、世界切换这类操作涉及 Secure 资源，跑在 NS-EL1 的 Linux 无权直接做</li>
+<li>ARM 规定：<strong>跨世界、进 EL3 只能通过 SMC</strong>（<code>hvc</code> 用于进 EL2，<code>svc</code> 用于进 EL1）</li>
 </ul>
-<h1 id="四、BL31-运行时服务框架"><a href="#四、BL31-运行时服务框架" class="headerlink" title="四、BL31 运行时服务框架"></a>四、BL31 运行时服务框架</h1><h2 id="4-1-三类服务"><a href="#4-1-三类服务" class="headerlink" title="4.1 三类服务"></a>4.1 三类服务</h2><table>
+<p><strong>一次 SMC 都发生了什么</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Linux（NS-EL1）执行 smc <span class="comment">#0</span></span><br><span class="line">  → 触发同步异常，CPU 切到 EL3，跳到 VBAR_EL3 指向的 SMC 向量</span><br><span class="line">  → ATF 保存 Normal World 上下文（通用寄存器、系统寄存器）</span><br><span class="line">  → 按 x0 里的 FID 分发到对应服务（PSCI / SiP / SPD …）</span><br><span class="line">  → 处理完，结果写回 x0~x3</span><br><span class="line">  → 恢复上下文，eret 返回 NS-EL1，Linux 继续往下执行</span><br></pre></td></tr></table></figure>
+
+<p><strong>特点</strong></p>
+<ul>
+<li><strong>同步</strong>：调用者阻塞等返回，不是中断，也没有回调函数</li>
+<li><strong>只能在低于 EL3 的等级发起</strong>，EL3 里再发 SMC 没有意义</li>
+<li>参数只能通过寄存器传（x0~x7），大数据要放到共享内存里传地址</li>
+<li>handler 要短平快，不能睡眠、不能做耗时业务</li>
+</ul>
+<h2 id="4-2-SMCCC"><a href="#4-2-SMCCC" class="headerlink" title="4.2 SMCCC"></a>4.2 SMCCC</h2><p>SMCCC（SMC Calling Convention）是 ARM 定义的<strong>调用规范</strong>。SMC 指令只负责”陷入 EL3”，而<strong>参数怎么传、FID 怎么编、返回值怎么解释</strong>由 SMCCC 规定。有了这套约定，不同厂商的 OS 和固件才能互相调用。</p>
+<p><strong>FID（Function ID）怎么编</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bit[31]     Fast(1) / Yielding(0)</span><br><span class="line">bit[30]     SMC64(1) / SMC32(0)</span><br><span class="line">bit[29:24]  Owning Entity Number（OEN，服务归属）</span><br><span class="line">bit[23:0]   Function Number（功能号）</span><br></pre></td></tr></table></figure>
+
+<p><strong>OEN 常见取值</strong></p>
+<table>
 <thead>
 <tr>
-<th>类型</th>
 <th>OEN</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x0</td>
+<td>Arm Architecture Calls</td>
+</tr>
+<tr>
+<td>0x1</td>
+<td>CPU Service</td>
+</tr>
+<tr>
+<td>0x2</td>
+<td>SiP Service（芯片厂商私有，各家自己定义）</td>
+</tr>
+<tr>
+<td>0x3</td>
+<td>OEM Service</td>
+</tr>
+<tr>
+<td>0x4</td>
+<td>Standard Service（PSCI、SDEI、TRNG…）</td>
+</tr>
+<tr>
+<td>0x5</td>
+<td>Standard Hypervisor Service</td>
+</tr>
+</tbody></table>
+<p><strong>Fast Call 与 Yielding Call</strong></p>
+<ul>
+<li><strong>Fast Call</strong>（bit31=1）：原子、不可被中断，用于短平快操作（开核、读版本号）</li>
+<li><strong>Yielding Call</strong>（bit31=0）：可被中断，用于可能阻塞的安全服务（如 Trusted OS 的调用）</li>
+<li>差别体现在 ATF 是否允许在处理期间响应中断、是否需要保存完整状态</li>
+</ul>
+<p><strong>寄存器约定</strong></p>
+<ul>
+<li>入参：<code>x0</code> = FID，<code>x1</code>~`x7` = 参数；SMC32 只用低 32 位，高 32 位必须清零</li>
+<li>返回：<code>x0</code> = 返回值 / 错误码，<code>x1</code>~`x3` 可选</li>
+<li><code>x8</code>~`x17<code>、</code>x29<code>、</code>x30`、SP 等由 EL3（被调用方）负责保存，调用方不用管</li>
+</ul>
+<p><strong>Linux 侧怎么用</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/arm-smccc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">arm_smccc_res</span> <span class="title">res</span>;</span></span><br><span class="line"><span class="title function_">arm_smccc_smc</span>(fid, a1, a2, a3, a4, a5, a6, a7, &amp;res);</span><br><span class="line"><span class="comment">/* 结果在 res.a0 ~ res.a3 */</span></span><br></pre></td></tr></table></figure>
+<p>实际驱动里一般不直接用它，而是用内核封装好的 <code>psci_ops</code>；只有厂商私有 SiP 调用才会直接走 <code>arm_smccc_smc</code>。</p>
+<h1 id="五、PSCI"><a href="#五、PSCI" class="headerlink" title="五、PSCI"></a>五、PSCI</h1><p>SMCCC 只是”怎么发 SMC”，PSCI 才是 SMCCC 之上<strong>最重要的一套标准服务</strong>：它规定了 OS 向 EL3 请求电源操作时的 FID 语义、参数含义和状态机。</p>
+<h2 id="5-1-PSCI-是什么"><a href="#5-1-PSCI-是什么" class="headerlink" title="5.1 PSCI 是什么"></a>5.1 PSCI 是什么</h2><p>PSCI（Power State Coordination Interface，电源状态协调接口）是 ARM 定义的<strong>电源管理接口规范</strong>，运行于 SMCCC 的 Standard Service（OEN = 0x4）之下，由 BL31 实现。</p>
+<p>一句话定位：<strong>Linux 想动电源，但电源控制器是 Secure 资源，只能发 SMC 请 BL31 代劳；PSCI 就是这套请求的标准格式与语义。</strong></p>
+<p>层次关系（把它放进前面几章的上下文）：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Linux 内核（NS-EL1）</span><br><span class="line">   │  psci_ops → arm_smccc_smc(FID, ...)      ← SMCCC：参数/返回值怎么传</span><br><span class="line">   ↓ smc <span class="comment">#0 陷入 EL3</span></span><br><span class="line">BL31（ATF）</span><br><span class="line">   │  ← PSCI：FID 语义、电源状态机、拓扑仲裁</span><br><span class="line">   ↓ plat_psci_ops（直接写寄存器） 或 SCMI（转交 SCP）</span><br><span class="line">硬件：CPU/簇电源控制器、SCP</span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么叫”协调”</strong></p>
+<ul>
+<li>多核多簇系统里，某个核能不能断电，取决于同簇里其它核的状态——只有最后一个核下线时才能真正给簇断电；</li>
+<li>这类全局信息只有 EL3 掌握，OS 只负责”发请求”，仲裁和实际下电动作由 BL31 完成。</li>
+</ul>
+<h2 id="5-2-典型功能"><a href="#5-2-典型功能" class="headerlink" title="5.2 典型功能"></a>5.2 典型功能</h2><p>PSCI 的函数走 SMCCC 的 SMC32/SMC64 两种形式，SMC64 只是把 bit30 置 1（即 <code>0xC4xx_xxxx</code>）。常用 SMC32 FID：</p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>FID</th>
 <th>说明</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Standard Service</strong>（std_svc）</td>
-<td>0x4</td>
-<td>PSCI、SDEI、TRNG、SPM 等 Arm 标准定义的服务</td>
+<td>PSCI_VERSION</td>
+<td>0x84000000</td>
+<td>查询固件实现的 PSCI 版本（0.2 / 1.0 / 1.1）</td>
 </tr>
 <tr>
-<td><strong>SiP Service</strong></td>
-<td>0x2</td>
-<td>芯片厂商私有（MTK、QCOM、Rockchip 各种私有 SMC）</td>
+<td>CPU_SUSPEND</td>
+<td>0x84000001</td>
+<td>让本核进入指定低功耗状态，带 resume 入口</td>
 </tr>
 <tr>
-<td><strong>OEM Service</strong></td>
-<td>0x3</td>
-<td>设备厂商私有</td>
+<td>CPU_OFF</td>
+<td>0x84000002</td>
+<td>关闭本核（热插拔下线，不再返回）</td>
+</tr>
+<tr>
+<td>CPU_ON</td>
+<td>0x84000003</td>
+<td>启动指定核：target_cpu(MPIDR) + entry point</td>
+</tr>
+<tr>
+<td>AFFINITY_INFO</td>
+<td>0x84000004</td>
+<td>查询某个核/簇当前所处的电源状态</td>
+</tr>
+<tr>
+<td>SYSTEM_OFF</td>
+<td>0x84000008</td>
+<td>系统关机</td>
+</tr>
+<tr>
+<td>SYSTEM_RESET</td>
+<td>0x84000009</td>
+<td>系统复位</td>
+</tr>
+<tr>
+<td>PSCI_FEATURES</td>
+<td>0x8400000A</td>
+<td>查询某个函数是否支持、以及其特性（如电源状态格式）</td>
+</tr>
+<tr>
+<td>SYSTEM_SUSPEND</td>
+<td>0x8400000E</td>
+<td>系统级挂起（整机休眠），唤醒后从 resume 入口继续</td>
 </tr>
 </tbody></table>
-<p>注册方式：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">DECLARE_RT_SVC</span>(</span><br><span class="line">    std_svc,</span><br><span class="line">    OEN_STD_START, OEN_STD_END,</span><br><span class="line">    SMC_TYPE_FAST,</span><br><span class="line">    std_svc_setup,      <span class="comment">/* 初始化 */</span></span><br><span class="line">    std_svc_smc_handler <span class="comment">/* 分发处理 */</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h2 id="5-4-两条典型路径"><a href="#5-4-两条典型路径" class="headerlink" title="5.4 两条典型路径"></a>5.4 两条典型路径</h2><p><strong>开核（CPU_ON）</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Linux 调 psci_ops.cpu_on(cpu, secondary_entry)</span><br><span class="line">  → SMC(CPU_ON, mpidr, entry)</span><br><span class="line">  → BL31 校验目标核属于自己、走 pwr_domain_on 释放复位/上电</span><br><span class="line">  → 给新核搭好上下文（入口、SCTLR/SPSR、NS 标记），eret 到 NS-EL1</span><br><span class="line">  → 新核从 secondary_entry 开始跑，随后 AFFINITY_INFO 变为 ON</span><br></pre></td></tr></table></figure>
 
-<p>新增一个自己的 SMC 服务，就是照抄 <code>services/std_svc/</code> 的套路加一个 <code>DECLARE_RT_SVC</code>。</p>
-<h2 id="4-2-SMC-处理路径"><a href="#4-2-SMC-处理路径" class="headerlink" title="4.2 SMC 处理路径"></a>4.2 SMC 处理路径</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Normal World 执行 smc <span class="comment">#0</span></span><br><span class="line">  → VBAR_EL3 的 SMC 向量异常入口（ATF 汇编）</span><br><span class="line">  → 保存通用寄存器到 CPU 上下文</span><br><span class="line">  → 按 SMC FID 的 OEN 找到注册的 rt_svc</span><br><span class="line">  → 调用 handler（C 代码）</span><br><span class="line">  → 设置返回寄存器 x0~x3</span><br><span class="line">  → 恢复上下文，eret 返回</span><br></pre></td></tr></table></figure>
+<p><strong>挂起/休眠（CPU_SUSPEND / SYSTEM_SUSPEND）</strong></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Linux 调 psci_ops.cpu_suspend(state, resume_entry)</span><br><span class="line">  → SMC(CPU_SUSPEND, power_state, entry)</span><br><span class="line">  → BL31 判断这是 standby 还是真 powerdown</span><br><span class="line">       standby  → wfi 一下就回来</span><br><span class="line">       powerdown→ 保存上下文、plat 层关时钟/下电（可能经 SCMI 交给 SCP）</span><br><span class="line">  → 唤醒源触发 → 从 reset 重新进入 BL31 → suspend_finish 恢复时钟/内存</span><br><span class="line">  → 跳 resume_entry 回到 Linux</span><br></pre></td></tr></table></figure>
 
-<p>要点：</p>
-<ul>
-<li>handler 里不能睡眠、不能做复杂业务，<strong>要快</strong></li>
-<li>需要跨世界传数据时走共享内存（<code>smc</code> 只传 64bit 参数 x0~x7）</li>
-<li>返回值约定：成功返回正数语义，失败返回负的错误码（PSCI 用 <code>PSCI_E_INVALID_PARAMS</code> 等）</li>
-</ul>
-<h1 id="五、SMCCC（SMC-调用约定）"><a href="#五、SMCCC（SMC-调用约定）" class="headerlink" title="五、SMCCC（SMC 调用约定）"></a>五、SMCCC（SMC 调用约定）</h1><h2 id="5-1-Function-ID-格式"><a href="#5-1-Function-ID-格式" class="headerlink" title="5.1 Function ID 格式"></a>5.1 Function ID 格式</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">bit[31]     Fast(1) / Yielding(0)</span><br><span class="line">bit[30]     SMC64(1) / SMC32(0)</span><br><span class="line">bit[29:24]  Owning Entity Number, OEN</span><br><span class="line">bit[23:0]   Function Number</span><br></pre></td></tr></table></figure>
-
-<p>举例：<code>PSCI_VERSION = 0x84000000</code></p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">0x84000000</span><br><span class="line"> = 1&lt;&lt;<span class="string">31         → Fast Call，不可被中断、返回快</span></span><br><span class="line"><span class="string"> | (0&lt;&lt;30)       → SMC32（用 32 位参数语义）</span></span><br><span class="line"><span class="string"> | (0x4 &lt;&lt; 24)   → OEN=4，Standard Service</span></span><br><span class="line"><span class="string"> | 0x000000      → function 0 → PSCI_VERSION</span></span><br></pre></td></tr></table></figure>
-
-<p>Fast vs Yielding：</p>
-<ul>
-<li><strong>Fast Call</strong>：原子、不可中断，用于短平快操作（如 <code>CPU_ON</code>、<code>PSCI_VERSION</code>）</li>
-<li><strong>Yielding Call</strong>：可被中断，用于耗时/可阻塞的服务（如 Trusted OS 的调用）</li>
-</ul>
-<h2 id="5-2-寄存器约定"><a href="#5-2-寄存器约定" class="headerlink" title="5.2 寄存器约定"></a>5.2 寄存器约定</h2><ul>
-<li>入参：<code>x0</code> = FID，<code>x1</code>~`x7` = 参数（SMC32 只用低 32 位，高 32 位必须清零）</li>
-<li>返回：<code>x0</code> = 状态/返回值，<code>x1</code>~`x3` 可选</li>
-<li><strong>x8~x17、x29、x30、SP 等由被调用方（EL3）负责保存</strong>，Normal World 不用管</li>
-<li>Linux 侧封装在 <code>include/linux/arm-smccc.h</code>：<code>arm_smccc_smc(fid, a1..a7, &amp;res)</code></li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">arm_smccc_res</span> <span class="title">res</span>;</span></span><br><span class="line"><span class="title function_">arm_smccc_smc</span>(<span class="title function_">PSCI_FN_NATIVE</span>(<span class="number">1</span>_0, SYSTEM_SUSPEND), entrypoint, ctx_id, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, &amp;res);</span><br></pre></td></tr></table></figure>
-<p>内核里更常见的是直接走 <code>psci_ops</code>（<code>drivers/firmware/psci/psci.c</code>）。</p>
-<h1 id="六、PSCI-在-ATF-中的实现"><a href="#六、PSCI-在-ATF-中的实现" class="headerlink" title="六、PSCI 在 ATF 中的实现"></a>六、PSCI 在 ATF 中的实现</h1><h2 id="6-1-分层"><a href="#6-1-分层" class="headerlink" title="6.1 分层"></a>6.1 分层</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Linux 驱动   drivers/firmware/psci/     → 组 SMC 参数</span><br><span class="line">       ↕ SMC</span><br><span class="line">ATF 公共层   lib/psci/                  → 状态机、拓扑、锁、缓存一致性处理</span><br><span class="line">       ↕ 回调</span><br><span class="line">ATF 平台层   plat/xxx/plat_psci_ops.c   → 真正写寄存器 / 发 SCMI / 通知 SCP</span><br><span class="line">       ↕</span><br><span class="line">硬件         CPU/Cluster 电源控制、SCP</span><br></pre></td></tr></table></figure>
-
-<h2 id="6-2-平台必须实现的回调（plat-psci-ops）"><a href="#6-2-平台必须实现的回调（plat-psci-ops）" class="headerlink" title="6.2 平台必须实现的回调（plat_psci_ops）"></a>6.2 平台必须实现的回调（<code>plat_psci_ops</code>）</h2><table>
+<p>这也是调试”唤不醒”的主战场：<code>plat</code> 的 <code>suspend_finish</code> 没把时钟/内存控制器恢复回原状，Linux 一跑就崩。</p>
+<h2 id="5-5-PSCI-与-SCMI-的分工"><a href="#5-5-PSCI-与-SCMI-的分工" class="headerlink" title="5.5 PSCI 与 SCMI 的分工"></a>5.5 PSCI 与 SCMI 的分工</h2><p>这两者最容易混，一句话区分：<strong>PSCI 管 CPU/系统级开关，SCMI 管平台资源</strong>。</p>
+<table>
 <thead>
 <tr>
-<th>回调</th>
-<th>作用</th>
+<th></th>
+<th>PSCI</th>
+<th>SCMI</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>pwr_domain_on(target_cpu)</code></td>
-<td>给指定核上电、释放复位、设置入口</td>
+<td>接口两端</td>
+<td>OS ↔ BL31（SMC）</td>
+<td>OS/BL31 ↔ SCP（共享内存 + 邮箱）</td>
 </tr>
 <tr>
-<td><code>pwr_domain_off(state)</code></td>
-<td>当前核下电</td>
+<td>覆盖范围</td>
+<td>CPU 热插拔、CPU/系统挂起、关机/复位、休眠唤醒</td>
+<td>时钟、性能（DVFS）、传感器、电源域、复位域</td>
 </tr>
 <tr>
-<td><code>pwr_domain_suspend(state)</code></td>
-<td>让当前域进入指定低功耗状态</td>
-</tr>
-<tr>
-<td><code>pwr_domain_on_finish(state)</code></td>
-<td>上电返回后的核级初始化</td>
-</tr>
-<tr>
-<td><code>pwr_domain_suspend_finish(state)</code></td>
-<td>resume 返回后的核级恢复</td>
-</tr>
-<tr>
-<td><code>validate_power_state(state)</code></td>
-<td>校验 OS 传来的 power_state 是否合法</td>
-</tr>
-<tr>
-<td><code>get_sys_suspend_power_state()</code></td>
-<td>返回 SYSTEM_SUSPEND 用的 power_state</td>
-</tr>
-<tr>
-<td><code>system_off()</code> / <code>system_reset()</code></td>
-<td>整机下电 / 复位</td>
-</tr>
-<tr>
-<td><code>validate_ns_entrypoint()</code></td>
-<td>校验 warm boot 入口地址合法性（防跳到非法内存）</td>
+<td>不覆盖</td>
+<td>DVFS、设备电源管理</td>
+<td>CPU 上下电的语义与状态机</td>
 </tr>
 </tbody></table>
-<h2 id="6-3-power-domain-拓扑"><a href="#6-3-power-domain-拓扑" class="headerlink" title="6.3 power domain 拓扑"></a>6.3 power domain 拓扑</h2><ul>
-<li>用 MPIDR 的 <code>affinity0/1/2/3</code> 描述层级：<code>PLAT_MAX_PWR_LVL</code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Level 0 : 单个 CPU</span><br><span class="line">Level 1 : Cluster</span><br><span class="line">Level 2 : System（有的平台还有 Level 3）</span><br></pre></td></tr></table></figure></li>
-<li>ATF 的 psci 层负责「<strong>最后一个核</strong>」判断：只有某 level 上的所有核都下电，才调用该 level 的 <code>pwr_domain_off</code>/<code>suspend</code></li>
-<li>这正是 genpd「域内最后一个设备 suspend 才断电」思想在 CPU 侧的对应</li>
+<p>实际系统里两者常串联：Linux 发 PSCI <code>CPU_SUSPEND</code> → BL31 仲裁后，通过 SCMI 让 SCP 真正去断 cluster 的电。</p>
+<h2 id="5-6-Linux-侧与-TF-A-侧的落点"><a href="#5-6-Linux-侧与-TF-A-侧的落点" class="headerlink" title="5.6 Linux 侧与 TF-A 侧的落点"></a>5.6 Linux 侧与 TF-A 侧的落点</h2><ul>
+<li><strong>Linux</strong>：开机解析 DTB 的 <code>/psci</code> 节点（<code>method = "smc"</code> 或 <code>"hvc"</code>、<code>compatible = "arm,psci-1.0"</code>），探测成功后填充 <code>psci_ops</code>；驱动/内核只面对 <code>psci_ops</code>，不直接拼 FID。</li>
+<li><strong>TF-A</strong>：版本协商、状态机、拓扑等公共实现在 <code>lib/psci/</code>（<code>psci_main.c</code>、<code>psci_on.c</code>、<code>psci_suspend.c</code>）；真正写寄存器、上电下电的平台代码在 <code>plat/&lt;vendor&gt;/plat_psci_ops.c</code>。</li>
 </ul>
-<h1 id="七、ATF-与-Linux-U-Boot-的接口"><a href="#七、ATF-与-Linux-U-Boot-的接口" class="headerlink" title="七、ATF 与 Linux / U-Boot 的接口"></a>七、ATF 与 Linux / U-Boot 的接口</h1><h2 id="7-1-设备树中的-psci-节点"><a href="#7-1-设备树中的-psci-节点" class="headerlink" title="7.1 设备树中的 psci 节点"></a>7.1 设备树中的 psci 节点</h2><figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="title class_">psci</span> <span class="punctuation">{</span></span><br><span class="line">    <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">"arm,psci-1.0"</span><span class="punctuation">;</span></span><br><span class="line">    <span class="attr">method</span> <span class="operator">=</span> <span class="string">"smc"</span><span class="punctuation">;</span>          <span class="comment">/* 或 "hvc"，与虚拟化场景有关 */</span></span><br><span class="line"><span class="punctuation">};</span></span><br></pre></td></tr></table></figure>
-
+<h1 id="六、SCP-与-SCPI-SCMI"><a href="#六、SCP-与-SCPI-SCMI" class="headerlink" title="六、SCP 与 SCPI / SCMI"></a>六、SCP 与 SCPI / SCMI</h1><h2 id="6-1-SCP"><a href="#6-1-SCP" class="headerlink" title="6.1 SCP"></a>6.1 SCP</h2><p>SCP（System Control Processor，系统控制处理器）是 SoC 内部一个独立于应用处理器（AP，即跑 Linux 的那颗大核）的<strong>专用微控制器</strong>，通常是一个 Cortex-M 系列的小核，运行独立的 SCP 固件。它的核心职责是把电源、时钟、复位等系统管理任务从 AP 上“卸载”下来，由自己专门负责。</p>
+<p>在支持SCP的平台上，它的主要功能：<br><strong>开机时</strong>，SCP 先于 AP 运行，完成初始硬件配置并给 AP 主核上电，AP 侧随后才能开始跑 BL1/BL2 等固件。<br><strong>关机时</strong>，它同样依据请求执行最终的断电或复位动作。<br><strong>休眠时</strong>，Linux 通过 SMC 请求 BL31，BL31 再通过 SCPI/SCMI 协议把电源操作转给 SCP 去执行 CPU 集群或系统级的断电操作。<br><strong>唤醒时</strong>，它负责响应 GIC 唤醒请求、本地定时器事件或常开域唤醒源，并在条件满足后重新给 AP 上电。</p>
+<h2 id="6-2-SCPI"><a href="#6-2-SCPI" class="headerlink" title="6.2 SCPI"></a>6.2 SCPI</h2><p>SCPI（System Control and Power Interface，系统控制与电源接口）是 ARM 定义的一套<strong>消息协议</strong>，专门用于应用处理器（AP）与系统控制处理器（SCP）之间的通信。它的核心作用是让 AP 侧的软件（无论是 BL31 还是 Linux 内核）能够向 SCP 请求电源管理、时钟配置、传感器读取等系统控制服务。</p>
+<p><strong>通信机制</strong><br>异步且双向的、基于共享内存。AP 和 SCP 之间通过<strong>硬件邮箱</strong>（MHU） 传递“有新消息”的通知，而实际的消息内容（命令头 + 可选的数据负载）则被写入双方约定的<strong>共享内存区域</strong>。</p>
+<p><strong>可以做什么？</strong><br>通过 SCPI，AP 可以请求 SCP 完成以下几类操作：</p>
 <ul>
-<li>内核 <code>psci_dt_init()</code> 解析它 → 决定用 <code>arm_smccc_smc</code> 还是 <code>arm_smccc_hvc</code></li>
-<li>缺这个节点 → <code>psci: probing for conduit method from DT failed</code>，内核拿不到 <code>psci_ops</code>，开核和休眠全废</li>
+<li><p><strong>电源与功耗管理</strong>：设置 CPU 核心/集群的电源状态（如开关核）、系统级电源状态（关机/重启）、设置 CPU 唤醒定时器，以及控制 DVFS（动态电压频率调整）的工作点。</p>
+</li>
+<li><p><strong>时钟管理</strong>：查询时钟能力，获取或设置特定时钟的频率。</p>
+</li>
+<li><p><strong>传感器</strong>：读取温度等传感器的数据</p>
+</li>
 </ul>
-<h2 id="7-2-内核侧注册"><a href="#7-2-内核侧注册" class="headerlink" title="7.2 内核侧注册"></a>7.2 内核侧注册</h2><p><code>drivers/firmware/psci/psci.c</code>：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">psci_dt_init / psci_acpi_init</span><br><span class="line">  → psci_0_2_init：SMC PSCI_VERSION 探测版本</span><br><span class="line">  → 设置 psci_ops：cpu_on / cpu_off / cpu_suspend / system_suspend ...</span><br><span class="line">  → 注册 cpu_ops（psci_cpu_ops）供 SMP bringup 与 hotplug 使用</span><br><span class="line">  → set_kernel_suspend / 唤醒入口（cpu_resume）通过 SMC 传给 ATF</span><br></pre></td></tr></table></figure>
-
-<p>唤醒时 ATF 用 <code>CPU_ON(mpidr, entry)</code> 里那个 entry 地址把核拉起来，Linux 侧对应的就是 <code>secondary_entry</code> / <code>cpu_resume</code>。</p>
-<h2 id="7-3-U-Boot-侧"><a href="#7-3-U-Boot-侧" class="headerlink" title="7.3 U-Boot 侧"></a>7.3 U-Boot 侧</h2><ul>
-<li>U-Boot 作为 BL33 被 ATF 拉起，靠 <strong>设备树</strong> 与 ATF 约定（U-Boot 的 <code>armv8</code> 启动代码处理从 EL3/EL2 降到 EL2/EL1）</li>
-<li>U-Boot 里也有 <code>psci</code> 命令/驱动，用于自己开核</li>
-<li>关键：<strong>BL31 和 BL33 的地址、入口、设备树地址必须匹配</strong>，否则卡在跳转处无输出</li>
-</ul>
-<h1 id="八、安全启动（TBBR-CoT）"><a href="#八、安全启动（TBBR-CoT）" class="headerlink" title="八、安全启动（TBBR / CoT）"></a>八、安全启动（TBBR / CoT）</h1><h2 id="8-1-信任链（Chain-of-Trust）"><a href="#8-1-信任链（Chain-of-Trust）" class="headerlink" title="8.1 信任链（Chain of Trust）"></a>8.1 信任链（Chain of Trust）</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ROTPK（烧在 OTP/eFuse 里的根公钥 <span class="built_in">hash</span>）</span><br><span class="line">  │ 验签</span><br><span class="line">  ▼</span><br><span class="line">BL1（ROM，不可改） ──验签──► BL2 ──验签──► BL31 / BL32 / BL33</span><br><span class="line">                                              │</span><br><span class="line">                                              ▼</span><br><span class="line">                                   U-Boot ──验签──► Kernel / DTB（FIT/AVB）</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>ROTPK</strong>：Root of Trust Public Key，芯片出厂烧死</li>
-<li>每一级加载下一级前都做签名校验，失败就停机/进恢复模式</li>
-<li>反回滚：<code>TRUSTED_BOARD_BOOT</code> + anti-rollback counter，禁止刷回旧版本</li>
-</ul>
-<h2 id="8-2-关键编译开关"><a href="#8-2-关键编译开关" class="headerlink" title="8.2 关键编译开关"></a>8.2 关键编译开关</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make PLAT=xxx TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 \</span><br><span class="line">     ROT_KEY=rotpk.pem ... all fip</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>TRUSTED_BOARD_BOOT=1</code>：BL1/BL2 打开验签</li>
-<li><code>GENERATE_COT=1</code>：用 <code>cert_create</code> 生成证书链，fiptool 打包进 FIP</li>
-</ul>
-<h1 id="九、代码结构速查"><a href="#九、代码结构速查" class="headerlink" title="九、代码结构速查"></a>九、代码结构速查</h1><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">TF-A/</span><br><span class="line">├── bl1/ bl2/ bl31/ bl32/        各启动阶段代码</span><br><span class="line">├── lib/</span><br><span class="line">│   ├── psci/                    PSCI 公共实现（状态机、拓扑）</span><br><span class="line">│   ├── el3_runtime/             上下文管理、SMC 分发</span><br><span class="line">│   ├── xlat_tables/             页表</span><br><span class="line">│   ├── cpus/                    CPU errata、AArch64 CPU 特定代码</span><br><span class="line">│   ├── smccc/                   SMCCC 相关</span><br><span class="line">│   └── libc/ spinlock/ locks</span><br><span class="line">├── services/</span><br><span class="line">│   ├── std_svc/                 标准服务：psci / sdei / trng / spm</span><br><span class="line">│   └── spd/                     Secure Payload Dispatcher：opteed / tspd</span><br><span class="line">├── plat/                        各厂商平台实现（plat_psci_ops 在这层）</span><br><span class="line">├── drivers/                     gic、串口、存储控制器、scmi 等</span><br><span class="line">├── include/                     架构头文件（lib/ 下同步镜像）</span><br><span class="line">├── fdts/                        设备树源文件</span><br><span class="line">├── tools/fiptool cert_create    打包与证书工具</span><br><span class="line">└── make_helpers/                构建规则</span><br></pre></td></tr></table></figure>
+<h2 id="6-3-SCMI"><a href="#6-3-SCMI" class="headerlink" title="6.3 SCMI"></a>6.3 SCMI</h2><p>由于 SCPI 灵活性不足、难以扩展等问题，ARM 推出 SCMI（System Control and Management Interface，系统控制与管理接口）来替代SCPI，它也同样应用于处理器（AP）与系统控制处理器（SCP）之间的通信。</p>
+<p><strong>通信机制</strong><br>与 SCPI 类似，SCMI 也依赖共享内存和硬件邮箱（MHU）。AP 将消息写入共享内存，然后通过邮箱“敲门”通知 SCP；SCMI 规定邮箱是调用固件的唯一允许方式。</p>
+<p><strong>主要管理能力</strong><br>SCMI 定义了一系列标准协议，覆盖以下方面：</p>
+<blockquote>
+<p><strong>电源域管理</strong>：将设备或域置入不同的低功耗状态。<br><strong>性能管理</strong>：控制 CPU、GPU 等计算引擎的性能等级（DVFS）。<br><strong>时钟管理</strong>：设置和查询平台时钟频率。<br><strong>传感器管理</strong>：读取温度等传感器数据，或接收阈值通知。<br><strong>复位管理</strong>：复位外设或复位域。</p>
+</blockquote>
+<p><strong>与SCPI的区别</strong><br>SCPI 的协议能力相对固定，Linux 内核中的 SCPI 驱动通过预定义的命令枚举。设备树绑定中，SCPI 甚至需要额外指定 num-domains 属性，因为协议本身缺乏运行时查询电源域数量的机制。</p>
+<p>SCMI 引入了协议分层和发现机制。它定义了多个标准协议，每个协议有独立的 ID，设备树中，每个支持的协议作为 SCMI 节点的子节点存在，便于内核按需探测和初始化</p>
+<p><strong>SCMI 分工</strong>：管平台资源，是 OS 与 SCP 的双向协议，负责时钟管理、性能管理（DVFS）、传感器读取、电源域管理、复位管理。</p>
+<h1 id="七、代码结构速查"><a href="#七、代码结构速查" class="headerlink" title="七、代码结构速查"></a>七、代码结构速查</h1><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">TF-A/</span><br><span class="line">├── bl1/ bl2/ bl31/ bl32/        各启动阶段代码</span><br><span class="line">├── lib/</span><br><span class="line">│   ├── psci/                    PSCI 公共实现（状态机、拓扑）</span><br><span class="line">│   ├── el3_runtime/             上下文管理、SMC 分发</span><br><span class="line">│   ├── xlat_tables/             页表</span><br><span class="line">│   ├── cpus/                    CPU errata、AArch64 CPU 特定代码</span><br><span class="line">│   ├── smccc/                   SMCCC 相关</span><br><span class="line">│   └── libc/ spinlock/ locks</span><br><span class="line">├── services/</span><br><span class="line">│   ├── std_svc/                 标准服务：psci / sdei / trng / spm</span><br><span class="line">│   └── spd/                     Secure Payload Dispatcher：opteed / tspd</span><br><span class="line">├── plat/                        各厂商平台实现（plat_psci_ops 在这层）</span><br><span class="line">├── drivers/                     gic、串口、存储控制器、scmi 等</span><br><span class="line">├── include/                     架构头文件（lib/ 下同步镜像）</span><br><span class="line">├── fdts/                        设备树源文件</span><br><span class="line">├── tools/fiptool cert_create    打包与证书工具</span><br><span class="line">└── make_helpers/                构建规则</span><br></pre></td></tr></table></figure>
 
 <p><strong>想改电源行为</strong> → <code>plat/&lt;vendor&gt;/...</code> 的 <code>plat_psci_ops.c</code><br><strong>想加私有 SMC</strong> → <code>services/std_svc/</code> 或 plat 下加 <code>DECLARE_RT_SVC</code><br><strong>想看为什么唤醒失败</strong> → <code>lib/psci/psci_main.c</code> + <code>plat</code> 的 suspend_finish</p>
-<h1 id="十、编译与调试"><a href="#十、编译与调试" class="headerlink" title="十、编译与调试"></a>十、编译与调试</h1><h2 id="10-1-编译"><a href="#10-1-编译" class="headerlink" title="10.1 编译"></a>10.1 编译</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> CROSS_COMPILE=aarch64-linux-gnu-</span><br><span class="line">make PLAT=qemu DEBUG=1 LOG_LEVEL=40 all fip</span><br><span class="line"><span class="comment"># 产物</span></span><br><span class="line">build/qemu/debug/bl1.bin bl2.bin bl31.bin</span><br><span class="line">build/qemu/debug/fip.bin</span><br></pre></td></tr></table></figure>
+<h1 id="八、编译与调试"><a href="#八、编译与调试" class="headerlink" title="八、编译与调试"></a>八、编译与调试</h1><h2 id="8-1-编译"><a href="#8-1-编译" class="headerlink" title="8.1 编译"></a>8.1 编译</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> CROSS_COMPILE=aarch64-linux-gnu-</span><br><span class="line">make PLAT=qemu DEBUG=1 LOG_LEVEL=40 all fip</span><br><span class="line"><span class="comment"># 产物</span></span><br><span class="line">build/qemu/debug/bl1.bin bl2.bin bl31.bin</span><br><span class="line">build/qemu/debug/fip.bin</span><br></pre></td></tr></table></figure>
 
 <ul>
 <li><code>LOG_LEVEL</code>：10 ERROR / 20 NOTICE / 30 WARNING / 40 INFO / 50 VERBOSE</li>
 <li><code>DEBUG=1</code> 会带上断言、更多日志、crash 输出</li>
 <li><code>make help</code> / <code>make PLAT=xxx help</code> 可看平台支持的所有选项</li>
 </ul>
-<h2 id="10-2-调试手段"><a href="#10-2-调试手段" class="headerlink" title="10.2 调试手段"></a>10.2 调试手段</h2><ul>
+<h2 id="8-2-调试手段"><a href="#8-2-调试手段" class="headerlink" title="8.2 调试手段"></a>8.2 调试手段</h2><ul>
 <li><strong>串口日志</strong>：最核心。卡在哪一级，看最后一行 log 就知道</li>
 <li><strong>crash console</strong>：ATF 崩溃时 <code>plat_crash_console_flush()</code> 强行刷串口</li>
 <li><strong>常见现象与定位</strong><table>
@@ -487,11 +553,10 @@ mjx-container[display="true"] + br {
 </tbody></table>
 </li>
 </ul>
-<h1 id="十一、面试常问"><a href="#十一、面试常问" class="headerlink" title="十一、面试常问"></a>十一、面试常问</h1><ul>
-<li><strong>ATF 有哪几个阶段，各自做什么？</strong> BL1 加载 BL2；BL2 加载 BL31/32/33；BL31 常驻提供运行时服务；BL32 是 OP-TEE（可选）；BL33 是 U-Boot</li>
+<h1 id="九、面试常问"><a href="#九、面试常问" class="headerlink" title="九、面试常问"></a>九、面试常问</h1><ul>
 <li><strong>为什么 Linux 开核要发 SMC？</strong> 因为电源控制寄存器是 Secure 资源，NS-EL1 无权访问，必须 EL3 代理，PSCI 就是这套标准接口</li>
 <li><strong>SMC 的 FID 怎么编码？</strong> bit31 fast/yielding、bit30 64/32、bit29:24 OEN、bit23:0 function number</li>
-<li><strong>fast call 和 yielding call 区别？</strong> fast 原子不可中断、用于短操作；yielding 可被中断、用于可能阻塞的安全服务</li>
+<li><strong>fast call 和 yielding call 区别？</strong> fast  原子不可中断、用于短操作；yielding 可被中断、用于可能阻塞的安全服务</li>
 <li><strong>ATF 和 OP-TEE 什么关系？</strong> ATF 在 EL3 负责世界切换与监控，OP-TEE 在 S-EL1 提供可信服务；ATF 通过 SPD 加载并调度 OP-TEE</li>
 <li><strong>CPU_ON 之后核从哪里开始执行？</strong> 从 OS 传入的 entry point（<code>secondary_entry</code>），ATF 会给它设置好上下文并 <code>eret</code> 到 NS-EL1/EL2</li>
 </ul>
@@ -502,7 +567,7 @@ mjx-container[display="true"] + br {
         <aside class="toc-sidebar">
   <div class="toc-wrapper">
     <h3 class="toc-title">Contents</h3>
-    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81ATF-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-text">一、ATF 是什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7%E4%B8%8E%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C"><span class="toc-text">二、异常等级与安全世界</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-%E5%9B%9B%E4%B8%AA%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7"><span class="toc-text">2.1 四个异常等级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C%E4%B8%8E%E9%9D%9E%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C"><span class="toc-text">2.2 安全世界与非安全世界</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5-BL1-%E2%86%92-BL33"><span class="toc-text">三、启动阶段 BL1 → BL33</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E4%B8%A4%E7%A7%8D%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84%E5%90%AF%E5%8A%A8%E9%93%BE%EF%BC%88%E5%AF%B9%E6%AF%94%E5%9B%BE%EF%BC%89"><span class="toc-text">3.1 两种视角下的启动链（对比图）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%90%84%E9%98%B6%E6%AE%B5%E8%81%8C%E8%B4%A3"><span class="toc-text">3.2 各阶段职责</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-FIP%EF%BC%88Firmware-Image-Package%EF%BC%89"><span class="toc-text">3.3 FIP（Firmware Image Package）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81BL31-%E8%BF%90%E8%A1%8C%E6%97%B6%E6%9C%8D%E5%8A%A1%E6%A1%86%E6%9E%B6"><span class="toc-text">四、BL31 运行时服务框架</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#4-1-%E4%B8%89%E7%B1%BB%E6%9C%8D%E5%8A%A1"><span class="toc-text">4.1 三类服务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-2-SMC-%E5%A4%84%E7%90%86%E8%B7%AF%E5%BE%84"><span class="toc-text">4.2 SMC 处理路径</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81SMCCC%EF%BC%88SMC-%E8%B0%83%E7%94%A8%E7%BA%A6%E5%AE%9A%EF%BC%89"><span class="toc-text">五、SMCCC（SMC 调用约定）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-Function-ID-%E6%A0%BC%E5%BC%8F"><span class="toc-text">5.1 Function ID 格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2-%E5%AF%84%E5%AD%98%E5%99%A8%E7%BA%A6%E5%AE%9A"><span class="toc-text">5.2 寄存器约定</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81PSCI-%E5%9C%A8-ATF-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-text">六、PSCI 在 ATF 中的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#6-1-%E5%88%86%E5%B1%82"><span class="toc-text">6.1 分层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-2-%E5%B9%B3%E5%8F%B0%E5%BF%85%E9%A1%BB%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%9B%9E%E8%B0%83%EF%BC%88plat-psci-ops%EF%BC%89"><span class="toc-text">6.2 平台必须实现的回调（plat_psci_ops）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-3-power-domain-%E6%8B%93%E6%89%91"><span class="toc-text">6.3 power domain 拓扑</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%83%E3%80%81ATF-%E4%B8%8E-Linux-U-Boot-%E7%9A%84%E6%8E%A5%E5%8F%A3"><span class="toc-text">七、ATF 与 Linux &#x2F; U-Boot 的接口</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#7-1-%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E7%9A%84-psci-%E8%8A%82%E7%82%B9"><span class="toc-text">7.1 设备树中的 psci 节点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-2-%E5%86%85%E6%A0%B8%E4%BE%A7%E6%B3%A8%E5%86%8C"><span class="toc-text">7.2 内核侧注册</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-3-U-Boot-%E4%BE%A7"><span class="toc-text">7.3 U-Boot 侧</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%AE%89%E5%85%A8%E5%90%AF%E5%8A%A8%EF%BC%88TBBR-CoT%EF%BC%89"><span class="toc-text">八、安全启动（TBBR &#x2F; CoT）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#8-1-%E4%BF%A1%E4%BB%BB%E9%93%BE%EF%BC%88Chain-of-Trust%EF%BC%89"><span class="toc-text">8.1 信任链（Chain of Trust）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-2-%E5%85%B3%E9%94%AE%E7%BC%96%E8%AF%91%E5%BC%80%E5%85%B3"><span class="toc-text">8.2 关键编译开关</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E9%80%9F%E6%9F%A5"><span class="toc-text">九、代码结构速查</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E7%BC%96%E8%AF%91%E4%B8%8E%E8%B0%83%E8%AF%95"><span class="toc-text">十、编译与调试</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#10-1-%E7%BC%96%E8%AF%91"><span class="toc-text">10.1 编译</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-2-%E8%B0%83%E8%AF%95%E6%89%8B%E6%AE%B5"><span class="toc-text">10.2 调试手段</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E9%9D%A2%E8%AF%95%E5%B8%B8%E9%97%AE"><span class="toc-text">十一、面试常问</span></a></li></ol>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81ATF-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-text">一、ATF 是什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7%E4%B8%8E%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C"><span class="toc-text">二、异常等级与安全世界</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-%E5%9B%9B%E4%B8%AA%E5%BC%82%E5%B8%B8%E7%AD%89%E7%BA%A7"><span class="toc-text">2.1 四个异常等级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C%E4%B8%8E%E9%9D%9E%E5%AE%89%E5%85%A8%E4%B8%96%E7%95%8C"><span class="toc-text">2.2 安全世界与非安全世界</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5-BL1-%E2%86%92-BL33"><span class="toc-text">三、启动阶段 BL1 → BL33</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E4%B8%A4%E7%A7%8D%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84%E5%90%AF%E5%8A%A8%E9%93%BE%EF%BC%88%E5%AF%B9%E6%AF%94%E5%9B%BE%EF%BC%89"><span class="toc-text">3.1 两种视角下的启动链（对比图）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%90%84%E9%98%B6%E6%AE%B5%E8%81%8C%E8%B4%A3"><span class="toc-text">3.2 各阶段职责</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-1-BL31%EF%BC%88EL3-Runtime-Firmware%EF%BC%89"><span class="toc-text">3.2.1 BL31（EL3 Runtime Firmware）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-%E5%90%8E%E7%BB%AD%E6%B5%81%E7%A8%8B%E5%85%A8%E5%B1%80%E9%A2%84%E8%A7%88"><span class="toc-text">3.3 后续流程全局预览</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81SMC-%E4%B8%8E-SMCCC"><span class="toc-text">四、SMC 与 SMCCC</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#4-1-SMC"><span class="toc-text">4.1 SMC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-2-SMCCC"><span class="toc-text">4.2 SMCCC</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81PSCI"><span class="toc-text">五、PSCI</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-PSCI-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-text">5.1 PSCI 是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2-%E5%85%B8%E5%9E%8B%E5%8A%9F%E8%83%BD"><span class="toc-text">5.2 典型功能</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-4-%E4%B8%A4%E6%9D%A1%E5%85%B8%E5%9E%8B%E8%B7%AF%E5%BE%84"><span class="toc-text">5.4 两条典型路径</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-5-PSCI-%E4%B8%8E-SCMI-%E7%9A%84%E5%88%86%E5%B7%A5"><span class="toc-text">5.5 PSCI 与 SCMI 的分工</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-6-Linux-%E4%BE%A7%E4%B8%8E-TF-A-%E4%BE%A7%E7%9A%84%E8%90%BD%E7%82%B9"><span class="toc-text">5.6 Linux 侧与 TF-A 侧的落点</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81SCP-%E4%B8%8E-SCPI-SCMI"><span class="toc-text">六、SCP 与 SCPI &#x2F; SCMI</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#6-1-SCP"><span class="toc-text">6.1 SCP</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-2-SCPI"><span class="toc-text">6.2 SCPI</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-3-SCMI"><span class="toc-text">6.3 SCMI</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E9%80%9F%E6%9F%A5"><span class="toc-text">七、代码结构速查</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E7%BC%96%E8%AF%91%E4%B8%8E%E8%B0%83%E8%AF%95"><span class="toc-text">八、编译与调试</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#8-1-%E7%BC%96%E8%AF%91"><span class="toc-text">8.1 编译</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-2-%E8%B0%83%E8%AF%95%E6%89%8B%E6%AE%B5"><span class="toc-text">8.2 调试手段</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E9%9D%A2%E8%AF%95%E5%B8%B8%E9%97%AE"><span class="toc-text">九、面试常问</span></a></li></ol>
   </div>
 </aside>
 
