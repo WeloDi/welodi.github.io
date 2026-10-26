@@ -1,0 +1,31 @@
+<button type="button" class="qa-fab" id="qa-toggle" aria-pressed="false" title="显示 / 隐藏答案">
+  <span class="qa-fab-text">显示答案</span>
+</button>
+
+<script>
+  (function () {
+    var btn = document.getElementById('qa-toggle');
+    if (!btn) return;
+    var text = btn.querySelector('.qa-fab-text');
+
+    function apply(on) {
+      document.documentElement.classList.toggle('qa-show', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (text) text.textContent = on ? '隐藏答案' : '显示答案';
+    }
+
+    var saved = null;
+    try {
+      saved = localStorage.getItem('qa-show');
+    } catch (e) {}
+    apply(saved === '1');
+
+    btn.addEventListener('click', function () {
+      var on = !document.documentElement.classList.contains('qa-show');
+      apply(on);
+      try {
+        localStorage.setItem('qa-show', on ? '1' : '0');
+      } catch (e) {}
+    });
+  })();
+</script>

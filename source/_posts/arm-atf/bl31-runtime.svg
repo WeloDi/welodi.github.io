@@ -1,0 +1,145 @@
+<svg width="1200" height="1300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1300" font-family="Consolas, 'Courier New', monospace" font-size="13">
+  <defs>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#8fcda1"/>
+    </marker>
+    <marker id="arrow-yellow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#d4d75a"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#7a5aa8"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#e09a5a"/>
+    </marker>
+  </defs>
+
+  <text x="600" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#2c3e50">
+    Suspend 调用链完整流程：从内核到 PSCI 与固件
+  </text>
+
+  <!-- ================= 区域 1：内核通用层 ================= -->
+  <rect x="30" y="45" width="1140" height="215" rx="6" fill="#f0f6fc" stroke="#a8c8e8"/>
+  <text x="50" y="70" font-size="14" font-weight="bold" fill="#2e6da4">内核通用层（kernel/power/suspend.c）</text>
+
+  <rect x="50" y="80" width="520" height="165" rx="4" fill="#ffffff" stroke="#4a8ec9" stroke-dasharray="4,2"/>
+  <text x="70" y="105" font-weight="bold" fill="#1e5a96">suspend_enter(state) {</text>
+  <text x="90" y="130" font-size="12" fill="#22588a">platform_suspend_prepare(state);</text>
+  <text x="370" y="130" font-size="12" fill="#808080">// 平台准备</text>
+  <text x="90" y="150" font-size="12" fill="#22588a">dpm_suspend_late() / dpm_suspend_noirq();</text>
+  <text x="370" y="150" font-size="12" fill="#808080">// 挂起设备</text>
+  <text x="90" y="170" font-size="12" fill="#22588a">pm_sleep_disable_secondary_cpus();</text>
+  <text x="370" y="170" font-size="12" fill="#808080">// 关非启动 CPU</text>
+  <text x="90" y="190" font-size="12" fill="#22588a">arch_suspend_disable_irqs();</text>
+  <text x="370" y="190" font-size="12" fill="#808080">// 关中断</text>
+  <text x="90" y="210" font-size="12" fill="#22588a">syscore_suspend();</text>
+  <text x="370" y="210" font-size="12" fill="#808080">// 挂起核心设备</text>
+  <text x="90" y="230" font-size="12" font-weight="bold" fill="#1e5a96">suspend_ops-&gt;enter(state);</text>
+  <text x="370" y="230" font-size="12" fill="#808080">// 平台休眠入口</text>
+  <text x="70" y="245" font-weight="bold" fill="#1e5a96">}</text>
+
+  <!-- 右侧：请求 SCP 服务的框 -->
+  <rect x="640" y="80" width="480" height="165" rx="4" fill="#e6f2ea" stroke="#5a8a78" stroke-width="1.5"/>
+  <text x="660" y="105" font-size="13" font-weight="bold" fill="#1a4a3a">内核侧 SCMI/SCPI 客户端服务</text>
+  <text x="660" y="130" font-size="12" font-weight="bold" fill="#2a5a4a">【运行期请求】</text>
+  <text x="660" y="150" font-size="12" fill="#2a5a4a">· 控制 CPU/GPU 的动态调频调压 (DVFS)</text>
+  <text x="660" y="170" font-size="12" fill="#2a5a4a">· 读取 SoC 温度/电压等传感器数据</text>
+  <text x="660" y="190" font-size="12" fill="#2a5a4a">· 控制特定外设的电源域开关</text>
+  <text x="660" y="215" font-size="12" font-weight="bold" fill="#2a5a4a">【休眠前请求】</text>
+  <text x="660" y="235" font-size="12" fill="#2a5a4a">· 配置 RTC 闹钟 / GPIO 唤醒源 / 查询唤醒事件</text>
+
+  <line x1="200" y1="260" x2="200" y2="285" stroke="#3d9460" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="215" y="275" font-size="12" fill="#2e6d3a">调用 .enter</text>
+
+  <!-- ================= 区域 2：PSCI 与 ARM64 架构 ================= -->
+  <rect x="30" y="285" width="1140" height="520" rx="6" fill="#f7fbf5" stroke="#a8c8a8"/>
+  <rect x="50" y="305" width="560" height="480" fill="#ffffff" stroke="#3d9460" stroke-width="1.5"/>
+  <text x="70" y="335" font-family="sans-serif" font-size="14" fill="#3d9460">psci客户端层（drivers/firmware/psci/psci.c）</text>
+
+  <text x="70" y="370" font-size="13">platform_suspend_ops psci_suspend_ops = {</text>
+  <text x="90" y="395" font-size="13">.valid</text>
+  <text x="200" y="395" font-size="13">= suspend_valid_only_mem,</text>
+  <text x="90" y="420" font-size="13">.enter</text>
+  <text x="200" y="420" font-size="13" fill="#d19a66" font-weight="bold">= psci_system_suspend_enter,</text>
+  <text x="70" y="445" font-size="13">};</text>
+
+  <rect x="70" y="470" width="520" height="285" fill="#ffffff" stroke="#d4d75a" stroke-width="1.5"/>
+  <text x="85" y="495" font-size="13">static int <tspan font-weight="bold">psci_system_suspend</tspan>(unsigned long unused) {</text>
+  <text x="105" y="520" font-size="12" fill="#6a9955">// 将内核符号 cpu_resume 的虚拟地址转换为物理地址</text>
+  <text x="105" y="540" font-size="13">phys_addr_t pa_cpu_resume = __pa_symbol(cpu_resume);</text>
+  <text x="105" y="565" font-size="12" fill="#6a9955">// PSCI_FN_NATIVE: 构造 PSCI SYSTEM_SUSPEND 功能的 SMC 功能号</text>
+  <text x="105" y="585" font-size="12" fill="#6a9955">// invoke_psci_fn(): 执行 SMC 指令，CPU 从 EL1 陷入 EL3</text>
+  <text x="105" y="610" font-size="13">err = <tspan fill="#569cd6" font-weight="bold">invoke_psci_fn</tspan>(PSCI_FN_NATIVE(1_0, SYSTEM_SUSPEND),</text>
+  <text x="285" y="630" font-size="13">pa_cpu_resume, 0, 0);</text>
+  <text x="153" y="655" font-size="13" fill="#808080">└─ <tspan fill="#5c3d8a" font-weight="bold">arm_smccc_smc()</tspan></text>
+  <text x="105" y="690" font-size="13">return psci_to_linux_errno(err);</text>
+  <text x="85" y="715" font-size="13">}</text>
+
+  <rect x="640" y="305" width="430" height="480" fill="#ffffff" stroke="#e09a5a" stroke-width="1.5"/>
+  <text x="660" y="335" font-family="sans-serif" font-size="14" fill="#e09a5a">ARM64架构层（arch/arm64/kernel/suspend.c）</text>
+  <text x="660" y="420" font-family="monospace" font-size="13" fill="#000000"><tspan fill="#569cd6">cpu_suspend</tspan>(0, <tspan font-weight="bold">psci_system_suspend</tspan>);</text>
+
+  <!-- ================= 区域 3：固件层 BL31 ================= -->
+  <rect x="30" y="825" width="1140" height="220" rx="6" fill="#f5f0fb" stroke="#b8a8d8"/>
+  <text x="50" y="855" font-size="14" font-weight="bold" fill="#5c3d8a">固件层：BL31（EL3，TF-A）</text>
+  <text x="60" y="885" font-weight="bold" fill="#4a2a7a">BL31 运行时服务框架（Runtime Services Framework）的通用处理流程：</text>
+  <text x="60" y="910" font-size="12" fill="#5c3d8a">1. 【异常捕获】硬件触发异常，CPU 根据 VBAR_EL3 向量表偏移，跳入 sync_exception_aarch64 入口。</text>
+  <text x="60" y="930" font-size="12" fill="#5c3d8a">2. 【保存现场】汇编代码将通用寄存器、系统寄存器压入 EL3 栈中，并调用 C 函数 handle_sync_exception。</text>
+  <text x="60" y="950" font-size="12" fill="#5c3d8a">3. 【解析参数】读取 X0 寄存器（SMC Function ID），提取其中的 OEN（实体编号）和 Type（快速/阻塞调用）。</text>
+  <text x="60" y="970" font-size="12" fill="#5c3d8a">4. 【查表分发】根据 OEN 查找 rt_svc_descs_indices 数组，匹配到对应服务（如 PSCI 或 SPD），跳转其处理函数。</text>
+  <text x="60" y="990" font-size="12" fill="#5c3d8a">5. 【执行服务】由具体服务解析命令并执行（如 PSCI 解析 SYSTEM_SUSPEND，调用平台 pwr_domain_suspend 准备下电）。</text>
+  <text x="60" y="1010" font-size="12" fill="#5c3d8a">6. 【恢复现场】服务返回后，将结果写入 X0，恢复之前保存的上下文，执行 ERET 指令降回 EL1 返回内核。</text>
+
+  <!-- ================= 区域 4：SCP 硬件模块 ================= -->
+  <rect x="30" y="1075" width="1140" height="225" rx="6" fill="#eef4f0" stroke="#a8c8b8"/>
+  <text x="50" y="1100" font-size="14" font-weight="bold" fill="#3d6b5a">SCP 硬件模块（System Control Processor）的三种工作状态</text>
+
+  <rect x="60" y="1120" width="340" height="165" rx="4" fill="#d8e8e0" stroke="#6a9a88"/>
+  <text x="80" y="1140" font-size="13" font-weight="bold" fill="#1a4a3a">【运行期】</text>
+  <text x="80" y="1165" font-size="12" fill="#2a5a4a">· 控制底层动态调频调压 (DVFS)</text>
+  <text x="80" y="1185" font-size="12" fill="#2a5a4a">· 读取 SoC 温度/电压等传感器</text>
+  <text x="80" y="1205" font-size="12" fill="#2a5a4a">· 控制特定外设电源域开关</text>
+  <text x="80" y="1230" font-size="12" fill="#2a5a4a">· 通过共享内存+邮箱返回结果</text>
+
+  <rect x="430" y="1120" width="340" height="165" rx="4" fill="#d8e8e0" stroke="#6a9a88"/>
+  <text x="450" y="1140" font-size="13" font-weight="bold" fill="#1a4a3a">【休眠时】</text>
+  <text x="450" y="1165" font-size="12" fill="#2a5a4a">1. 切断 AP 主核及外设电源</text>
+  <text x="450" y="1185" font-size="12" fill="#2a5a4a">2. 触发 DDR 进入自刷新</text>
+  <text x="450" y="1205" font-size="12" fill="#2a5a4a">3. 自身留在常开域待命</text>
+  <text x="450" y="1225" font-size="12" fill="#2a5a4a">4. 监控 RTC/GPIO 唤醒源</text>
+
+  <rect x="800" y="1120" width="340" height="165" rx="4" fill="#d8e8e0" stroke="#6a9a88"/>
+  <text x="820" y="1140" font-size="13" font-weight="bold" fill="#1a4a3a">【唤醒时】</text>
+  <text x="820" y="1165" font-size="12" fill="#2a5a4a">1. 检测到唤醒信号</text>
+  <text x="820" y="1185" font-size="12" fill="#2a5a4a">2. 执行上电时序（供电、开时钟）</text>
+  <text x="820" y="1205" font-size="12" fill="#2a5a4a">3. 释放 AP 复位</text>
+  <text x="820" y="1225" font-size="12" fill="#2a5a4a">4. 触发 BL31 热启动</text>
+
+  <!-- ================= 所有连线统一放在最上层 ================= -->
+  
+  <!-- 1. 中间浅绿色实心箭头 -->
+  <line x1="420" y1="416" x2="655" y2="416" stroke="#8fcda1" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- 2. 中间浅黄色实心箭头 -->
+  <path d="M 800 430 L 800 640 L 590 640" fill="none" stroke="#d4d75a" stroke-width="2" marker-end="url(#arrow-yellow)"/>
+
+  <!-- 3. 底端紫色虚线 -->
+  <line x1="320" y1="730" x2="320" y2="820" stroke="#7a5aa8" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-purple)"/>
+  <text x="335" y="775" font-size="12" fill="#5c3d8a">执行 SMC 指令 (arm_smccc_smc)</text>
+
+  <!-- 4. 运行期双向交互箭头（最右侧，下半截刚好抵住 SCP 顶边框） -->
+  <g>
+    <!-- 将终点从 1115 改为 1075，使其刚好抵住边框 -->
+    <line x1="1110" y1="245" x2="1110" y2="1075" stroke="#6ba888" stroke-width="2"/>
+    <polygon points="1100,260 1120,260 1110,245" fill="#6ba888"/>
+    <!-- 下箭头的尖端点指向 1075 -->
+    <polygon points="1100,1060 1120,1060 1110,1075" fill="#6ba888"/>
+  </g>
+  
+  <text x="1090" y="660" font-size="12" fill="#3d6b5a" transform="rotate(-90, 1090, 660)">运行期双向通信 (SCMI/SCPI)</text>
+
+  <!-- 5. 橙色虚线：BL31 与 SCP 的交互 -->
+  <line x1="800" y1="1045" x2="800" y2="1075" stroke="#e09a5a" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-orange)"/>
+  <text x="785" y="1065" text-anchor="end" font-size="12" fill="#e09a5a">SCMI/SCPI</text>
+
+</svg>

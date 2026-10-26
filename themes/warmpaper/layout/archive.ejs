@@ -1,11 +1,17 @@
 <div class="archive">
   <h1 class="archive-title">Archives</h1>
-  <% var lastYear = null; %>
+  <p class="archive-count">共 <%= page.posts.length %> 篇文章</p>
+  <% var lastYear = null, lastMonth = null; %>
   <% page.posts.each(function(post){ %>
     <% var year = date(post.date, 'YYYY'); %>
+    <% var month = date(post.date, 'YYYY-MM'); %>
     <% if (year !== lastYear) { %>
       <h2 class="archive-year"><%= year %></h2>
-      <% lastYear = year; %>
+      <% lastYear = year; lastMonth = null; %>
+    <% } %>
+    <% if (month !== lastMonth) { %>
+      <h3 class="archive-month"><%= date(post.date, 'MM') %> 月</h3>
+      <% lastMonth = month; %>
     <% } %>
     <div class="archive-post">
       <span class="archive-post-date"><%- date(post.date, 'MM-DD') %></span>

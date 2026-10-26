@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1160" viewBox="0 0 1200 1160" role="img" aria-label="MT7925 驱动框图：模块构成与系统关系" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Noto Sans CJK SC', sans-serif">
+
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/></marker>
+<marker id="arrb" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#2563eb"/></marker>
+<marker id="arro" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#f97316"/></marker>
+</defs>
+
+<!-- 顶部三色阶段标签（与流程图一致：①加载 / ②运行 / ③关闭） -->
+<rect x="24" y="24" width="384" height="30" rx="6" fill="#0ea5e9"/>
+<text x="216" y="44" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">① 加载启动（模块出现在这里）</text>
+<rect x="416" y="24" width="384" height="30" rx="6" fill="#22c55e"/>
+<text x="608" y="44" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">② 运行期（数据收发）</text>
+<rect x="808" y="24" width="368" height="30" rx="6" fill="#f97316"/>
+<text x="992" y="44" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">③ 关闭卸载</text>
+
+<text x="24" y="86" font-size="16" font-weight="700" fill="#0f172a">MT7925 驱动框图：模块构成 + 系统关系（软件栈 ↔ PCIe 总线 ↔ 片内子系统）</text>
+
+<!-- Host 域外框 -->
+<rect x="24" y="104" width="1152" height="616" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="40" y="126" font-size="12" font-weight="600" fill="#334155">Host OS（Linux 内核 + PCIe Root Complex）</text>
+
+<!-- 行 1：用户空间 → NL80211 → cfg80211 -->
+<rect x="40" y="140" width="170" height="80" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="125" y="166" font-size="13" font-weight="700" fill="#0f172a" text-anchor="middle">用户空间</text>
+<text x="125" y="186" font-size="11.5" fill="#475569" text-anchor="middle">iw / wpa_supplicant / iwd</text>
+<text x="125" y="204" font-size="11.5" fill="#475569" text-anchor="middle">hostapd / NetworkManager</text>
+
+<line x1="210" y1="180" x2="232" y2="180" stroke="#64748b" stroke-width="1.6" marker-end="url(#arr)"/>
+
+<rect x="232" y="140" width="180" height="80" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="322" y="166" font-size="13" font-weight="700" fill="#0f172a" text-anchor="middle">NL80211</text>
+<text x="322" y="186" font-size="11.5" fill="#475569" text-anchor="middle">netlink 协议族</text>
+<text x="322" y="204" font-size="11.5" fill="#475569" text-anchor="middle">cfg ↔ 用户态 通道</text>
+
+<line x1="412" y1="180" x2="434" y2="180" stroke="#64748b" stroke-width="1.6" marker-end="url(#arr)"/>
+
+<rect x="434" y="140" width="380" height="80" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="1.2"/>
+<text x="624" y="166" font-size="13" font-weight="700" fill="#1e1b4b" text-anchor="middle">cfg80211</text>
+<text x="624" y="186" font-size="11.5" fill="#3730a3" text-anchor="middle">regulatory · wiphy 注册 · 扫描 · 密钥</text>
+<text x="624" y="204" font-size="11.5" fill="#3730a3" text-anchor="middle">iftype · 信道 · MLME 接口 · WoWLAN</text>
+
+<!-- ①注册阶段 → cfg80211 的标注 -->
+<path d="M 730 220 Q 760 250 760 280" fill="none" stroke="#0ea5e9" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="775" y="284" font-size="11" fill="#0369a1">① wiphy_register</text>
+
+<line x1="900" y1="180" x2="922" y2="180" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrb)"/>
+<line x1="922" y1="180" x2="900" y2="190" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrb)"/>
+
+<rect x="924" y="140" width="236" height="80" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.2"/>
+<text x="1042" y="166" font-size="13" font-weight="700" fill="#78350f" text-anchor="middle">mac80211 ops</text>
+<text x="1042" y="186" font-size="11.5" fill="#92400e" text-anchor="middle">mt7925_ops · start · tx · add_if</text>
+<text x="1042" y="204" font-size="11.5" fill="#92400e" text-anchor="middle">sta_state · config · cfg_changed</text>
+
+<!-- 行 2：mac80211 -->
+<rect x="40" y="252" width="1120" height="92" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+<text x="56" y="278" font-size="14" font-weight="700" fill="#1e3a8a">mac80211</text>
+<text x="56" y="300" font-size="11.5" fill="#1e40af">认证 / 关联 / 4-way 握手状态机　·　帧排队 + 重传限速　·　BA / AMSDU / 加密 / 密钥管理</text>
+<text x="56" y="318" font-size="11.5" fill="#1e40af">TX 调度（ieee80211_tx_info）　·　RX 上报（rx_cb / ieee80211_rx_status）　·　MLO 多链路模型（vif / link_sta）</text>
+<text x="1148" y="278" font-size="11" fill="#1e3a8a" text-anchor="end">② 主要消费者：TX / RX / 状态</text>
+
+<!-- cfg80211 ↔ mac80211 双向箭头（左右短接头） -->
+<line x1="500" y1="228" x2="500" y2="248" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrb)"/>
+<line x1="520" y1="248" x2="520" y2="228" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrb)"/>
+
+<!-- 行 3：mt76 core / mt792x / mt7925 三层 -->
+<rect x="40" y="364" width="1120" height="64" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.4"/>
+<rect x="40" y="364" width="6" height="64" fill="#64748b"/>
+<text x="60" y="388" font-size="13" font-weight="700" fill="#0f172a">mt76 core + mt76_connac（通用层，与芯片无关）</text>
+<text x="60" y="408" font-size="11.5" fill="#475569">mt76_dev / mt76_phy / mt76_wcid　·　queue &amp; token 池　·　mt76_dma_*（ring 通用操作）　·　mt76_connac_mcu（UNI 命令公共实现）</text>
+
+<rect x="40" y="438" width="1120" height="64" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4"/>
+<rect x="40" y="438" width="6" height="64" fill="#f59e0b"/>
+<text x="60" y="462" font-size="13" font-weight="700" fill="#78350f">mt792x（7920 / 7921 / 7922 / 7925 共享层）</text>
+<text x="60" y="482" font-size="11.5" fill="#92400e">struct mt792x_dev / phy / vif / sta / link_sta　·　mt792x_dma.c / mac.c / core.c / usb.c　·　PM work · fw 加载 · ACPI SAR · debugfs</text>
+
+<rect x="40" y="512" width="1120" height="96" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.4"/>
+<rect x="40" y="512" width="6" height="96" fill="#0284c7"/>
+<text x="60" y="536" font-size="13" font-weight="700" fill="#0c4a6e">mt7925（芯片差异层，v6.12 共 15 个文件）</text>
+<text x="60" y="556" font-size="11.5" fill="#075985">main.c：ieee80211_ops &amp; STA / 链路回调　·　init.c：register_device · init_work · mac_init · debugfs · thermal</text>
+<text x="60" y="574" font-size="11.5" fill="#075985">mac.c：TXWI / RXD 解析 · TXS · WTBL · 速率表 · coredump　·　mcu.c：UNI 命令 TLV · 事件分发 · CLC</text>
+<text x="60" y="592" font-size="11.5" fill="#075985">pci.c / pci_mac.c / pci_mcu.c：总线专属（probe · DMA ring · TX prepare · MCU init）　　usb.c：USB 适配</text>
+
+<!-- ① ③ 阶段标注 -->
+<path d="M 1075 364 Q 1110 380 1115 410" fill="none" stroke="#0ea5e9" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="1124" y="396" font-size="11" fill="#0369a1" text-anchor="end">① alloc / probe</text>
+<path d="M 1075 558 Q 1110 558 1115 558" fill="none" stroke="#f97316" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="1124" y="552" font-size="11" fill="#9a3412" text-anchor="end">③ unregister</text>
+<text x="1124" y="572" font-size="11" fill="#9a3412" text-anchor="end">　 / free</text>
+
+<!-- 行 4：PCIe 总线契约层 -->
+<rect x="40" y="628" width="1120" height="76" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1.4"/>
+<rect x="40" y="628" width="6" height="76" fill="#0891b2"/>
+<text x="60" y="652" font-size="13" font-weight="700" fill="#0e7490">PCIe 总线（驱动 ↔ 芯片 的契约层）</text>
+
+<!-- 四个子模块 -->
+<rect x="280" y="660" width="200" height="34" rx="6" fill="#ffffff" stroke="#0891b2"/>
+<text x="380" y="682" font-size="11.5" font-weight="600" fill="#0e7490" text-anchor="middle">MMIO / BAR0 + L1/L2 重映射</text>
+
+<rect x="500" y="660" width="220" height="34" rx="6" fill="#ffffff" stroke="#0891b2"/>
+<text x="610" y="682" font-size="11.5" font-weight="600" fill="#0e7490" text-anchor="middle">DMA ring（TX0 / MCU15 / FWDL16 / RX2）</text>
+
+<rect x="740" y="660" width="200" height="34" rx="6" fill="#ffffff" stroke="#0891b2"/>
+<text x="840" y="682" font-size="11.5" font-weight="600" fill="#0e7490" text-anchor="middle">中断（MSI · tasklet · NAPI）</text>
+
+<rect x="960" y="660" width="180" height="34" rx="6" fill="#ffffff" stroke="#0891b2"/>
+<text x="1050" y="682" font-size="11.5" font-weight="600" fill="#0e7490" text-anchor="middle">ASPM · drv_own/fw_own</text>
+
+<!-- 物理边界 -->
+<line x1="40" y1="738" x2="1144" y2="738" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="8 4"/>
+<text x="592" y="758" font-size="11.5" font-weight="600" fill="#475569" text-anchor="middle">─── PCIe Link（物理 / 链路层，主控 ↔ 芯片的边界） ───</text>
+
+<!-- 芯片域外框 -->
+<rect x="24" y="772" width="1152" height="316" rx="10" fill="#fff7ed" stroke="#fb923c" stroke-width="1.4"/>
+<text x="40" y="794" font-size="12" font-weight="600" fill="#9a3412">MT7925 芯片内部子系统（PCIe EP + WFDMA + LMAC + WF_MCU 固件 + PHY/RF）</text>
+
+<!-- 芯片模块：横向流 -->
+<rect x="40" y="810" width="140" height="120" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.2"/>
+<text x="110" y="836" font-size="13" font-weight="700" fill="#7c2d12" text-anchor="middle">PCIe EP</text>
+<text x="110" y="858" font-size="11" fill="#9a3412" text-anchor="middle">RC 内对端</text>
+<text x="110" y="876" font-size="11" fill="#9a3412" text-anchor="middle">BAR0 译码</text>
+<text x="110" y="894" font-size="11" fill="#9a3412" text-anchor="middle">MSI doorbell</text>
+
+<line x1="180" y1="870" x2="208" y2="870" stroke="#f97316" stroke-width="2" marker-end="url(#arro)"/>
+
+<rect x="208" y="810" width="180" height="120" rx="8" fill="#ffedd5" stroke="#f97316" stroke-width="1.4"/>
+<text x="298" y="836" font-size="13" font-weight="700" fill="#7c2d12" text-anchor="middle">WFDMA</text>
+<text x="298" y="858" font-size="11" fill="#9a3412" text-anchor="middle">TX ring · RX ring</text>
+<text x="298" y="876" font-size="11" fill="#9a3412" text-anchor="middle">MCU ring · FWDL ring</text>
+<text x="298" y="894" font-size="11" fill="#9a3412" text-anchor="middle">PLE（发包）/ PSE（回收）</text>
+<text x="298" y="912" font-size="11" fill="#9a3412" text-anchor="middle">doorbell · prefetch</text>
+
+<line x1="388" y1="870" x2="416" y2="870" stroke="#f97316" stroke-width="2" marker-end="url(#arro)"/>
+
+<!-- LMAC 区 -->
+<rect x="416" y="810" width="320" height="120" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.4"/>
+<text x="576" y="836" font-size="13" font-weight="700" fill="#78350f" text-anchor="middle">LMAC（每频段一套：BN0 / BN1）</text>
+<text x="576" y="858" font-size="11" fill="#92400e" text-anchor="middle">TMAC · RMAC · MIB · 速率表</text>
+<text x="576" y="876" font-size="11" fill="#92400e" text-anchor="middle">WTBL（20 项，wcid 索引）</text>
+<text x="576" y="894" font-size="11" fill="#92400e" text-anchor="middle">BA / 重传 / AMPDU 调度</text>
+<text x="576" y="912" font-size="11" fill="#92400e" text-anchor="middle">扫描 / 信道切换</text>
+
+<!-- WTBL 横条强调 -->
+<rect x="426" y="820" width="64" height="20" rx="4" fill="#fde68a" stroke="#d97706"/>
+<text x="458" y="834" font-size="11" font-weight="600" fill="#7c2d12" text-anchor="middle">WTBL</text>
+
+<line x1="736" y1="870" x2="764" y2="870" stroke="#f97316" stroke-width="2" marker-end="url(#arro)"/>
+
+<rect x="764" y="810" width="180" height="120" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>
+<text x="854" y="836" font-size="13" font-weight="700" fill="#7f1d1d" text-anchor="middle">WF_MCU  ★固件</text>
+<text x="854" y="858" font-size="11" fill="#991b1b" text-anchor="middle">SYSRAM 上跑的代码</text>
+<text x="854" y="876" font-size="11" fill="#991b1b" text-anchor="middle">协议栈 · 速率 · 功率</text>
+<text x="854" y="894" font-size="11" fill="#991b1b" text-anchor="middle">扫描 · 省电 · MLO</text>
+<text x="854" y="912" font-size="11" fill="#991b1b" text-anchor="middle">patch + ram（fw 文件）</text>
+
+<line x1="944" y1="870" x2="972" y2="870" stroke="#f97316" stroke-width="2" marker-end="url(#arro)"/>
+
+<rect x="972" y="810" width="188" height="120" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.2"/>
+<text x="1066" y="836" font-size="13" font-weight="700" fill="#7c2d12" text-anchor="middle">PHY / RF</text>
+<text x="1066" y="858" font-size="11" fill="#9a3412" text-anchor="middle">2.4G / 5G / 6G 三频段</text>
+<text x="1066" y="876" font-size="11" fill="#9a3412" text-anchor="middle">射频校准（EEPROM）</text>
+<text x="1066" y="894" font-size="11" fill="#9a3412" text-anchor="middle">功率 / CLC / SAR</text>
+<text x="1066" y="912" font-size="11" fill="#9a3412" text-anchor="middle">天线 / 信道</text>
+
+<!-- 芯片内部额外模块行 -->
+<rect x="40" y="952" width="552" height="116" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.2"/>
+<text x="56" y="976" font-size="13" font-weight="700" fill="#7c2d12">LMAC 内部子单元（数据流链路）</text>
+<rect x="56" y="990" width="120" height="60" rx="6" fill="#fef3c7" stroke="#d97706"/>
+<text x="116" y="1010" font-size="11.5" font-weight="600" fill="#7c2d12" text-anchor="middle">TXWI 构造</text>
+<text x="116" y="1028" font-size="11" fill="#92400e" text-anchor="middle">OMAC/WMM</text>
+<text x="116" y="1044" font-size="11" fill="#92400e" text-anchor="middle">BAND/WLAN_IDX</text>
+
+<rect x="190" y="990" width="120" height="60" rx="6" fill="#fef3c7" stroke="#d97706"/>
+<text x="250" y="1010" font-size="11.5" font-weight="600" fill="#7c2d12" text-anchor="middle">RXD 解析</text>
+<text x="250" y="1028" font-size="11" fill="#92400e" text-anchor="middle">PN / 加密</text>
+<text x="250" y="1044" font-size="11" fill="#92400e" text-anchor="middle">RSSI / 速率</text>
+
+<rect x="324" y="990" width="120" height="60" rx="6" fill="#fef3c7" stroke="#d97706"/>
+<text x="384" y="1010" font-size="11.5" font-weight="600" fill="#7c2d12" text-anchor="middle">TXS / TX_FREE</text>
+<text x="384" y="1028" font-size="11" fill="#92400e" text-anchor="middle">MSDU 完成</text>
+<text x="384" y="1044" font-size="11" fill="#92400e" text-anchor="middle">token 归还</text>
+
+<rect x="458" y="990" width="120" height="60" rx="6" fill="#fef3c7" stroke="#d97706"/>
+<text x="518" y="1010" font-size="11.5" font-weight="600" fill="#7c2d12" text-anchor="middle">扫描 / ROC</text>
+<text x="518" y="1028" font-size="11" fill="#92400e" text-anchor="middle">MCU 命令下发</text>
+<text x="518" y="1044" font-size="11" fill="#92400e" text-anchor="middle">结果事件回送</text>
+
+<rect x="608" y="952" width="552" height="116" rx="8" fill="#ffffff" stroke="#fb923c" stroke-width="1.2"/>
+<text x="624" y="976" font-size="13" font-weight="700" fill="#7c2d12">MCU 通信机制（host ↔ 固件 桥梁）</text>
+<rect x="624" y="990" width="160" height="60" rx="6" fill="#fee2e2" stroke="#dc2626"/>
+<text x="704" y="1010" font-size="11.5" font-weight="600" fill="#7f1d1d" text-anchor="middle">UNI 命令 / TLV</text>
+<text x="704" y="1028" font-size="11" fill="#991b1b" text-anchor="middle">经 TX ring 15</text>
+<text x="704" y="1044" font-size="11" fill="#991b1b" text-anchor="middle">（MT7925_TXQ_MCU_WM）</text>
+
+<rect x="800" y="990" width="160" height="60" rx="6" fill="#fee2e2" stroke="#dc2626"/>
+<text x="880" y="1010" font-size="11.5" font-weight="600" fill="#7f1d1d" text-anchor="middle">MCU 事件</text>
+<text x="880" y="1028" font-size="11" fill="#991b1b" text-anchor="middle">经 RX ring 0</text>
+<text x="880" y="1044" font-size="11" fill="#991b1b" text-anchor="middle">（MT7925_RXQ_MCU_WM）</text>
+
+<rect x="976" y="990" width="170" height="60" rx="6" fill="#fee2e2" stroke="#dc2626"/>
+<text x="1061" y="1010" font-size="11.5" font-weight="600" fill="#7f1d1d" text-anchor="middle">固件加载</text>
+<text x="1061" y="1028" font-size="11" fill="#991b1b" text-anchor="middle">patch + ram</text>
+<text x="1061" y="1044" font-size="11" fill="#991b1b" text-anchor="middle">FW_N9_RDY 握手</text>
+
+<!-- 关键关系箭头：host 主控软件栈 → PCIe 总线 → 芯片 -->
+<line x1="592" y1="704" x2="592" y2="738" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+<text x="600" y="724" font-size="11" font-weight="600" fill="#475569">下行</text>
+<line x1="612" y1="738" x2="612" y2="704" stroke="#2563eb" stroke-width="2" marker-end="url(#arrb)"/>
+<text x="620" y="724" font-size="11" font-weight="600" fill="#1e40af">上行</text>
+
+<!-- 阶段注释 -->
+<text x="40" y="1098" font-size="11" fill="#0369a1">① 加载：cfg80211 wiphy_register ← mt7925_register_device（异步 init_work：固件 patch/ram → MAC init → capability → hw_init_done）</text>
+<text x="40" y="1116" font-size="11" fill="#15803d">② 运行：mac80211 ← ops → mt7925  → DMA ring ← PCIe → WFDMA ↔ LMAC → PHY/RF　　控制面：host ↔ WF_MCU 固件（TX ring 15 / RX ring 0）</text>
+<text x="40" y="1134" font-size="11" fill="#9a3412">③ 关闭：mt7925e_unregister_device → cancel_work → napi_disable → dma_cleanup → set_bit(MT76_REMOVED) → devres 兜底</text>
+
+</svg>

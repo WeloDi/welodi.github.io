@@ -7,6 +7,9 @@ tags:
   - 面试
   - 驱动开发
   - 嵌入式
+categories:
+  - 面试
+  - 进阶
 ---
 
 ## 一、设备树（Device Tree）

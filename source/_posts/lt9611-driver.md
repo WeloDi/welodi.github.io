@@ -2,6 +2,9 @@
 title: lt9611_driver
 date: 2026-09-10 20:00:00
 tags: [drm, 驱动开发]
+categories:
+  - 显示驱动
+  - 桥接芯片
 ---
 
 ## 文档概述
@@ -293,8 +296,9 @@ static irqreturn_t lt9611_irq_thread_handler(int irq, void *dev_id)
 
 ---
 
-## 四、DRM框架完善
+## 四、DRM框架
 
+### 4.1 流程总览
 ```c
 static const struct drm_bridge_funcs lt9611_bridge_funcs = {
 	.attach = lt9611_bridge_attach,          /* 挂接下游 bridge/panel，把 pipeline 串起来 */
@@ -313,110 +317,280 @@ static const struct drm_bridge_funcs lt9611_bridge_funcs = {
 	.atomic_get_input_bus_fmts = lt9611_atomic_get_input_bus_fmts,      /* 输入格式：DSI RGB888 */
 };
 ```
+完整的调用流程如下：
+{% asset_img lt9611-call-flow.svg "从 probe 建链到 HPD 插入/取模式表/点屏/拔出的完整调用关系" %}
 
-当中断处理函数调用drm_kms_helper_hotplug_event后：
+### 4.2 函数解析（按实际调用顺序）
+
+**lt9611_bridge_attach**
 ```c
-drm_kms_helper_hotplug_event()
- └─ drm_client_dev_hotplug()
-     └─ client->funcs->hotplug()          ← fbdev client
-         └─ drm_fb_helper_hotplug_event()
-             └─ drm_client_modeset_probe()
-                 └─ connector->funcs->fill_modes()
-                     └─ drm_helper_probe_single_connector_modes()
-                         ├─ connector->funcs->detect()
-                         │   └─ drm_bridge_connector_detect()
-                         │       └─ bridge->funcs->detect()
-                         │           └─ ★ lt9611_bridge_detect()        ← 读 HPD 寄存器
-                         │
-                         └─ connector->helper_private->get_modes()
-                             └─ drm_bridge_connector_get_modes()
-                                 └─ drm_bridge_connector_get_modes_edid()
-                                     ├─ drm_bridge_connector_detect()    ← 又调一次 detect
-                                     └─ drm_bridge_edid_read(bridge)
-                                         └─ ★ lt9611_bridge_edid_read()  ← 读 EDID
-                                             ├─ lt9611_power_on()
-                                             └─ drm_edid_read_custom(..., lt9611_get_edid_block, ...)
-                                                 └─ lt9611_get_edid_block()
-                                                     └─ lt9611_read_edid()  ← DDC 读 256B
-
+//把下游的 next_bridge 接到 bridge 链中自己的后面，完成链路串联。
+static int lt9611_bridge_attach(struct drm_bridge *bridge,
+								enum drm_bridge_attach_flags flags)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+	return drm_bridge_attach(bridge->encoder,    //挂到哪个 encoder 上
+							lt9611->next_bridge, //挂谁（新成员）
+				 			bridge, //挂在谁后面
+							flags); //用什么规则挂
+}
 ```
+
+**lt9611_bridge_hpd_enable**
+```c
+//作用：清掉 HPD 中断屏蔽位并清中断标志，之后 HDMI 线插拔才会产生中断。
+static void lt9611_bridge_hpd_enable(struct drm_bridge *bridge)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+
+	lt9611_enable_hpd_interrupts(lt9611);
+}
+```
+
+**lt9611_bridge_detect**
+```c
+//作用：读寄存器 0x825e 判断 HDMI 是否接上，并把结果缓存进 lt9611->status。
+static enum drm_connector_status lt9611_bridge_detect(struct drm_bridge *bridge)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+	unsigned int reg_val = 0;
+	int connected = 0;
+
+	regmap_read(lt9611->regmap, 0x825e, &reg_val);   //0x825e：HPD 状态寄存器
+	connected = (reg_val & (BIT(2) | BIT(0)));       //BIT0/BIT2 任一置位即认为已连接
+
+	lt9611->status = connected ? connector_status_connected :
+				     connector_status_disconnected;
+
+	return lt9611->status;
+}
+```
+
+**lt9611_bridge_edid_read**
+```c
+//作用：先确保芯片上电（读 EDID 要走 DDC 通道），再按自定义回调逐块读出 EDID。
+static const struct drm_edid *
+lt9611_bridge_edid_read(struct drm_bridge *bridge,
+			struct drm_connector *connector)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+
+	lt9611_power_on(lt9611);   //读 EDID 需要芯片上电、DDC 通路可用
+
+	return drm_edid_read_custom(connector, lt9611_get_edid_block, lt9611);
+	//drm_edid_read_custom：读法自己实现，具体读哪一段由 lt9611_get_edid_block 决定
+}
+```
+
+> `lt9611_get_edid_block()` 只支持 1 个扩展块（`block > 1` 直接返回 `-EINVAL`），且 block 0 时才真正触发 `lt9611_read_edid()` 把数据搬进 `lt9611->edid_buf`，后续块从缓存里 `memcpy` 返回。
+
+**lt9611_bridge_mode_valid**
+```c
+//作用：把 LT9611 跑不动的时序过滤掉。
+static enum drm_mode_status lt9611_bridge_mode_valid(struct drm_bridge *bridge,
+						     const struct drm_display_info *info,
+						     const struct drm_display_mode *mode)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+
+	if (mode->hdisplay > 3840)              //水平超过 3840
+		return MODE_BAD_HVALUE;
+	if (mode->vdisplay > 2160)              //垂直超过 2160
+		return MODE_BAD_VVALUE;
+	if (mode->hdisplay == 3840 && mode->vdisplay == 2160 &&
+	    drm_mode_vrefresh(mode) > 30)       //4K 只到 30Hz（HDMI 1.4 带宽限制）
+		return MODE_CLOCK_HIGH;
+	if (mode->hdisplay > 2000 && !lt9611->dsi1_node)
+		return MODE_PANEL;                  //超过 2000 像素必须双 DSI 拼接，单 DSI 带不动
+	else
+		return MODE_OK;
+}
+```
+
+**状态管理的三个默认实现：**
+
+这三个回调都直接指向 `drm_atomic_helper_*` 的通用实现：
+
+**lt9611_atomic_get_input_bus_fmts**
+```c
+//作用：声明"我只接受 DSI 侧的 RGB888（每像素 24bit）这一种输入格式"，让上游按这个格式准备像素流。
+#define MAX_INPUT_SEL_FORMATS	1
+static u32 *
+lt9611_atomic_get_input_bus_fmts(struct drm_bridge *bridge,
+				 struct drm_bridge_state *bridge_state,
+				 struct drm_crtc_state *crtc_state,
+				 struct drm_connector_state *conn_state,
+				 u32 output_fmt,               //输出侧格式（本驱动不看这个参数）
+				 unsigned int *num_input_fmts) //出参：告诉框架支持几种输入格式
+{
+	u32 *input_fmts;
+
+	*num_input_fmts = 0;
+
+	input_fmts = kcalloc(MAX_INPUT_SEL_FORMATS, sizeof(*input_fmts),
+			     GFP_KERNEL);   //内存由 DRM 框架负责释放
+	if (!input_fmts)
+		return NULL;
+
+	/* This is the DSI-end bus format */
+	input_fmts[0] = MEDIA_BUS_FMT_RGB888_1X24;   //DSI 输入格式：RGB888
+	*num_input_fmts = 1;
+
+	return input_fmts;
+}
+```
+
+**lt9611_bridge_atomic_pre_enable**
+```c
+//作用：如果芯片当前处于睡眠态，先用一组寄存器把它唤醒，否则直接返回。
+static void lt9611_bridge_atomic_pre_enable(struct drm_bridge *bridge,
+					    struct drm_bridge_state *old_bridge_state)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+	static const struct reg_sequence reg_cfg[] = {
+		{ 0x8102, 0x12 },   //0x8102 由睡眠时的 0x48 改回 0x12：MIPI Rx 退出掉电
+		{ 0x8123, 0x40 },
+		{ 0x8130, 0xea },
+		{ 0x8011, 0xfa },
+	};
+
+	if (!lt9611->sleep)   //没睡过就不用唤醒
+		return;
+
+	regmap_multi_reg_write(lt9611->regmap, reg_cfg, ARRAY_SIZE(reg_cfg));
+
+	lt9611->sleep = false;
+}
+```
+
+**lt9611_bridge_atomic_enable**
+```c
+//作用：从本次 commit 的 state 里取出最终时序，按 DSI 输入 → PLL → 时序 → PCR → 上电 → HDMI PHY → 打开输出的顺序配置整条链路。
+static void lt9611_bridge_atomic_enable(struct drm_bridge *bridge,
+					struct drm_bridge_state *old_bridge_state)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+	struct drm_atomic_state *state = old_bridge_state->base.state;
+	struct drm_connector *connector;
+	struct drm_connector_state *conn_state;
+	struct drm_crtc_state *crtc_state;
+	struct drm_display_mode *mode;
+	unsigned int postdiv;
+
+	//从 atomic state 反查"挂在同一个 encoder 上的 connector"，再顺着找它的 crtc，
+	//这样才能拿到本次要设的时序；任何一环缺失说明 commit 状态不完整，直接返回
+	connector = drm_atomic_get_new_connector_for_encoder(state, bridge->encoder);
+	if (WARN_ON(!connector))
+		return;
+
+	conn_state = drm_atomic_get_new_connector_state(state, connector);
+	if (WARN_ON(!conn_state))
+		return;
+
+	crtc_state = drm_atomic_get_new_crtc_state(state, conn_state->crtc);
+	if (WARN_ON(!crtc_state))
+		return;
+
+	mode = &crtc_state->adjusted_mode;   //bridge 用的是调整后的时序
+
+	lt9611_mipi_input_digital(lt9611, mode);    //DSI 输入数字部分：lane 数、数据格式
+	lt9611_pll_setup(lt9611, mode, &postdiv);   //按像素时钟算 PLL，并给出 postdiv 分频值
+	lt9611_mipi_video_setup(lt9611, mode);      //把 hactive/vactive/前后肩写进芯片
+	lt9611_pcr_setup(lt9611, mode, postdiv);    //PCR：像素时钟恢复与分频
+
+	if (lt9611_power_on(lt9611)) {   //HDMI 侧上电：选晶振、IRQ、功耗等寄存器
+		dev_err(lt9611->dev, "power on failed\n");
+		return;
+	}
+
+	lt9611_mipi_input_analog(lt9611);                    //MIPI Rx 模拟部分：偏置、均衡
+	lt9611_hdmi_set_infoframes(lt9611, connector, mode); //写 AVI/音频等 InfoFrame
+	lt9611_hdmi_tx_digital(lt9611, connector->display_info.is_hdmi); //按对方是 HDMI 还是 DVI 配
+	lt9611_hdmi_tx_phy(lt9611);                          //HDMI TMDS PHY 上电、摆幅/预加重
+
+	msleep(500);                    //等链路稳定
+	lt9611_video_check(lt9611);     //回读芯片测到的时序，确认视频已进来且数值正确
+
+	/* Enable HDMI output */
+	regmap_write(lt9611->regmap, 0x8130, 0xea);   //最后一步：打开 HDMI 输出
+}
+```
+
+**lt9611_bridge_atomic_disable**
+```c
+//作用：先关 HDMI 输出，再把芯片断电。
+static void lt9611_bridge_atomic_disable(struct drm_bridge *bridge,
+					 struct drm_bridge_state *old_bridge_state)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+	int ret;
+
+	/* Disable HDMI output */
+	ret = regmap_write(lt9611->regmap, 0x8130, 0x6a);   //0x8130 由 0xea 改为 0x6a：关输出
+	if (ret) {
+		dev_err(lt9611->dev, "video on failed\n");
+		return;
+	}
+
+	if (lt9611_power_off(lt9611)) {   //内部把 0x8130 再写 0x6a，并清 power_on 标记
+		dev_err(lt9611->dev, "power on failed\n");
+		return;
+	}
+}
+```
+
+**lt9611_bridge_atomic_post_disable**
+```c
+//作用：写睡眠寄存器序列让芯片进入省电的睡眠态，并置 lt9611->sleep = true，
+//      下次再点屏时由 pre_enable 负责唤醒（与 pre_enable 成对）。
+static void lt9611_bridge_atomic_post_disable(struct drm_bridge *bridge,
+					      struct drm_bridge_state *old_bridge_state)
+{
+	struct lt9611 *lt9611 = bridge_to_lt9611(bridge);
+
+	lt9611_sleep_setup(lt9611);
+}
+```
+
+> `lt9611_sleep_setup()` 里的关键几笔：`0x8102 = 0x48`（MIPI Rx 掉电）、`0x8130 = 0x00`（输出全关）、`0x8011 = 0x0a`（低功耗），写完把 `sleep` 置真。
 
 ---
 
 ## 五、HDMI 音频通路
 
-LT9611 同时把 DSI 携带的音频转发进 HDMI 的音频通道，作为 ASoC codec 注册回调：
-
-| 回调 | 功能 |
-| --- | --- |
-| `.hw_params` | 设置音频采样率 (48k/96k) |
-| `.audio_startup` | 启动音频通路 |
-| `.audio_shutdown` | 关闭音频通路 |
-| `.get_dai_id` | 获取 DAI ID (sound port) |
-
----
-
-## 六、热插拔与显示配置完整调用链
+音频并不走 DSI 链路：SoC 的 I2S（最多 8 声道）直接接到 LT9611，DTS 里 `lt9611` 节点的 `#sound-dai-cells = <1>` 就是为它准备的。驱动把芯片注册成一个标准的 `hdmi-codec` 平台设备交给 ASoC，播放时由下面这组 ops 把采样率、音频时钟、通路开关写进芯片，音频随 HDMI 数据流一起发出去。
 
 ```c
-插入
- │
- ├─ HW: 显示器拉高 HPD ──► LT9611 触发中断 ──► SoC IRQ
- │
- ├─ lt9611_irq_thread_handler
- │     ├─ 读 HPD 中断状态(0x820f)：bit7=拔出、bit6=插入
- │     └─ 判定为「插入」→ drm_kms_helper_hotplug_event() 上报热插拔事件
- │
- ├─ DRM 核心
- │     ├─ 发 uevent → udev → 用户态
- │     └─ 通知内核内客户端（fbcon/fbdev）
- │
- ├─ 用户态重新探测连接器（drm_client_modeset_probe → fill_modes）
- │     ├─ lt9611_bridge_detect
- │     │      读 0x825e → connected
- │     │
- │     └─ lt9611_bridge_edid_read
- │            ├─ lt9611_power_on()（DDC 需要芯片工作）
- │            └─ lt9611_read_edid() 经 DDC 读回 256B EDID
- │
- ├─ DRM 解析 EDID → 生成 mode 表、音频能力、TMDS 上限
- │      lt9611_bridge_mode_valid 过滤（最大 3840x2160@30Hz）
- │
- ├─ 用户态选 mode，提交 atomic commit
- │     ├─ check         总线格式协商 + 模式校验
- │     ├─ pre_enable    仅当 sleep==true：唤醒芯片
- │     ├─ encoder atomic_enable
- │     └─ enable        lt9611_bridge_atomic_enable()
- │                     → MIPI 输入数字配置
- │                     → PLL 配置并使能 TxPLL
- │                     → MIPI 视频时序
- │                     → PCR 配置并复位（0x8300-0x834f）
- │                     → lt9611_power_on()
- │                     → MIPI 输入模拟前端（0x8110-0x812f）
- │                     → AVI/HDMI Vendor infoframe
- │                     → HDMI TX 数字配置（0x82d6）
- │                     → HDMI TX PHY 配置（0x8130-0x8144）
- │                     → msleep(500) 等视频稳定
- │                     → lt9611_video_check() 校验 DSI 输入锁定（0x825e）
- │                     → 使能 HDMI 输出（0x8130=0xea）   ★画面出现
- │
- │   ┈┈┈┈ 正常显示中 ┈┈┈┈
- │
-拔出
- │
- ├─ HW: 显示器拉低 HPD ──► LT9611 触发中断 ──► SoC IRQ
- │
- ├─ lt9611_irq_thread_handler
- │     └─ 判定为「拔出」→ drm_kms_helper_hotplug_event() 上报热插拔事件
- │
- ├─ 用户态重新探测
- │     └─ lt9611_bridge_detect → disconnected（mode 表清空）
- │
- ├─ 用户态提交 disable commit
- │     ├─ disable       关闭 HDMI 输出 → lt9611_power_off()
- │     ├─ encoder atomic_disable
- │     └─ post_disable  lt9611_sleep_setup() 进入低功耗，sleep = true
- │
- ▼
-  芯片停在 sleep 态，等下一次 HPD 插入
+//作用：暴露给 ASoC（hdmi-codec）的 codec 回调
+static const struct hdmi_codec_ops lt9611_codec_ops = {
+	.hw_params      = lt9611_hdmi_hw_params,      /* 按采样率配音频时钟（48k/96k） */
+	.audio_shutdown = lt9611_audio_shutdown,      /* 关音频通路 */
+	.audio_startup  = lt9611_audio_startup,       /* 开音频通路与音频时钟 */
+	.get_dai_id     = lt9611_hdmi_i2s_get_dai_id, /* 在 DTS 里认出音频端点并返回 DAI id */
+};
+
+static struct hdmi_codec_pdata codec_data = {
+	.ops = &lt9611_codec_ops,
+	.max_i2s_channels = 8,   /* I2S 最多 8 声道 */
+	.i2s = 1,                /* 音频走 I2S 接口（另一种可选 SPDIF） */
+};
+
+//作用：把 LT9611 注册成 hdmi-codec 平台设备，probe 末尾调用一次
+static int lt9611_audio_init(struct device *dev, struct lt9611 *lt9611)
+{
+	codec_data.data = lt9611;               //回调里的 data 参数就是从这来的
+
+	lt9611->audio_pdev =
+		platform_device_register_data(dev, HDMI_CODEC_DRV_NAME,
+					      PLATFORM_DEVID_AUTO,   //设备名与 id 交给内核分配
+					      &codec_data, sizeof(codec_data));
+
+	return PTR_ERR_OR_ZERO(lt9611->audio_pdev);   //注册失败则 probe 直接失败
+}
 ```
+
+> 注 1：`probe` 里的 `lt9611_audio_init()` 只负责注册设备，音频寄存器要等 ASoC 起流时才写下去 —— 所以 HDMI 插上、屏也亮了，并不代表音频已经就绪。
+>
+> 注 2：较新的内核把这段换成了 DRM bridge 原生的 HDMI helper（`.hdmi_audio_startup` / `.hdmi_audio_prepare` / `.hdmi_audio_shutdown`，配合 `DRM_BRIDGE_OP_HDMI_AUDIO`），不再注册 `hdmi-codec`，但写的是同一批寄存器。
+
+---

@@ -6,6 +6,9 @@ tags:
   - IMU
   - 同步
   - 嵌入式
+categories:
+  - Camera
+  - 时间同步
 ---
 
 ## 一、时间同步的作用与挑战

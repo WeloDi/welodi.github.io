@@ -1,0 +1,146 @@
+/* 图片查看器（点击图片放大 / 滚轮缩放 / 拖拽平移） */
+.wz-openable {
+  cursor: zoom-in;
+}
+
+.wz-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  overflow: hidden;
+  background: rgba(18, 18, 20, 0.88);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.wz-backdrop.is-open {
+  display: block;
+}
+
+.wz-backdrop.is-panning {
+  cursor: grabbing;
+}
+
+.wz-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.wz-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* 主题有全局 `img { max-width:100% }`，会把图片布局宽度压成视口宽，
+   * 导致 JS 里用 naturalWidth 算出来的居中和缩放全部失效，这里必须覆盖掉 */
+  width: auto;
+  max-width: none;
+  height: auto;
+  transform-origin: 0 0;
+  background: #fff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  -webkit-user-drag: none;
+  user-select: none;
+  will-change: transform;
+}
+
+.wz-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  align-items: center;
+}
+
+html[data-theme="dark"] .wz-toolbar {
+  background: rgba(45, 45, 48, 0.94);
+}
+
+.wz-btn {
+  border: none;
+  background: transparent;
+  color: #333;
+  font-size: 14px;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+html[data-theme="dark"] .wz-btn {
+  color: #eee;
+}
+
+.wz-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="dark"] .wz-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.wz-scale {
+  min-width: 56px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #555;
+  font-size: 13px;
+}
+
+html[data-theme="dark"] .wz-scale {
+  color: #ccc;
+}
+
+.wz-close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 10000;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wz-tip {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.wz-tip.is-visible {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .wz-toolbar {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+
+  .wz-btn {
+    padding: 8px 10px;
+  }
+}

@@ -2,6 +2,9 @@
 title: hx9023s_driver
 date: 2026-08-22 20:00:00
 tags: [iio, 驱动开发]
+categories:
+  - 传感器
+  - 传感器驱动
 ---
 
 ## 文档概述
@@ -37,7 +40,7 @@ HX9023S 单芯片最多支持 5 路感应通道，I2C 接口，带 1 个硬件�
 
 ### 2.1 芯片与数据通路
 
-HX9023S 内部对 5 个感应通道（CH0~CH4）做电容测量，DSP 输出四类数据：
+HX9023S 内部有 5 个感应通道（CH0~CH4），每个通道可以输出以下四种数据，但是同时只能输出一种（通过芯片内部mux控制）
 
 | 数据 | 含义 |
 |------|------|
@@ -74,7 +77,7 @@ HX9023S 内部对 5 个感应通道（CH0~CH4）做电容测量，DSP 输出四�
 ### 2.3 数据结构
 
 #### 2.3.1 hx9023s_ch_data
-
+描述单个通道的运行时状态
 ```c
 struct hx9023s_ch_data {
 	s16 raw;    /* 原始数据 */
@@ -90,8 +93,7 @@ struct hx9023s_ch_data {
 	u8 channel_positive;/* 正极引脚（DTS 配置） */
 	u8 channel_negative;/* 负极引脚（DTS 配置）*/
 
-	/* 数据多路器(mux)输出选择, 决定读回的数据应解释为 raw 还是 bl、
-	 * lp 还是 diff(由 hx9023s_data_select() 从芯片寄存器同步) */
+	/*记住"当前 mux 选的是哪个数据输出 */
 	bool sel_bl;
 	bool sel_raw;
 	bool sel_diff;
@@ -102,7 +104,7 @@ struct hx9023s_ch_data {
 ```
 
 #### 2.3.2 hx9023s_data
-
+描述整个设备的数据结构
 ```c
 struct hx9023s_data {
 	struct iio_trigger *trig;     /*iio系统专用触发器*/
@@ -131,7 +133,7 @@ struct hx9023s_data {
 
 #### 2.3.3 hx9023s_events[]
 
-`struct iio_event_spec` 数组：声明每个通道对外暴露的"阈值事件"契约。经 `HX9023S_CHANNEL` 宏挂到各通道后，IIO core 据此自动生成 sysfs 事件属性（`/sys/bus/iio/devices/iio:deviceX/events/`，如 `in_proximity0_thresh_rising_value`），并把读写分发到 `hx9023s_read_event_val` / `hx9023s_write_event_val` / `hx9023s_read_event_config` / `hx9023s_write_event_config` 四个回调。事件方向语义（RISING=远离、FALLING=接近）与"去抖全通道共享、阈值每通道独立"的规则见 2.3.3 事件规格注释。
+声明每个通道对外暴露的"阈值事件"。经 `HX9023S_CHANNEL` 宏挂到各通道后，IIO core 据此自动生成 sysfs 事件属性（`/sys/bus/iio/devices/iio:deviceX/events/`），并把读写分发到 `hx9023s_read_event_val` / `hx9023s_write_event_val` / `hx9023s_read_event_config` / `hx9023s_write_event_config` 四个回调。事件方向语义（RISING=远离、FALLING=接近）
 ```c
 static const struct iio_event_spec hx9023s_events[] = {
 	{
@@ -156,29 +158,31 @@ static const struct iio_event_spec hx9023s_events[] = {
 ```
 
 #### 2.3.4 hx9023s_channels[]
-
-`struct iio_chan_spec` 数组：驱动对外暴露的通道接口总表。5 个数据通道由 `HX9023S_CHANNEL(idx)` 宏展开，每个通道挂载上文的 `hx9023s_events`（事件规格）、声明每通道独立的 `raw` 与全通道共享的 `samp_freq` 属性，并给出触发缓冲中的扫描槽位；末尾的 `IIO_CHAN_SOFT_TIMESTAMP(5)` 是伪通道——不读硬件，只在扫描帧末尾预留 8 字节对齐的时间戳槽位（对应 `data->buffer.ts`）。
+IIO核心。
+`struct iio_chan_spec` 数组：驱动对外暴露的通道接口总表，描述这个通道长什么样、怎么对外暴露
+5 个数据通道由 `HX9023S_CHANNEL(idx)` 宏展开，每个通道挂载上文的 `hx9023s_events`（事件规格）、声明每通道独立的 `raw` 与全通道共享的 `samp_freq` 属性，并给出触发缓冲中的扫描槽位；末尾的 `IIO_CHAN_SOFT_TIMESTAMP(5)` 是伪通道——不读硬件，只在扫描帧末尾预留 8 字节对齐的时间戳槽位（对应 `data->buffer.ts`）。
 
 ```c
-#define HX9023S_CHANNEL(idx)					\
-{								\
-	/* 通道量纲: sysfs 前缀 in_proximity, 事件码 type 段 */	\
-	.type = IIO_PROXIMITY,					\
-	/* 每通道独立属性 in_proximityN_raw, read_raw 返回该通道 diff */ \
-	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		\
-	/* 支持采样频率读写，且全通道共享 */	\
-	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_SAMP_FREQ),\
-	.indexed = 1,						\
-	.channel = idx,						\
-	.address = 0,						\
-	.event_spec = hx9023s_events,				\
-	.num_event_specs = ARRAY_SIZE(hx9023s_events),		\
+#define HX9023S_CHANNEL(idx)					
+{								
+	/* 通道量纲: sysfs 前缀 in_proximity, 事件码 type 段 */	
+	.type = IIO_PROXIMITY,					
+	/* 每通道独立属性 in_proximityN_raw, read_raw 返回该通道 diff */ 
+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),		
+	/* 支持采样频率读写，且全通道共享 */	
+	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_SAMP_FREQ),
 
-	/*定义该通道在 IIO 触发缓冲（triggered buffer）一帧数据里的"槽位" */ \
-	.scan_index = idx,					\
-	/* scan_type: buffer 中每样本的位布局(见宏上方注释的端序提醒) */	\
-	.scan_type = {						\
-		.sign = 's',					\
+	.indexed = 1,						
+	.channel = idx,						
+	.address = 0,						
+	.event_spec = hx9023s_events,				
+	.num_event_specs = ARRAY_SIZE(hx9023s_events),		
+
+	/*定义该通道在读取到的一帧数据里的"槽位" */ 
+	.scan_index = idx,				
+	/* scan_type: buffer 中每样本的位布局(见宏上方注释的端序提醒) */
+	.scan_type = {
+		.sign = 's',
 		.realbits = 16,		  /* 有效位数 */
 		.storagebits = 16,	  /* 存储位数	*/
 		.endianness = IIO_BE, /* 该通道的样本在 buffer 帧里按"大端序"存放 */
@@ -275,7 +279,7 @@ static const struct regmap_config hx9023s_regmap_config = {
 ---
 
 ## 四、probe 流程
-
+### 4.1 probe
 ```c
 static int hx9023s_probe(struct i2c_client *client) {
 	struct device *dev = &client->dev;
@@ -291,10 +295,10 @@ static int hx9023s_probe(struct i2c_client *client) {
 	hx9023s_id_check(indio_dev)                   // chip_id校验（0x1D）
 
 	// 填充 iio_dev
-	indio_dev->channels = hx9023s_channels;
+	indio_dev->channels = hx9023s_channels;	      //填充通道设置
 	indio_dev->num_channels = ARRAY_SIZE(hx9023s_channels);
 	indio_dev->info = &hx9023s_info;			  //填充ops
-	indio_dev->modes = INDIO_DIRECT_MODE;
+	indio_dev->modes = INDIO_DIRECT_MODE;         //声明"支持直接读“
 
 	i2c_set_clientdata(client, indio_dev);		  //将indio_dev绑定到client->dev.driver_data
 	regmap_multi_reg_write(reg_init_list)         // 上电初始化
@@ -302,17 +306,21 @@ static int hx9023s_probe(struct i2c_client *client) {
 	regcache_sync(data->regmap)                   // 将寄存器缓存中的值同步到硬件设备的物理寄存器
 	devm_request_threaded_irq(...)                // 中断
 	devm_iio_trigger_alloc/register(...)          // 注册 iio_trigger
-	devm_iio_triggered_buffer_setup(...)          // 触发缓冲
+
+	/* 创建环形缓冲区，供用户空间通过读取 */
+	devm_iio_triggered_buffer_setup(dev, indio_dev,
+					      iio_pollfunc_store_time,  //记录时间戳
+					      hx9023s_trigger_handler,  //真正采样
+					      &hx9023s_buffer_setup_ops);  
 
 	/* 注册到 IIO 子系统: 生成 /sys/bus/iio/devices/iio:deviceX,
 	 * 扫 channels/info/masks 建全部 sysfs 属性, 设备自此对用户可见 */
-	devm_iio_device_register(...)
+	devm_iio_device_register(dev, indio_dev);
 };
 ```
+### 4.2 OPS
 
-**hx9023s_info**
-
-IIO core 通过四个事件回调访问阈值 / 去抖 / 使能（注册见下方 `struct iio_info`）。sysfs 事件文件进来后，回调内部按"属性类型 + 事件方向"分派到具体读写函数：
+**hx9023s_info** 是IIO core 的ops, 通过四个事件回调访问阈值 / 去抖 / 使能（注册见下方 `struct iio_info`）。sysfs 事件文件进来后，回调内部按"属性类型 + 事件方向"分派到具体读写函数：
 
 ```c
 hx9023s_read_event_val() / hx9023s_write_event_val()
@@ -600,9 +608,9 @@ devm_iio_triggered_buffer_setup(dev, indio_dev,
 **作用**：
 	为 IIO 设备配置一个触发式缓冲区，使传感器的触发器触发时，推送数据到缓冲区，供用户空间通过 /dev/iio:deviceX 读取，简单来说：让传感器支持"连续采样"模式
 **参数**:
-	iio_pollfunc_store_time: 上半部函数(trigger 踢来时的响应函数)：在此用来**记录时间戳**
-	hx9023s_trigger_handler: 下半部函数：实际读取数据并填充缓冲区
-	&hx9023s_buffer_setup_ops: 缓冲区操作回调（启用/禁用缓冲时调用）
+	`iio_pollfunc_store_time`: trigger 上半部：iio框架通用函数，在此用来**记录时间戳**
+	`hx9023s_trigger_handler`: trigger 下半部：实际读取数据并填充缓冲区
+	`&hx9023s_buffer_setup_ops`: 缓冲区操作回调（启用/禁用缓冲时调用）
 
 
 **hx9023s_trigger_handler**

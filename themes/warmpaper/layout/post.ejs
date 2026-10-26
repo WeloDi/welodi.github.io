@@ -5,12 +5,14 @@
       <time datetime="<%- date_xml(page.date) %>"><%- date(page.date, 'YYYY-MM-DD') %></time>
       <% if (page.categories && page.categories.length) { %>
         <span class="separator">&middot;</span>
-        <% page.categories.each(function(cat){ %>
-          <a href="<%- url_for(cat.path) %>"><%= cat.name %></a>
-        <% }) %>
+        <% page.categories.toArray().forEach(function(cat, index){ %><% if (index) { %><span class="separator">/</span><% } %><a href="<%- url_for(cat.path) %>"><%= cat.name %></a><% }) %>
       <% } %>
     </div>
   </header>
+
+  <% if (page.qna) { %>
+    <%- partial('partial/qna-toggle') %>
+  <% } %>
 
   <div class="post-body-wrapper">
     <div class="post-content">

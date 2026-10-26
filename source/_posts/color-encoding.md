@@ -5,6 +5,9 @@ tags:
   - Camera
   - MIPI
   - ISP
+categories:
+  - Camera
+  - 图像处理
 ---
 
 

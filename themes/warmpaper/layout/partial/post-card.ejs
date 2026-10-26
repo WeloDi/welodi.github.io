@@ -6,9 +6,7 @@
     <time datetime="<%- date_xml(post.date) %>"><%- date(post.date, 'YYYY-MM-DD') %></time>
     <% if (post.categories && post.categories.length) { %>
       <span class="separator">&middot;</span>
-      <% post.categories.each(function(cat){ %>
-        <a href="<%- url_for(cat.path) %>"><%= cat.name %></a>
-      <% }) %>
+      <% post.categories.toArray().forEach(function(cat, index){ %><% if (index) { %><span class="separator">/</span><% } %><a href="<%- url_for(cat.path) %>"><%= cat.name %></a><% }) %>
     <% } %>
   </div>
   <div class="post-card-excerpt">
@@ -25,8 +23,8 @@
         content = content.replace(/<img[^>]*>/gi, '');
         content = content.replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '');
         content = content.replace(/<code[^>]*>.*?<\/code>/gi, '');
-        // 3. Remove heading tags but keep their text content
-        content = content.replace(/<\/?h[1-6][^>]*>/gi, ' ');
+        // 3. Drop headings entirely — section labels read poorly in a short preview
+        content = content.replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ');
         // 4. Strip remaining HTML tags
         var text = strip_html(content).trim();
         // 5. Replace repeated newlines with period+space for readability
@@ -48,7 +46,7 @@
           var excerpt = text;
         }
       %>
-      <p><%- excerpt %>...</p>
+      <% if (excerpt) { %><p><%- excerpt %>...</p><% } %>
     <% } %>
   </div>
   <a class="read-more" href="<%- url_for(post.path) %>"><%= theme.excerpt_link || 'Read More' %> &rarr;</a>

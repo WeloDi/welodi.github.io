@@ -5,9 +5,24 @@
       <span class="nav-toggle-icon"></span>
     </button>
     <nav class="site-nav">
+      <%
+        var firstSeg = (page.path || 'index.html').split('/')[0];
+        var activeRoot = (firstSeg === 'index.html') ? '' : '/' + firstSeg;
+      %>
       <% for (var name in theme.menu) { %>
-        <a class="nav-link" href="<%- url_for(theme.menu[name]) %>"><%= name %></a>
+        <%
+          var navHref = url_for(theme.menu[name]);
+          var navRoot = navHref.replace(/\/+$/, '');
+          var isActive = (navRoot === activeRoot);
+        %>
+        <a class="nav-link<%- isActive ? ' active' : '' %>" href="<%- navHref %>"<%- isActive ? ' aria-current="page"' : '' %>><%= name %></a>
       <% } %>
+      <button class="search-toggle" type="button" aria-label="搜索文章" title="搜索文章（/）">
+        <svg class="icon-search" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5"/>
+        </svg>
+      </button>
       <button class="theme-toggle" type="button" aria-label="切换主题" title="切换主题" data-theme-state="light">
         <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="4"/>

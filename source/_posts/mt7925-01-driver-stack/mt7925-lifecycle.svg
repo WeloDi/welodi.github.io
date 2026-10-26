@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1780" viewBox="0 0 960 1780" role="img" aria-label="MT7925 驱动生命周期总览：加载启动 → 运行期数据收发 → 关闭卸载" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Noto Sans CJK SC', sans-serif">
+
+<defs>
+<marker id="mtar" viewBox="0 0 10 10" refX="7" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
+<path d="M0,0 L10,5 L0,10 Z" fill="#94a3b8"/>
+</marker>
+</defs>
+
+<!-- ============ ① 加载启动 ============ -->
+<rect x="24" y="24" width="912" height="570" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="24" width="912" height="36" rx="10" fill="#0ea5e9"/>
+<rect x="24" y="48" width="912" height="12" fill="#0ea5e9"/>
+<text x="44" y="49" font-size="14.5" font-weight="700" fill="#ffffff">① 加载启动：probe 资源准备 → 电源握手 → 异步固件下载 → MAC 初始化 → wiphy 注册 → 接口 up（第 02 / 03 / 04 / 05 篇）</text>
+
+<line x1="58" y1="88" x2="58" y2="556" stroke="#cbd5e1" stroke-width="1.4"/>
+<circle cx="58" cy="88" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="114" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="140" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="166" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="192" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="218" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="244" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="270" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="296" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="322" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="348" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="374" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="400" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="426" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="452" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="478" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="504" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="530" r="4.5" fill="#0ea5e9"/>
+<circle cx="58" cy="556" r="4.5" fill="#0ea5e9"/>
+
+<text x="82" y="92" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_pci_probe()</tspan><tspan fill="#475569">　匹配 0x14c3:0x7925 / 0x0717；driver_data 里存的其实是固件名（总线差异入口）</tspan></text>
+<text x="82" y="118" font-size="12"><tspan fill="#2563eb" font-weight="600">pcim_enable_device()</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">pcim_iomap_regions(BAR0)</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">pci_set_master()</tspan><tspan fill="#475569">　都是 devres 托管</tspan></text>
+<text x="82" y="144" font-size="12"><tspan fill="#2563eb" font-weight="600">pci_alloc_irq_vectors(1,1,ALL_TYPES)</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">dma_set_mask(32bit)</tspan><tspan fill="#b45309" font-weight="600">　★ 硬件只寻址低 4G，必须显式声明</tspan></text>
+<text x="82" y="170" font-size="12"><tspan fill="#2563eb" font-weight="600">mt792x_get_mac80211_ops()</tspan><tspan fill="#475569"> 取能力副本 → </tspan><tspan fill="#2563eb" font-weight="600">mt76_alloc_device()</tspan><tspan fill="#475569"> 分配 mt792x_dev（内嵌 mt76_dev）</tspan></text>
+<text x="82" y="196" font-size="12"><tspan fill="#475569">内联三张表：</tspan><tspan fill="#2563eb" font-weight="600">drv_ops</tspan><tspan fill="#475569">（硬件能力）/ </tspan><tspan fill="#2563eb" font-weight="600">hif_ops</tspan><tspan fill="#475569">（总线 + MCU 生命周期）/ </tspan><tspan fill="#2563eb" font-weight="600">irq_map</tspan><tspan fill="#475569">（中断位映射）</tspan></text>
+<text x="82" y="222" font-size="12"><tspan fill="#475569">换 </tspan><tspan fill="#2563eb" font-weight="600">bus_ops-&gt;rr / wr / rmw</tspan><tspan fill="#475569">（L1/L2 重映射）→ </tspan><tspan fill="#2563eb" font-weight="600">mt76_mmio_init(BAR0)</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">tasklet_init(irq_tasklet)</tspan></text>
+<text x="82" y="248" font-size="12"><tspan fill="#2563eb" font-weight="600">__mt792x_mcu_fw_pmctrl()</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">__mt792xe_mcu_drv_pmctrl()</tspan><tspan fill="#b45309" font-weight="600">　★ 电源握手：先让固件放手，驱动再取所有权</tspan></text>
+<text x="82" y="274" font-size="12"><tspan fill="#2563eb" font-weight="600">mt792x_wfsys_reset()</tspan><tspan fill="#475569"> → 清 host_irq_enable 屏蔽设备中断 → </tspan><tspan fill="#2563eb" font-weight="600">devm_request_irq(mt792x_irq_handler)</tspan></text>
+<text x="82" y="300" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_dma_init()</tspan><tspan fill="#475569">：建 TX(0) / MCU_WM(15) / FWDL(16) / RX(2) ring + NAPI</tspan></text>
+<text x="82" y="326" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_register_device()</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">queue_work(init_work)</tspan><tspan fill="#b45309" font-weight="600">　★ probe 在这里就返回了，后续初始化全在 workqueue 里跑</tspan></text>
+<text x="82" y="352" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_init_work</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">mt7925_init_hardware</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">mt792x_mcu_init</tspan><tspan fill="#475569">（PCIe 走 mt7925e_mcu_init）</tspan></text>
+<text x="82" y="378" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_run_firmware</tspan><tspan fill="#475569">：mt76_connac2_load_patch → load_ram → 轮询 FW_N9_RDY</tspan><tspan fill="#b45309" font-weight="600">　★ 这一步依赖固件文件</tspan></text>
+<text x="82" y="404" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_mcu_get_nic_capability()</tspan><tspan fill="#475569">：频段 / EHT / MLO 能力（chip_cap、eml_cap 全部来自固件）</tspan></text>
+<text x="82" y="430" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_mcu_set_eeprom()</tspan><tspan fill="#475569"> / </tspan><tspan fill="#2563eb" font-weight="600">mt7925_load_clc()</tspan><tspan fill="#475569">：EEPROM 覆盖 + 功率表 CLC + SAR</tspan></text>
+<text x="82" y="456" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_mac_init()</tspan><tspan fill="#475569">：WTBL 20 项清零 → band init（BN0/BN1）→ 定点速率表</tspan></text>
+<text x="82" y="482" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_set_stream_he_eht_caps</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">mt7925_init_mlo_caps</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">mt76_register_device()</tspan><tspan fill="#475569">（wiphy 上线）</tspan></text>
+<text x="82" y="508" font-size="12"><tspan fill="#2563eb" font-weight="600">dev-&gt;hw_init_done = true</tspan><tspan fill="#b45309" font-weight="600">　★ 此后才允许 chip reset；中断上半部也用 MT76_STATE_INITIALIZED 判归属</tspan></text>
+<text x="82" y="534" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_start()</tspan><tspan fill="#475569"> / </tspan><tspan fill="#2563eb" font-weight="600">mt7925_add_interface()</tspan><tspan fill="#475569">：接口 up、关联；</tspan><tspan fill="#2563eb" font-weight="600">mt7925_vif_cfg_changed()</tspan><tspan fill="#475569"> 处理 PS / IPv6 等</tspan></text>
+<text x="82" y="560" font-size="12"><tspan fill="#475569">STA 加入：sta_add → </tspan><tspan fill="#2563eb" font-weight="600">mt76_wcid_alloc()</tspan><tspan fill="#475569"> 占一个 WTBL 表项 → </tspan><tspan fill="#2563eb" font-weight="600">mt7925_mcu_add_sta()</tspan><tspan fill="#b45309" font-weight="600">　★ MLO 下每条链路各一个 wcid</tspan></text>
+
+<line x1="480" y1="602" x2="480" y2="630" stroke="#94a3b8" stroke-width="2" marker-end="url(#mtar)"/>
+
+<!-- ============ ② 运行期 ============ -->
+<rect x="24" y="640" width="912" height="692" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="640" width="912" height="36" rx="10" fill="#22c55e"/>
+<rect x="24" y="664" width="912" height="12" fill="#22c55e"/>
+<text x="44" y="665" font-size="14.5" font-weight="700" fill="#ffffff">② 运行期：数据收发（TX / RX）+ MCU 控制 + 省电（第 06 / 07 篇）</text>
+
+<text x="40" y="712" font-size="12.5" font-weight="700" fill="#166534">▎TX 上行：mac80211 → TXWI → DMA ring → 硬件 → 回收</text>
+<line x1="58" y1="734" x2="58" y2="838" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="58" cy="734" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="760" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="786" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="812" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="838" r="4.5" fill="#22c55e"/>
+<text x="82" y="738" font-size="12"><tspan fill="#475569">mac80211 选 sta / rate → </tspan><tspan fill="#2563eb" font-weight="600">mt792x_tx()</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">mt76_token_get()</tspan><tspan fill="#475569"> 取 token</tspan></text>
+<text x="82" y="764" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925e_tx_prepare_skb()</tspan><tspan fill="#b45309" font-weight="600">　★ PCIe 专属：把 TXWI 写进 DMA 缓冲</tspan></text>
+<text x="82" y="790" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_mac_write_txwi()</tspan><tspan fill="#475569">：WLAN_IDX = wcid-&gt;idx，OMAC / BAND / WMM 由 link_id 查得</tspan></text>
+<text x="82" y="816" font-size="12"><tspan fill="#2563eb" font-weight="600">mt76_dma_tx_queue_skb()</tspan><tspan fill="#475569"> → mt76_dma_add_buf() → kick 写 Q_WRITE → 硬件发出去</tspan></text>
+<text x="82" y="842" font-size="12"><tspan fill="#475569">回收：RX ring 收到 TXRX_NOTIFY → </tspan><tspan fill="#2563eb" font-weight="600">mt7925_mac_tx_free()</tspan><tspan fill="#475569"> → mt76_token_release() → 解除 TX_BLOCKED</tspan></text>
+
+<text x="40" y="874" font-size="12.5" font-weight="700" fill="#166534">▎RX 下行：中断 → tasklet → NAPI → 分流 → mac80211</text>
+<line x1="58" y1="896" x2="58" y2="1052" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="58" cy="896" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="922" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="948" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="974" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1000" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1026" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1052" r="4.5" fill="#22c55e"/>
+<text x="82" y="900" font-size="12"><tspan fill="#475569">上半部 </tspan><tspan fill="#2563eb" font-weight="600">mt792x_irq_handler()</tspan><tspan fill="#475569">：确认归属 → 关 host_irq_enable → tasklet_schedule</tspan></text>
+<text x="82" y="926" font-size="12"><tspan fill="#475569">下半部 </tspan><tspan fill="#2563eb" font-weight="600">mt792x_irq_tasklet()</tspan><tspan fill="#475569">：读 HOST_INT_STA(W1C) → mt76_set_irq_mask() → napi_schedule</tspan></text>
+<text x="82" y="952" font-size="12"><tspan fill="#475569">NAPI：</tspan><tspan fill="#2563eb" font-weight="600">mt792x_poll_rx()</tspan><tspan fill="#475569"> → mt76_dma_rx_poll() → mt76_dma_rx_process()（napi_build_skb + recycle）</tspan></text>
+<text x="82" y="978" font-size="12"><tspan fill="#475569">第一层分流 </tspan><tspan fill="#2563eb" font-weight="600">mt7925_rx_check()</tspan><tspan fill="#475569">：TXS / TXRX_NOTIFY 就地处理并消化掉 skb</tspan></text>
+<text x="82" y="1004" font-size="12"><tspan fill="#475569">第二层 </tspan><tspan fill="#2563eb" font-weight="600">mt7925_queue_rx_skb()</tspan><tspan fill="#475569">：数据帧 → </tspan><tspan fill="#2563eb" font-weight="600">mt7925_mac_fill_rx()</tspan><tspan fill="#475569"> → mt76_rx() → mac80211</tspan></text>
+<text x="82" y="1030" font-size="12"><tspan fill="#475569">RX_EVENT → </tspan><tspan fill="#2563eb" font-weight="600">mt7925_mcu_rx_event()</tspan><tspan fill="#475569">　（MCU 事件、扫描结果、TXS 都走这条）</tspan></text>
+<text x="82" y="1056" font-size="12"><tspan fill="#2563eb" font-weight="600">mt792x_rx_poll_complete()</tspan><tspan fill="#475569"> → mt76_connac_irq_enable() 重新开中断</tspan></text>
+
+<text x="40" y="1088" font-size="12.5" font-weight="700" fill="#166534">▎控制面：mac80211 回调 → MCU UNI 命令 → 片内固件</text>
+<line x1="58" y1="1110" x2="58" y2="1162" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="58" cy="1110" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1136" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1162" r="4.5" fill="#22c55e"/>
+<text x="82" y="1114" font-size="12"><tspan fill="#475569">mac80211 回调（扫描 / 认证 / 关联 / 密钥 / BA）→ </tspan><tspan fill="#2563eb" font-weight="600">mt7925_mcu_*()</tspan><tspan fill="#475569"> 组 UNI 命令</tspan></text>
+<text x="82" y="1140" font-size="12"><tspan fill="#475569">命令经 TX ring 15（</tspan><tspan fill="#2563eb" font-weight="600">MT7925_TXQ_MCU_WM</tspan><tspan fill="#475569">）交给片内 WF_MCU 固件执行</tspan></text>
+<text x="82" y="1166" font-size="12"><tspan fill="#475569">结果 / 事件经 RX ring 0（</tspan><tspan fill="#2563eb" font-weight="600">MT7925_RXQ_MCU_WM</tspan><tspan fill="#475569">）回来，由 mt7925_mcu_rx_event() 分发</tspan></text>
+
+<text x="40" y="1198" font-size="12.5" font-weight="700" fill="#166534">▎省电：runtime PM（drv_own / fw_own）与系统 suspend</text>
+<line x1="58" y1="1220" x2="58" y2="1298" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="58" cy="1220" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1246" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1272" r="4.5" fill="#22c55e"/>
+<circle cx="58" cy="1298" r="4.5" fill="#22c55e"/>
+<text x="82" y="1224" font-size="12"><tspan fill="#475569">空闲：</tspan><tspan fill="#2563eb" font-weight="600">mt792x_pm_power_save_work()</tspan><tspan fill="#475569"> → 置 MT76_STATE_PM → 深睡 → fw_own 交还固件</tspan></text>
+<text x="82" y="1250" font-size="12"><tspan fill="#475569">唤醒：</tspan><tspan fill="#2563eb" font-weight="600">mt792x_pm_wake_work()</tspan><tspan fill="#475569"> → drv_own → 退出深睡 → 必要时 mt792x_reset()</tspan></text>
+<text x="82" y="1276" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_suspend()</tspan><tspan fill="#475569"> → HIF suspend → 配置 WoWLAN；</tspan><tspan fill="#2563eb" font-weight="600">mt7925_resume()</tspan><tspan fill="#475569"> 反向恢复密钥 / BA / PS</tspan></text>
+<text x="82" y="1302" font-size="12"><tspan fill="#475569">三层省电：mac80211 PS（BSS_CHANGED_PS）/ mt76 runtime PM + 深睡 / 系统 suspend</tspan></text>
+
+<line x1="480" y1="1340" x2="480" y2="1368" stroke="#94a3b8" stroke-width="2" marker-end="url(#mtar)"/>
+
+<!-- ============ ③ 关闭卸载 ============ -->
+<rect x="24" y="1376" width="912" height="358" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+<rect x="24" y="1376" width="912" height="36" rx="10" fill="#f97316"/>
+<rect x="24" y="1400" width="912" height="12" fill="#f97316"/>
+<text x="44" y="1401" font-size="14.5" font-weight="700" fill="#ffffff">③ 关闭卸载：remove / shutdown 的收尾顺序（第 02 / 07 篇）</text>
+
+<line x1="58" y1="1440" x2="58" y2="1700" stroke="#cbd5e1" stroke-width="1.4"/>
+<circle cx="58" cy="1440" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1466" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1492" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1518" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1544" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1570" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1596" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1622" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1648" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1674" r="4.5" fill="#f97316"/>
+<circle cx="58" cy="1700" r="4.5" fill="#f97316"/>
+
+<text x="82" y="1444" font-size="12"><tspan fill="#2563eb" font-weight="600">mt7925_pci_remove()</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">mt7925e_unregister_device()</tspan><tspan fill="#475569">　（shutdown 复用同一条路径）</tspan></text>
+<text x="82" y="1470" font-size="12"><tspan fill="#475569">① </tspan><tspan fill="#2563eb" font-weight="600">cancel_work_sync(init_work)</tspan><tspan fill="#475569">：先掐掉异步初始化</tspan></text>
+<text x="82" y="1496" font-size="12"><tspan fill="#475569">② </tspan><tspan fill="#2563eb" font-weight="600">mt76_unregister_device()</tspan><tspan fill="#475569">：摘 netdev / wiphy，mac80211 不再下发帧</tspan></text>
+<text x="82" y="1522" font-size="12"><tspan fill="#475569">③ </tspan><tspan fill="#2563eb" font-weight="600">napi_disable()</tspan><tspan fill="#475569"> + cancel ps_work / wake_work / reset_work</tspan></text>
+<text x="82" y="1548" font-size="12"><tspan fill="#475569">④ </tspan><tspan fill="#2563eb" font-weight="600">mt7925_tx_token_put()</tspan><tspan fill="#475569">：归还 token 池</tspan></text>
+<text x="82" y="1574" font-size="12"><tspan fill="#475569">⑤ </tspan><tspan fill="#2563eb" font-weight="600">__mt792xe_mcu_drv_pmctrl()</tspan><tspan fill="#475569">：从固件手里拿回芯片所有权</tspan></text>
+<text x="82" y="1600" font-size="12"><tspan fill="#475569">⑥ </tspan><tspan fill="#2563eb" font-weight="600">mt792x_dma_cleanup()</tspan><tspan fill="#475569">：停 WFDMA + 释放 ring（先 DMA，后中断）</tspan></text>
+<text x="82" y="1626" font-size="12"><tspan fill="#475569">⑦ </tspan><tspan fill="#2563eb" font-weight="600">mt792x_wfsys_reset()</tspan><tspan fill="#475569"> + </tspan><tspan fill="#2563eb" font-weight="600">skb_queue_purge(res_q)</tspan></text>
+<text x="82" y="1652" font-size="12"><tspan fill="#475569">⑧ </tspan><tspan fill="#2563eb" font-weight="600">tasklet_disable(irq_tasklet)</tspan></text>
+<text x="82" y="1678" font-size="12"><tspan fill="#2563eb" font-weight="600">set_bit(MT76_REMOVED)</tspan><tspan fill="#b45309" font-weight="600">　★ 让飞行中的 ISR 立刻返回 IRQ_NONE</tspan><tspan fill="#475569"> → devm_free_irq()</tspan></text>
+<text x="82" y="1704" font-size="12"><tspan fill="#2563eb" font-weight="600">mt76_free_device()</tspan><tspan fill="#475569"> → </tspan><tspan fill="#2563eb" font-weight="600">pci_free_irq_vectors()</tspan><tspan fill="#475569">；pcim_* / devm_* 交给 devres 自动回收</tspan></text>
+
+<text x="24" y="1758" font-size="12" fill="#64748b">图例：蓝字 = 函数或符号　★ = 关键节点（易踩坑 / 绕不开）　▎= 泳道　左侧竖线 = 执行先后顺序　灰色大箭头 = 阶段切换</text>
+
+</svg>

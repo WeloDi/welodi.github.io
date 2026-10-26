@@ -7,6 +7,9 @@ tags:
   - 面试
   - 驱动开发
   - 嵌入式
+categories:
+  - 面试
+  - 基础
 ---
 
 ## 一、C 语言基础
@@ -14,27 +17,14 @@ tags:
 ### 1. volatile 关键字详解
 
 **答：**
-volatile 告诉编译器：该变量的值可能被「编译器无法预知」的方式改变，每次访问都必须从内存重新读取，禁止优化到寄存器中
-```c
+volatile 告诉编译器：这个变量的 value 可能会被意外改变——即使程序没显式修改，它也可能被外部因素改变。编译器就会放弃对该变量的优化。
 
-// 场景1：硬件寄存器（MMIO）
-volatile uint32_t *reg = (volatile uint32_t *)ioremap(0xfec80000, 4);
-*reg = 0x01;  // 强制写入硬件
-val = *reg;   // 强制从硬件读取
+为什么编译器要优化：编译器为了优化性能，在生成汇编语言时候，会对代码执行顺序做一些“调整”。
 
-// 场景2：中断中修改的全局变量
-volatile int irq_flag = 0;
-void interrupt_handler(void) {
-    irq_flag = 1;  // 中断中修改
-}
-while (!irq_flag);  // 主循环必须每次都重新读取
-
-// 场景3：多线程共享变量
-volatile int running = 1;
-void worker_thread(void) {
-    while (running) { /* 工作 */ }
-}
-```
+使用场景：
+1. 硬件寄存器读写（最核心场景）
+2. 中断服务程序与主程序共享变量
+3. 多线程共享变量
 
 **典型反例（不加 volatile 的后果）：**
 ```c

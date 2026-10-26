@@ -3,6 +3,9 @@ title: Interview
 date: 2026-06-12 18:27:58
 tags:
 excerpt: 嵌入式 Linux 驱动开发面试笔记，涵盖基础知识（编译流程、OSI七层模型、IIC/SPI/UART总线、中断、DMA、IPC）、工业协议（CANopen、EtherCAT）、ROS2、U-Boot 启动流程、CPU 调度与实时补丁、DRM 显示框架、USB 设备枚举、以及一个实际 G-Sensor 驱动问题调试案例。
+categories:
+  - 面试
+  - 综合
 ---
 
 # 1. 基础知识

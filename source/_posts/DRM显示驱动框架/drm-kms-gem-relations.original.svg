@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" font-family="'Microsoft YaHei','PingFang SC','Hiragino Sans GB',sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 4 L0 8 z" fill="#555555"/>
+    </marker>
+    <marker id="arGold" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 4 L0 8 z" fill="#b8860b"/>
+    </marker>
+    <marker id="arRed" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 4 L0 8 z" fill="#c0392b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="860" fill="#ffffff"/>
+
+  <!-- 用户空间 -->
+  <rect x="40" y="24" width="1120" height="76" rx="10" fill="#eef4fb" stroke="#7aa7d0" stroke-width="1.5"/>
+  <text x="64" y="54" font-size="15" font-weight="bold" fill="#1f4e79">用户空间：应用 / 合成器（Weston、SurfaceFlinger…）/ libdrm</text>
+  <text x="64" y="80" font-size="13" fill="#39607f">分配 buffer → 描述成 Framebuffer → atomic commit 提交 Plane；收到 page_flip 事件后送下一帧</text>
+
+  <line x1="600" y1="100" x2="600" y2="134" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="612" y="124" font-size="12.5" fill="#666666">ioctl（/dev/dri/card0）</text>
+
+  <!-- drm_device -->
+  <rect x="40" y="140" width="1120" height="470" rx="12" fill="#fcfcfd" stroke="#8e8e93" stroke-width="1.5"/>
+  <text x="64" y="170" font-size="15" font-weight="bold" fill="#333333">内核空间：drm_device —— 一台显示控制器，对应 /dev/dri/card0</text>
+
+  <!-- GEM 层 -->
+  <rect x="64" y="186" width="330" height="400" rx="10" fill="#fffaf0" stroke="#e0a94a" stroke-width="1.5"/>
+  <text x="84" y="212" font-size="14" font-weight="bold" fill="#a06a10">显存（GEM 层）</text>
+
+  <rect x="84" y="230" width="290" height="100" rx="8" fill="#fff2d9" stroke="#d99a2b" stroke-width="1.3"/>
+  <text x="100" y="256" font-size="14.5" font-weight="bold" fill="#7a4c05">drm_gem_object</text>
+  <text x="100" y="280" font-size="12.5" fill="#6b4405">真正存放像素的显存</text>
+  <text x="100" y="301" font-size="12.5" fill="#6b4405">分配 / 释放 / dma-buf 共享</text>
+  <text x="100" y="322" font-size="12.5" fill="#6b4405">GPU 与显示共用同一块内存</text>
+
+  <line x1="229" y1="330" x2="229" y2="364" stroke="#b8860b" stroke-width="1.6" marker-end="url(#arGold)"/>
+  <text x="241" y="352" font-size="12.5" fill="#8a6a00">被描述成</text>
+
+  <rect x="84" y="368" width="290" height="118" rx="8" fill="#fff2d9" stroke="#d99a2b" stroke-width="1.3"/>
+  <text x="100" y="394" font-size="14.5" font-weight="bold" fill="#7a4c05">drm_framebuffer</text>
+  <text x="100" y="418" font-size="12.5" fill="#6b4405">对 GEM 的「扫描输出描述」</text>
+  <text x="100" y="439" font-size="12.5" fill="#6b4405">format / pitch / size / offset</text>
+  <text x="100" y="460" font-size="12.5" fill="#6b4405">本身不含像素；同一个 GEM</text>
+  <text x="100" y="479" font-size="12.5" fill="#6b4405">可描述成多个 Framebuffer</text>
+
+  <text x="84" y="516" font-size="12.5" fill="#8a6a00">• 由用户空间 ADDFB2 创建</text>
+  <text x="84" y="537" font-size="12.5" fill="#8a6a00">• 登记在 mode_config.fb_list</text>
+  <text x="84" y="558" font-size="12.5" fill="#8a6a00">• 被 Plane 引用才会上屏</text>
+
+  <!-- KMS 层 -->
+  <rect x="420" y="186" width="716" height="400" rx="10" fill="#f2faf4" stroke="#6dbb87" stroke-width="1.5"/>
+  <text x="440" y="212" font-size="14" font-weight="bold" fill="#2f7a4a">KMS 对象（全部登记在 drm_mode_config 的各条链表中）</text>
+
+  <!-- Plane -->
+  <rect x="440" y="236" width="124" height="150" rx="8" fill="#e6f5ea" stroke="#4ea86d" stroke-width="1.3"/>
+  <text x="450" y="262" font-size="12.5" font-weight="bold" fill="#245e39">drm_plane</text>
+  <text x="450" y="286" font-size="12.5" fill="#2f5f42">图层 / 混合单元</text>
+  <text x="450" y="306" font-size="12.5" fill="#2f5f42">引用 1 个 FB</text>
+  <text x="450" y="326" font-size="12.5" fill="#2f5f42">zpos / alpha</text>
+  <text x="450" y="346" font-size="12.5" fill="#2f5f42">贴在哪块矩形</text>
+  <text x="450" y="366" font-size="12.5" fill="#2f5f42">可缩放旋转</text>
+
+  <line x1="566" y1="311" x2="578" y2="311" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <!-- CRTC -->
+  <rect x="580" y="236" width="124" height="150" rx="8" fill="#e6f5ea" stroke="#4ea86d" stroke-width="1.3"/>
+  <text x="590" y="262" font-size="12.5" font-weight="bold" fill="#245e39">drm_crtc</text>
+  <text x="590" y="286" font-size="12.5" fill="#2f5f42">时序发生器</text>
+  <text x="590" y="306" font-size="12.5" fill="#2f5f42">按 display_mode</text>
+  <text x="590" y="326" font-size="12.5" fill="#2f5f42">产生行/场同步</text>
+  <text x="590" y="346" font-size="12.5" fill="#2f5f42">vblank 中断</text>
+  <text x="590" y="366" font-size="12.5" fill="#2f5f42">可重配时序</text>
+
+  <line x1="706" y1="311" x2="718" y2="311" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <!-- Encoder -->
+  <rect x="720" y="236" width="124" height="150" rx="8" fill="#e6f5ea" stroke="#4ea86d" stroke-width="1.3"/>
+  <text x="730" y="262" font-size="12.5" font-weight="bold" fill="#245e39">drm_encoder</text>
+  <text x="730" y="286" font-size="12.5" fill="#2f5f42">信号转换</text>
+  <text x="730" y="306" font-size="12.5" fill="#2f5f42">并行像素流 →</text>
+  <text x="730" y="326" font-size="12.5" fill="#2f5f42">DSI/LVDS/HDMI</text>
+  <text x="730" y="346" font-size="12.5" fill="#2f5f42">控制器内部逻辑</text>
+
+  <line x1="846" y1="311" x2="858" y2="311" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <!-- Bridge -->
+  <rect x="860" y="236" width="124" height="150" rx="8" fill="#e6f5ea" stroke="#4ea86d" stroke-width="1.3"/>
+  <text x="870" y="262" font-size="12.5" font-weight="bold" fill="#245e39">drm_bridge</text>
+  <text x="870" y="286" font-size="12.5" fill="#2f5f42">转接站（可选）</text>
+  <text x="870" y="306" font-size="12.5" fill="#2f5f42">独立注册、可级联</text>
+  <text x="870" y="326" font-size="12.5" fill="#2f5f42">如 DSI→HDMI 桥</text>
+  <text x="870" y="346" font-size="12.5" fill="#2f5f42">无芯片时可省</text>
+
+  <line x1="986" y1="311" x2="998" y2="311" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <!-- Connector -->
+  <rect x="1000" y="236" width="124" height="150" rx="8" fill="#e6f5ea" stroke="#4ea86d" stroke-width="1.3"/>
+  <text x="1010" y="262" font-size="12.5" font-weight="bold" fill="#245e39">drm_connector</text>
+  <text x="1010" y="286" font-size="12.5" fill="#2f5f42">物理接口与屏</text>
+  <text x="1010" y="306" font-size="12.5" fill="#2f5f42">读 EDID / HPD</text>
+  <text x="1010" y="326" font-size="12.5" fill="#2f5f42">上报连接状态</text>
+  <text x="1010" y="346" font-size="12.5" fill="#2f5f42">提供 mode 列表</text>
+
+  <!-- FB 被 Plane 引用 -->
+  <line x1="374" y1="400" x2="428" y2="400" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arGold)"/>
+  <text x="376" y="390" font-size="11.5" fill="#8a6a00">被引用</text>
+
+  <!-- KMS 说明 -->
+  <text x="440" y="414" font-size="12.5" fill="#2f7a4a">• 五个对象串成一条链，就是数据流的固定通路</text>
+  <text x="440" y="436" font-size="12.5" fill="#2f7a4a">• 「能接谁」由 possible_crtcs / possible_encoders 声明</text>
+  <text x="440" y="458" font-size="12.5" fill="#2f7a4a">• 运行时的绑定关系记在 atomic state，不在链表里</text>
+  <text x="440" y="480" font-size="12.5" fill="#2f7a4a">• atomic commit 回调顺序：plane → crtc → encoder → connector</text>
+  <text x="440" y="502" font-size="12.5" fill="#2f7a4a">• Bridge 不上报用户空间，drmModeGetResources() 看不到它</text>
+
+  <!-- 硬件与外设 -->
+  <rect x="40" y="630" width="1120" height="200" rx="12" fill="#f8f6fd" stroke="#9b7fc9" stroke-width="1.5"/>
+  <text x="64" y="660" font-size="15" font-weight="bold" fill="#5b3f96">硬件与外设（不在 drm_device 里）</text>
+
+  <rect x="64" y="680" width="380" height="126" rx="8" fill="#efe9fb" stroke="#8c6fc4" stroke-width="1.3"/>
+  <text x="84" y="708" font-size="13.5" font-weight="bold" fill="#452d78">显示控制器（SoC 内部）</text>
+  <text x="84" y="734" font-size="12.5" fill="#4c3a80">图层混合器（Plane）→ 时序发生器（CRTC）</text>
+  <text x="84" y="755" font-size="12.5" fill="#4c3a80">→ 输出口（Encoder）</text>
+  <text x="84" y="776" font-size="12.5" fill="#4c3a80">物理单元与 DRM 对象一一对应</text>
+
+  <line x1="446" y1="743" x2="476" y2="743" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="461" y="733" font-size="11.5" fill="#666666" text-anchor="middle">DSI</text>
+
+  <rect x="480" y="680" width="300" height="126" rx="8" fill="#efe9fb" stroke="#8c6fc4" stroke-width="1.3"/>
+  <text x="500" y="708" font-size="13.5" font-weight="bold" fill="#452d78">外挂桥接 IC（可选）</text>
+  <text x="500" y="734" font-size="12.5" fill="#4c3a80">如 LT9611：MIPI DSI → HDMI</text>
+  <text x="500" y="755" font-size="12.5" fill="#4c3a80">对应 drm_bridge</text>
+
+  <line x1="782" y1="743" x2="816" y2="743" stroke="#555555" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="799" y="733" font-size="11.5" fill="#666666" text-anchor="middle">HDMI</text>
+
+  <rect x="820" y="680" width="316" height="126" rx="8" fill="#fdeeee" stroke="#d98b8b" stroke-width="1.3"/>
+  <text x="840" y="708" font-size="13.5" font-weight="bold" fill="#8c3b3b">物理接口 + 显示器</text>
+  <text x="840" y="734" font-size="12.5" fill="#7d4a4a">接收信号并显示</text>
+  <text x="840" y="755" font-size="12.5" fill="#7d4a4a">回传 EDID、产生 HPD</text>
+
+  <!-- EDID / HPD 回读 -->
+  <line x1="1090" y1="678" x2="1090" y2="394" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#arRed)"/>
+  <text x="1082" y="470" font-size="12" fill="#c0392b" text-anchor="end">信号 ↓ / EDID ↑</text>
+
+  <text x="40" y="848" font-size="12" fill="#666666">图例：实线 = 数据流；金色虚线 = Framebuffer 被 Plane 引用；红色虚线 = 从显示器回读 EDID / HPD</text>
+</svg>

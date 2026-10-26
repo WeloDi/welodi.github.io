@@ -3,15 +3,14 @@
 # Navigation menu
 menu:
   Home: /
-  Archives: /archives
-  Tags: /tags
   Categories: /categories
+  Tags: /tags
   About: /about
 
 # Table of Contents (right sidebar on post pages)
 toc:
   enable: true
-  max_depth: 3
+  max_depth: 4
   min_depth: 1
   list_number: false
 

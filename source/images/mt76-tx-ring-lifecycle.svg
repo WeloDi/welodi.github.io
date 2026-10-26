@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1960" viewBox="0 0 1700 1960">
+<defs>
+<style>
+text{font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;}
+.mono{font-family:Consolas,"DejaVu Sans Mono","Courier New",monospace;}
+.tt{font-size:26px;font-weight:700;fill:#1a237e;}
+.ts{font-size:14px;fill:#607d8b;}
+.lg{font-size:14px;font-weight:700;fill:#37474f;}
+.ti{font-size:16px;font-weight:700;fill:#263238;}
+.de{font-size:13px;fill:#546e7a;}
+.cd{font-size:12.5px;fill:#37474f;}
+.bd{font-size:16px;font-weight:700;fill:#fff;}
+.cl{font-size:15px;font-weight:700;fill:#37474f;}
+.cs{font-size:9.5px;fill:#b0bec5;}
+.pc{font-size:12.5px;font-weight:700;}
+.bl{font-size:11px;font-weight:700;}
+</style>
+<marker id="aFLOW" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#cfd8dc"/></marker>
+<marker id="aD" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#66bb6a"/></marker>
+<marker id="aP" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#ffa726"/></marker>
+<marker id="aH" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#6a1b9a"/></marker>
+<marker id="aN" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 z" fill="#90a4ae"/></marker>
+</defs>
+<rect x="0" y="0" width="1700" height="1960" fill="#ffffff"/>
+<text class="tt" x="60.0" y="54.0" text-anchor="start">mt76 TX 环形队列：tail / dma_idx / head 三指针生命周期</text>
+<path d="M60.0,78.0 L1640.0,78.0" fill="none" stroke="#e0e6ea" stroke-width="1.2"/>
+<text class="lg" x="60.0" y="156.0" text-anchor="start">三个指针</text>
+<rect x="60.0" y="182.0" width="108.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="114.0" y="198.0" text-anchor="middle" fill="#6a1b9a">head</text>
+<text class="de" x="180.0" y="198.0" text-anchor="start">→  驱动入队位置：下一个空槽，mt76_dma_add_buf() 里 ++</text>
+<rect x="60.0" y="209.0" width="108.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="114.0" y="225.0" text-anchor="middle" fill="#1565c0">dma_idx</text>
+<text class="de" x="180.0" y="225.0" text-anchor="start">→  硬件完成位置：硬件写 DMA_IDX 寄存器，驱动只读</text>
+<rect x="60.0" y="236.0" width="108.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="114.0" y="252.0" text-anchor="middle" fill="#c62828">tail</text>
+<text class="de" x="180.0" y="252.0" text-anchor="start">→  驱动回收位置：mt76_dma_tx_cleanup() 里追到 dma_idx</text>
+<circle cx="112" cy="334.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="340.0" text-anchor="middle">1</text>
+<text class="ti" x="144.0" y="330.0" text-anchor="start">协议栈下发 skb 之前：队列为空</text>
+<text class="de" x="144.0" y="354.0" text-anchor="start">· mt76_dma_tx_queue_skb() 入口</text>
+<text class="de" x="144.0" y="375.0" text-anchor="start">· 先做水位检查，环满则丢包</text>
+<path d="M112.0,355.0 L112.0,471.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="490.0" y="306.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="322.0" text-anchor="middle" fill="#6a1b9a">head=0</text>
+<path d="M520.0,328.0 L520.0,385.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M515.0,384.0 L525.0,384.0 L520.0,391.0 z" fill="#6a1b9a"/>
+<rect x="479.5" y="334.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="350.0" text-anchor="middle" fill="#1565c0">dma_idx=0</text>
+<path d="M520.0,356.0 L520.0,385.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M515.0,384.0 L525.0,384.0 L520.0,391.0 z" fill="#1565c0"/>
+<rect x="490.0" y="362.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="378.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,384.0 L520.0,385.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,384.0 L525.0,384.0 L520.0,391.0 z" fill="#c62828"/>
+<rect x="520.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="605.0" y="432.0" text-anchor="end">0</text>
+<rect x="612.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="697.0" y="432.0" text-anchor="end">1</text>
+<rect x="704.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="789.0" y="432.0" text-anchor="end">2</text>
+<rect x="796.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="881.0" y="432.0" text-anchor="end">3</text>
+<rect x="888.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="432.0" text-anchor="end">4</text>
+<rect x="980.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="432.0" text-anchor="end">5</text>
+<rect x="1072.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="432.0" text-anchor="end">6</text>
+<rect x="1164.0" y="392.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="432.0" text-anchor="end">7</text>
+<rect x="520.0" y="436.0" width="736.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="888.0" y="447.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="344.5" width="300.0" height="71.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="366.5" xml:space="preserve">if (q-&gt;queued + (tx_info.nbuf + 1) / 2</text>
+<text class="mono cd" x="1291.0" y="385.5" xml:space="preserve">    &gt;= q-&gt;ndesc - 1)</text>
+<text class="mono cd" x="1291.0" y="404.5" xml:space="preserve">        goto unmap;   /* 环满 */</text>
+<path d="M70.0,452.0 L1640.0,452.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="494.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="500.0" text-anchor="middle">2</text>
+<text class="ti" x="144.0" y="490.0" text-anchor="start">分配 txwi、DMA 映射、填描述符</text>
+<text class="de" x="144.0" y="514.0" text-anchor="start">· desc[0].buf0 ← txwi 的 DMA 地址</text>
+<text class="de" x="144.0" y="535.0" text-anchor="start">· desc[0].buf1 ← skb-&gt;data 的 DMA 地址</text>
+<text class="de" x="144.0" y="556.0" text-anchor="start">· head 0→1，queued=1（还没 kick）</text>
+<path d="M112.0,515.0 L112.0,631.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="582.0" y="466.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="612.0" y="482.0" text-anchor="middle" fill="#6a1b9a">head=1</text>
+<path d="M612.0,488.0 L612.0,545.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M607.0,544.0 L617.0,544.0 L612.0,551.0 z" fill="#6a1b9a"/>
+<rect x="479.5" y="494.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="510.0" text-anchor="middle" fill="#1565c0">dma_idx=0</text>
+<path d="M520.0,516.0 L520.0,545.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M515.0,544.0 L525.0,544.0 L520.0,551.0 z" fill="#1565c0"/>
+<rect x="490.0" y="522.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="538.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,544.0 L520.0,545.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,544.0 L525.0,544.0 L520.0,551.0 z" fill="#c62828"/>
+<rect x="520.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="566.0" y="574.0" text-anchor="middle" fill="#e65100">P0</text>
+<text class="cs" x="566.0" y="589.0" text-anchor="middle">desc[0]</text>
+<text class="cs" x="605.0" y="592.0" text-anchor="end">0</text>
+<rect x="612.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="697.0" y="592.0" text-anchor="end">1</text>
+<rect x="704.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="789.0" y="592.0" text-anchor="end">2</text>
+<rect x="796.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="881.0" y="592.0" text-anchor="end">3</text>
+<rect x="888.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="592.0" text-anchor="end">4</text>
+<rect x="980.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="592.0" text-anchor="end">5</text>
+<rect x="1072.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="592.0" text-anchor="end">6</text>
+<rect x="1164.0" y="552.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="592.0" text-anchor="end">7</text>
+<rect x="520.0" y="596.0" width="92.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="566.0" y="607.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="612.0" y="596.0" width="644.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="934.0" y="607.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="485.5" width="358.0" height="109.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="507.5" xml:space="preserve">t = mt76_get_txwi(dev);</text>
+<text class="mono cd" x="1291.0" y="526.5" xml:space="preserve">addr = dma_map_single(..., skb-&gt;data, ...);</text>
+<text class="mono cd" x="1291.0" y="545.5" xml:space="preserve">tx_info.buf[0] = { t-&gt;dma_addr, txwi_size };</text>
+<text class="mono cd" x="1291.0" y="564.5" xml:space="preserve">tx_info.buf[1] = { addr, len };   /* nbuf = 2 */</text>
+<text class="mono cd" x="1291.0" y="583.5" xml:space="preserve">mt76_dma_add_buf(dev, q, tx_info.buf, ...);</text>
+<path d="M70.0,612.0 L1640.0,612.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="654.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="660.0" text-anchor="middle">3</text>
+<text class="ti" x="144.0" y="650.0" text-anchor="start">kick：把 head 写给硬件 cpu_idx</text>
+<text class="de" x="144.0" y="674.0" text-anchor="start">· 硬件读 desc[0] → 取 buf0/buf1 → 发到射频</text>
+<text class="de" x="144.0" y="695.0" text-anchor="start">· 软件三个指针都不动</text>
+<path d="M112.0,675.0 L112.0,791.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="582.0" y="626.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="612.0" y="642.0" text-anchor="middle" fill="#6a1b9a">head=1</text>
+<path d="M612.0,648.0 L612.0,705.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M607.0,704.0 L617.0,704.0 L612.0,711.0 z" fill="#6a1b9a"/>
+<rect x="479.5" y="654.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="670.0" text-anchor="middle" fill="#1565c0">dma_idx=0</text>
+<path d="M520.0,676.0 L520.0,705.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M515.0,704.0 L525.0,704.0 L520.0,711.0 z" fill="#1565c0"/>
+<rect x="490.0" y="682.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="698.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,704.0 L520.0,705.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,704.0 L525.0,704.0 L520.0,711.0 z" fill="#c62828"/>
+<rect x="520.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="566.0" y="734.0" text-anchor="middle" fill="#e65100">P0</text>
+<text class="cs" x="566.0" y="749.0" text-anchor="middle">desc[0]</text>
+<text class="cs" x="605.0" y="752.0" text-anchor="end">0</text>
+<rect x="612.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="697.0" y="752.0" text-anchor="end">1</text>
+<rect x="704.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="789.0" y="752.0" text-anchor="end">2</text>
+<rect x="796.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="881.0" y="752.0" text-anchor="end">3</text>
+<rect x="888.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="752.0" text-anchor="end">4</text>
+<rect x="980.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="752.0" text-anchor="end">5</text>
+<rect x="1072.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="752.0" text-anchor="end">6</text>
+<rect x="1164.0" y="712.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="752.0" text-anchor="end">7</text>
+<rect x="520.0" y="756.0" width="92.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="566.0" y="767.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="612.0" y="756.0" width="644.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="934.0" y="767.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="645.5" width="300.0" height="109.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="667.5" xml:space="preserve">mt76_dma_kick_queue(dev, q)</text>
+<text class="mono cd" x="1291.0" y="686.5" xml:space="preserve">{</text>
+<text class="mono cd" x="1291.0" y="705.5" xml:space="preserve">    wmb();</text>
+<text class="mono cd" x="1291.0" y="724.5" xml:space="preserve">    Q_WRITE(q, cpu_idx, q-&gt;head);</text>
+<text class="mono cd" x="1291.0" y="743.5" xml:space="preserve">}</text>
+<path d="M70.0,772.0 L1640.0,772.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="814.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="820.0" text-anchor="middle">4</text>
+<text class="ti" x="144.0" y="810.0" text-anchor="start">硬件发送中，又提交 P1 / P2 / P3</text>
+<text class="de" x="144.0" y="834.0" text-anchor="start">· head 1→4，queued=4</text>
+<text class="de" x="144.0" y="855.0" text-anchor="start">· [dma_idx, head) = P0..P3 全在硬件手里</text>
+<path d="M112.0,835.0 L112.0,951.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="858.0" y="786.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="802.0" text-anchor="middle" fill="#6a1b9a">head=4</text>
+<path d="M888.0,808.0 L888.0,865.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M883.0,864.0 L893.0,864.0 L888.0,871.0 z" fill="#6a1b9a"/>
+<rect x="479.5" y="814.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="830.0" text-anchor="middle" fill="#1565c0">dma_idx=0</text>
+<path d="M520.0,836.0 L520.0,865.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M515.0,864.0 L525.0,864.0 L520.0,871.0 z" fill="#1565c0"/>
+<rect x="490.0" y="842.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="858.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,864.0 L520.0,865.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,864.0 L525.0,864.0 L520.0,871.0 z" fill="#c62828"/>
+<rect x="520.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="566.0" y="894.0" text-anchor="middle" fill="#e65100">P0</text>
+<text class="cs" x="566.0" y="909.0" text-anchor="middle">desc[0]</text>
+<text class="cs" x="605.0" y="912.0" text-anchor="end">0</text>
+<rect x="612.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="658.0" y="894.0" text-anchor="middle" fill="#e65100">P1</text>
+<text class="cs" x="658.0" y="909.0" text-anchor="middle">desc[1]</text>
+<text class="cs" x="697.0" y="912.0" text-anchor="end">1</text>
+<rect x="704.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="750.0" y="894.0" text-anchor="middle" fill="#e65100">P2</text>
+<text class="cs" x="750.0" y="909.0" text-anchor="middle">desc[2]</text>
+<text class="cs" x="789.0" y="912.0" text-anchor="end">2</text>
+<rect x="796.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="842.0" y="894.0" text-anchor="middle" fill="#e65100">P3</text>
+<text class="cs" x="842.0" y="909.0" text-anchor="middle">desc[3]</text>
+<text class="cs" x="881.0" y="912.0" text-anchor="end">3</text>
+<rect x="888.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="912.0" text-anchor="end">4</text>
+<rect x="980.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="912.0" text-anchor="end">5</text>
+<rect x="1072.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="912.0" text-anchor="end">6</text>
+<rect x="1164.0" y="872.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="912.0" text-anchor="end">7</text>
+<rect x="520.0" y="916.0" width="368.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="704.0" y="927.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="888.0" y="916.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="1072.0" y="927.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="805.5" width="300.0" height="109.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="827.5" xml:space="preserve">/* mt76_dma_add_buf() 循环体内 */</text>
+<text class="mono cd" x="1291.0" y="846.5" xml:space="preserve">q-&gt;head = (q-&gt;head + 1) % q-&gt;ndesc;</text>
+<text class="mono cd" x="1291.0" y="865.5" xml:space="preserve">q-&gt;queued++;</text>
+<text class="mono cd" x="1291.0" y="884.5" xml:space="preserve">...</text>
+<text class="mono cd" x="1291.0" y="903.5" xml:space="preserve">mt76_dma_kick_queue(dev, q);</text>
+<path d="M70.0,932.0 L1640.0,932.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="974.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="980.0" text-anchor="middle">5</text>
+<text class="ti" x="144.0" y="970.0" text-anchor="start">硬件发完 P0、P1，推进 dma_idx</text>
+<text class="de" x="144.0" y="994.0" text-anchor="start">· 硬件自己写 DMA_IDX 寄存器 0→2（驱动不参与）</text>
+<text class="de" x="144.0" y="1015.0" text-anchor="start">· [tail, dma_idx) = P0、P1 已完成待回收</text>
+<path d="M112.0,995.0 L112.0,1111.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="858.0" y="946.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="962.0" text-anchor="middle" fill="#6a1b9a">head=4</text>
+<path d="M888.0,968.0 L888.0,1025.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M883.0,1024.0 L893.0,1024.0 L888.0,1031.0 z" fill="#6a1b9a"/>
+<rect x="663.5" y="974.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="704.0" y="990.0" text-anchor="middle" fill="#1565c0">dma_idx=2</text>
+<path d="M704.0,996.0 L704.0,1025.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M699.0,1024.0 L709.0,1024.0 L704.0,1031.0 z" fill="#1565c0"/>
+<rect x="490.0" y="1002.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="1018.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,1024.0 L520.0,1025.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,1024.0 L525.0,1024.0 L520.0,1031.0 z" fill="#c62828"/>
+<rect x="520.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="cl" x="566.0" y="1054.0" text-anchor="middle" fill="#2e7d32">P0</text>
+<text class="cs" x="566.0" y="1069.0" text-anchor="middle">desc[0]</text>
+<text class="cs" x="605.0" y="1072.0" text-anchor="end">0</text>
+<rect x="612.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="cl" x="658.0" y="1054.0" text-anchor="middle" fill="#2e7d32">P1</text>
+<text class="cs" x="658.0" y="1069.0" text-anchor="middle">desc[1]</text>
+<text class="cs" x="697.0" y="1072.0" text-anchor="end">1</text>
+<rect x="704.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="750.0" y="1054.0" text-anchor="middle" fill="#e65100">P2</text>
+<text class="cs" x="750.0" y="1069.0" text-anchor="middle">desc[2]</text>
+<text class="cs" x="789.0" y="1072.0" text-anchor="end">2</text>
+<rect x="796.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="842.0" y="1054.0" text-anchor="middle" fill="#e65100">P3</text>
+<text class="cs" x="842.0" y="1069.0" text-anchor="middle">desc[3]</text>
+<text class="cs" x="881.0" y="1072.0" text-anchor="end">3</text>
+<rect x="888.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="1072.0" text-anchor="end">4</text>
+<rect x="980.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="1072.0" text-anchor="end">5</text>
+<rect x="1072.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="1072.0" text-anchor="end">6</text>
+<rect x="1164.0" y="1032.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="1072.0" text-anchor="end">7</text>
+<rect x="520.0" y="1076.0" width="184.0" height="15.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.2"/>
+<text class="bl" x="612.0" y="1087.5" text-anchor="middle" fill="#2e7d32">已完成待回收</text>
+<rect x="704.0" y="1076.0" width="184.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="796.0" y="1087.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="888.0" y="1076.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="1072.0" y="1087.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="984.5" width="300.0" height="71.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="1006.5" xml:space="preserve">/* 硬件侧：DMA_IDX 寄存器 0 -&gt; 2 */</text>
+<text class="mono cd" x="1291.0" y="1025.5" xml:space="preserve">/* P0、P1 描述符 ctrl 置上 DMA_DONE */</text>
+<text class="mono cd" x="1291.0" y="1044.5" xml:space="preserve">/* 并拉高 TX 完成中断线 */</text>
+<path d="M70.0,1092.0 L1640.0,1092.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="1134.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="1140.0" text-anchor="middle">6</text>
+<text class="ti" x="144.0" y="1130.0" text-anchor="start">TX 完成中断 → 调度 tx_napi</text>
+<text class="de" x="144.0" y="1154.0" text-anchor="start">· 上半部关中断 → tasklet → napi_schedule()</text>
+<text class="de" x="144.0" y="1175.0" text-anchor="start">· 所有 TX 队列共用一个 tx_napi</text>
+<path d="M112.0,1155.0 L112.0,1271.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="858.0" y="1106.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="1122.0" text-anchor="middle" fill="#6a1b9a">head=4</text>
+<path d="M888.0,1128.0 L888.0,1185.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M883.0,1184.0 L893.0,1184.0 L888.0,1191.0 z" fill="#6a1b9a"/>
+<rect x="663.5" y="1134.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="704.0" y="1150.0" text-anchor="middle" fill="#1565c0">dma_idx=2</text>
+<path d="M704.0,1156.0 L704.0,1185.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M699.0,1184.0 L709.0,1184.0 L704.0,1191.0 z" fill="#1565c0"/>
+<rect x="490.0" y="1162.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="1178.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,1184.0 L520.0,1185.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,1184.0 L525.0,1184.0 L520.0,1191.0 z" fill="#c62828"/>
+<rect x="520.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="cl" x="566.0" y="1214.0" text-anchor="middle" fill="#2e7d32">P0</text>
+<text class="cs" x="566.0" y="1229.0" text-anchor="middle">desc[0]</text>
+<text class="cs" x="605.0" y="1232.0" text-anchor="end">0</text>
+<rect x="612.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="cl" x="658.0" y="1214.0" text-anchor="middle" fill="#2e7d32">P1</text>
+<text class="cs" x="658.0" y="1229.0" text-anchor="middle">desc[1]</text>
+<text class="cs" x="697.0" y="1232.0" text-anchor="end">1</text>
+<rect x="704.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="750.0" y="1214.0" text-anchor="middle" fill="#e65100">P2</text>
+<text class="cs" x="750.0" y="1229.0" text-anchor="middle">desc[2]</text>
+<text class="cs" x="789.0" y="1232.0" text-anchor="end">2</text>
+<rect x="796.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="842.0" y="1214.0" text-anchor="middle" fill="#e65100">P3</text>
+<text class="cs" x="842.0" y="1229.0" text-anchor="middle">desc[3]</text>
+<text class="cs" x="881.0" y="1232.0" text-anchor="end">3</text>
+<rect x="888.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="1232.0" text-anchor="end">4</text>
+<rect x="980.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="1232.0" text-anchor="end">5</text>
+<rect x="1072.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="1232.0" text-anchor="end">6</text>
+<rect x="1164.0" y="1192.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="1232.0" text-anchor="end">7</text>
+<rect x="520.0" y="1236.0" width="184.0" height="15.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.2"/>
+<text class="bl" x="612.0" y="1247.5" text-anchor="middle" fill="#2e7d32">已完成待回收</text>
+<rect x="704.0" y="1236.0" width="184.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="796.0" y="1247.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="888.0" y="1236.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="1072.0" y="1247.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="1135.0" width="337.0" height="90.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="1157.0" xml:space="preserve">mt792x_irq_handler()</text>
+<text class="mono cd" x="1291.0" y="1176.0" xml:space="preserve">    tasklet_schedule(&amp;dev-&gt;mt76.irq_tasklet);</text>
+<text class="mono cd" x="1291.0" y="1195.0" xml:space="preserve">mt792x_irq_tasklet()</text>
+<text class="mono cd" x="1291.0" y="1214.0" xml:space="preserve">    napi_schedule(&amp;dev-&gt;mt76.tx_napi);</text>
+<path d="M70.0,1252.0 L1640.0,1252.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="1294.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="1300.0" text-anchor="middle">7</text>
+<text class="ti" x="144.0" y="1290.0" text-anchor="start">cleanup 读硬件 dma_idx</text>
+<text class="de" x="144.0" y="1314.0" text-anchor="start">· last = dma_idx = 2</text>
+<text class="de" x="144.0" y="1335.0" text-anchor="start">· tail 还停在 0</text>
+<path d="M112.0,1315.0 L112.0,1431.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="858.0" y="1266.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="1282.0" text-anchor="middle" fill="#6a1b9a">head=4</text>
+<path d="M888.0,1288.0 L888.0,1345.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M883.0,1344.0 L893.0,1344.0 L888.0,1351.0 z" fill="#6a1b9a"/>
+<rect x="663.5" y="1294.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="704.0" y="1310.0" text-anchor="middle" fill="#1565c0">dma_idx=2</text>
+<path d="M704.0,1316.0 L704.0,1345.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M699.0,1344.0 L709.0,1344.0 L704.0,1351.0 z" fill="#1565c0"/>
+<rect x="490.0" y="1322.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="520.0" y="1338.0" text-anchor="middle" fill="#c62828">tail=0</text>
+<path d="M520.0,1344.0 L520.0,1345.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M515.0,1344.0 L525.0,1344.0 L520.0,1351.0 z" fill="#c62828"/>
+<rect x="520.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="cl" x="566.0" y="1374.0" text-anchor="middle" fill="#2e7d32">P0</text>
+<text class="cs" x="566.0" y="1389.0" text-anchor="middle">desc[0]</text>
+<text class="cs" x="605.0" y="1392.0" text-anchor="end">0</text>
+<rect x="612.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="cl" x="658.0" y="1374.0" text-anchor="middle" fill="#2e7d32">P1</text>
+<text class="cs" x="658.0" y="1389.0" text-anchor="middle">desc[1]</text>
+<text class="cs" x="697.0" y="1392.0" text-anchor="end">1</text>
+<rect x="704.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="750.0" y="1374.0" text-anchor="middle" fill="#e65100">P2</text>
+<text class="cs" x="750.0" y="1389.0" text-anchor="middle">desc[2]</text>
+<text class="cs" x="789.0" y="1392.0" text-anchor="end">2</text>
+<rect x="796.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="842.0" y="1374.0" text-anchor="middle" fill="#e65100">P3</text>
+<text class="cs" x="842.0" y="1389.0" text-anchor="middle">desc[3]</text>
+<text class="cs" x="881.0" y="1392.0" text-anchor="end">3</text>
+<rect x="888.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="1392.0" text-anchor="end">4</text>
+<rect x="980.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="1392.0" text-anchor="end">5</text>
+<rect x="1072.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="1392.0" text-anchor="end">6</text>
+<rect x="1164.0" y="1352.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="1392.0" text-anchor="end">7</text>
+<rect x="520.0" y="1396.0" width="184.0" height="15.0" rx="0" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.2"/>
+<text class="bl" x="612.0" y="1407.5" text-anchor="middle" fill="#2e7d32">已完成待回收</text>
+<rect x="704.0" y="1396.0" width="184.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="796.0" y="1407.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="888.0" y="1396.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="1072.0" y="1407.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="1304.5" width="316.0" height="71.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="1326.5" xml:space="preserve">mt76_dma_tx_cleanup(dev, q, false)</text>
+<text class="mono cd" x="1291.0" y="1345.5" xml:space="preserve">{</text>
+<text class="mono cd" x="1291.0" y="1364.5" xml:space="preserve">    last = Q_READ(q, dma_idx);   /* = 2 */</text>
+<path d="M70.0,1412.0 L1640.0,1412.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="1454.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="1460.0" text-anchor="middle">8</text>
+<text class="ti" x="144.0" y="1450.0" text-anchor="start">驱动清理：tail 追到 dma_idx</text>
+<text class="de" x="144.0" y="1474.0" text-anchor="start">· P0、P1：解映射 → 释放 skb → 归还 txwi → tail++</text>
+<text class="de" x="144.0" y="1495.0" text-anchor="start">· tail 0→2，queued=2</text>
+<path d="M112.0,1475.0 L112.0,1591.0" fill="none" stroke="#cfd8dc" stroke-width="1.6" marker-end="url(#aFLOW)"/>
+<rect x="858.0" y="1426.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="1442.0" text-anchor="middle" fill="#6a1b9a">head=4</text>
+<path d="M888.0,1448.0 L888.0,1505.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M883.0,1504.0 L893.0,1504.0 L888.0,1511.0 z" fill="#6a1b9a"/>
+<rect x="663.5" y="1454.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="704.0" y="1470.0" text-anchor="middle" fill="#1565c0">dma_idx=2</text>
+<path d="M704.0,1476.0 L704.0,1505.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M699.0,1504.0 L709.0,1504.0 L704.0,1511.0 z" fill="#1565c0"/>
+<rect x="674.0" y="1482.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="704.0" y="1498.0" text-anchor="middle" fill="#c62828">tail=2</text>
+<path d="M704.0,1504.0 L704.0,1505.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M699.0,1504.0 L709.0,1504.0 L704.0,1511.0 z" fill="#c62828"/>
+<rect x="520.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="605.0" y="1552.0" text-anchor="end">0</text>
+<rect x="612.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="697.0" y="1552.0" text-anchor="end">1</text>
+<rect x="704.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="750.0" y="1534.0" text-anchor="middle" fill="#e65100">P2</text>
+<text class="cs" x="750.0" y="1549.0" text-anchor="middle">desc[2]</text>
+<text class="cs" x="789.0" y="1552.0" text-anchor="end">2</text>
+<rect x="796.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.4"/>
+<text class="cl" x="842.0" y="1534.0" text-anchor="middle" fill="#e65100">P3</text>
+<text class="cs" x="842.0" y="1549.0" text-anchor="middle">desc[3]</text>
+<text class="cs" x="881.0" y="1552.0" text-anchor="end">3</text>
+<rect x="888.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="1552.0" text-anchor="end">4</text>
+<rect x="980.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="1552.0" text-anchor="end">5</text>
+<rect x="1072.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="1552.0" text-anchor="end">6</text>
+<rect x="1164.0" y="1512.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="1552.0" text-anchor="end">7</text>
+<rect x="704.0" y="1556.0" width="184.0" height="15.0" rx="0" fill="#fff3e0" stroke="#ffa726" stroke-width="1.2"/>
+<text class="bl" x="796.0" y="1567.5" text-anchor="middle" fill="#e65100">已提交未完成</text>
+<rect x="888.0" y="1556.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="1072.0" y="1567.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="520.0" y="1556.0" width="184.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="612.0" y="1567.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="1407.5" width="372.0" height="185.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="1429.5" xml:space="preserve">while (q-&gt;queued &gt; 0 &amp;&amp; q-&gt;tail != last) {</text>
+<text class="mono cd" x="1291.0" y="1448.5" xml:space="preserve">    mt76_dma_tx_cleanup_idx(dev, q, q-&gt;tail, &amp;e);</text>
+<text class="mono cd" x="1291.0" y="1467.5" xml:space="preserve">        dma_unmap_single(e-&gt;dma_addr[0]);  /* txwi */</text>
+<text class="mono cd" x="1291.0" y="1486.5" xml:space="preserve">        dma_unmap_single(e-&gt;dma_addr[1]);  /* data */</text>
+<text class="mono cd" x="1291.0" y="1505.5" xml:space="preserve">    mt76_queue_tx_complete(dev, q, &amp;e);</text>
+<text class="mono cd" x="1291.0" y="1524.5" xml:space="preserve">        q-&gt;tail = (q-&gt;tail + 1) % q-&gt;ndesc;</text>
+<text class="mono cd" x="1291.0" y="1543.5" xml:space="preserve">        q-&gt;queued--;   /* 释放 skb */</text>
+<text class="mono cd" x="1291.0" y="1562.5" xml:space="preserve">    mt76_put_txwi(dev, e.txwi);</text>
+<text class="mono cd" x="1291.0" y="1581.5" xml:space="preserve">}</text>
+<path d="M70.0,1572.0 L1640.0,1572.0" fill="none" stroke="#eceff1" stroke-width="1.2" stroke-dasharray="7,6"/>
+<circle cx="112" cy="1614.0" r="19" fill="#37474f"/>
+<text class="bd" x="112.0" y="1620.0" text-anchor="middle">9</text>
+<text class="ti" x="144.0" y="1610.0" text-anchor="start">发完并回收，队列重回空</text>
+<text class="de" x="144.0" y="1634.0" text-anchor="start">· dma_idx 追到 4，tail 也追到 4</text>
+<text class="de" x="144.0" y="1655.0" text-anchor="start">· queued=0，可继续提交新包</text>
+<rect x="858.0" y="1586.0" width="60.0" height="22.0" rx="4" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="1602.0" text-anchor="middle" fill="#6a1b9a">head=4</text>
+<path d="M888.0,1608.0 L888.0,1665.0" fill="none" stroke="#6a1b9a" stroke-width="1.6"/>
+<path d="M883.0,1664.0 L893.0,1664.0 L888.0,1671.0 z" fill="#6a1b9a"/>
+<rect x="847.5" y="1614.0" width="81.0" height="22.0" rx="4" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="1630.0" text-anchor="middle" fill="#1565c0">dma_idx=4</text>
+<path d="M888.0,1636.0 L888.0,1665.0" fill="none" stroke="#1565c0" stroke-width="1.6"/>
+<path d="M883.0,1664.0 L893.0,1664.0 L888.0,1671.0 z" fill="#1565c0"/>
+<rect x="858.0" y="1642.0" width="60.0" height="22.0" rx="4" fill="#ffebee" stroke="#c62828" stroke-width="1.4"/>
+<text class="pc" x="888.0" y="1658.0" text-anchor="middle" fill="#c62828">tail=4</text>
+<path d="M888.0,1664.0 L888.0,1665.0" fill="none" stroke="#c62828" stroke-width="1.6"/>
+<path d="M883.0,1664.0 L893.0,1664.0 L888.0,1671.0 z" fill="#c62828"/>
+<rect x="520.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="605.0" y="1712.0" text-anchor="end">0</text>
+<rect x="612.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="697.0" y="1712.0" text-anchor="end">1</text>
+<rect x="704.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="789.0" y="1712.0" text-anchor="end">2</text>
+<rect x="796.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="881.0" y="1712.0" text-anchor="end">3</text>
+<rect x="888.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="973.0" y="1712.0" text-anchor="end">4</text>
+<rect x="980.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1065.0" y="1712.0" text-anchor="end">5</text>
+<rect x="1072.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1157.0" y="1712.0" text-anchor="end">6</text>
+<rect x="1164.0" y="1672.0" width="92.0" height="44.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.4"/>
+<text class="cs" x="1249.0" y="1712.0" text-anchor="end">7</text>
+<rect x="888.0" y="1716.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="1072.0" y="1727.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="520.0" y="1716.0" width="368.0" height="15.0" rx="0" fill="#fafbfc" stroke="#cfd8dc" stroke-width="1.2"/>
+<text class="bl" x="704.0" y="1727.5" text-anchor="middle" fill="#90a4ae">空闲</text>
+<rect x="1280.0" y="1615.0" width="300.0" height="90.0" rx="5" fill="#fbfcfd" stroke="#e3e8ec" stroke-width="1.2"/>
+<text class="mono cd" x="1291.0" y="1637.0" xml:space="preserve">/* 边清边再读一次：硬件可能又前进了 */</text>
+<text class="mono cd" x="1291.0" y="1656.0" xml:space="preserve">if (!flush &amp;&amp; q-&gt;tail == last)</text>
+<text class="mono cd" x="1291.0" y="1675.0" xml:space="preserve">    last = Q_READ(q, dma_idx);</text>
+<text class="mono cd" x="1291.0" y="1694.0" xml:space="preserve">/* tail == dma_idx == head == 4 */</text>
+<rect x="60.0" y="1770.0" width="760.0" height="160.0" rx="8" fill="#fcfdfd" stroke="#e0e6ea" stroke-width="1.3"/>
+<rect x="860.0" y="1770.0" width="780.0" height="160.0" rx="8" fill="#fcfdfd" stroke="#e0e6ea" stroke-width="1.3"/>
+<text class="ti" x="80.0" y="1800.0" text-anchor="start">struct mt76_desc：一个描述符 = 2 个 DMA 地址</text>
+<text class="ti" x="880.0" y="1800.0" text-anchor="start">tx_info.buf[] → 描述符：每 2 个 buf 占 1 个 desc</text>
+<rect x="80.0" y="1814.0" width="340.0" height="36.0" rx="0" fill="#ffffff" stroke="#90a4ae" stroke-width="1.4"/>
+<text class="cd" x="122.5" y="1837.0" text-anchor="middle">buf0</text>
+<path d="M165.0,1814.0 L165.0,1850.0" fill="none" stroke="#cfd8dc" stroke-width="1"/>
+<text class="cd" x="207.5" y="1837.0" text-anchor="middle">ctrl</text>
+<path d="M250.0,1814.0 L250.0,1850.0" fill="none" stroke="#cfd8dc" stroke-width="1"/>
+<text class="cd" x="292.5" y="1837.0" text-anchor="middle">buf1</text>
+<path d="M335.0,1814.0 L335.0,1850.0" fill="none" stroke="#cfd8dc" stroke-width="1"/>
+<text class="cd" x="377.5" y="1837.0" text-anchor="middle">info</text>
+<path d="M122.5,1850.0 L122.5,1878.0" fill="none" stroke="#66bb6a" stroke-width="1.6" marker-end="url(#aD)"/>
+<rect x="80.0" y="1880.0" width="125.5" height="26.0" rx="5" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="pc" x="142.8" y="1898.0" text-anchor="middle" fill="#2e7d32">txwi 的 DMA 地址</text>
+<path d="M292.5,1850.0 L292.5,1878.0" fill="none" stroke="#66bb6a" stroke-width="1.6" marker-end="url(#aD)"/>
+<rect x="250.0" y="1880.0" width="160.5" height="26.0" rx="5" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.4"/>
+<text class="pc" x="330.2" y="1898.0" text-anchor="middle" fill="#2e7d32">skb-&gt;data 的 DMA 地址</text>
+<text class="cd" x="80.0" y="1922.0" text-anchor="start">dma.h:  struct mt76_desc { __le32 buf0; __le32 ctrl; __le32 buf1; __le32 info; }</text>
+<rect x="880.0" y="1814.0" width="102.0" height="30.0" rx="5" fill="#eceff1" stroke="#b0bec5" stroke-width="1.3"/>
+<text class="pc" x="931.0" y="1834.0" text-anchor="middle" fill="#455a64">buf[0]  txwi</text>
+<rect x="994.0" y="1814.0" width="124.0" height="30.0" rx="5" fill="#eceff1" stroke="#b0bec5" stroke-width="1.3"/>
+<text class="pc" x="1056.0" y="1834.0" text-anchor="middle" fill="#455a64">buf[1]  线性数据</text>
+<rect x="1130.0" y="1814.0" width="109.0" height="30.0" rx="5" fill="#eceff1" stroke="#b0bec5" stroke-width="1.3"/>
+<text class="pc" x="1184.5" y="1834.0" text-anchor="middle" fill="#455a64">buf[2]  frag0</text>
+<rect x="1251.0" y="1814.0" width="109.0" height="30.0" rx="5" fill="#eceff1" stroke="#b0bec5" stroke-width="1.3"/>
+<text class="pc" x="1305.5" y="1834.0" text-anchor="middle" fill="#455a64">buf[3]  frag1</text>
+<path d="M880.0,1862.0 L880.0,1854.0 L1118.0,1854.0 L1118.0,1862.0" fill="none" stroke="#6a1b9a" stroke-width="1.4"/>
+<path d="M999.0,1854.0 L999.0,1862.0" fill="none" stroke="#6a1b9a" stroke-width="1.4"/>
+<path d="M999.0,1862.0 L999.0,1874.0" fill="none" stroke="#6a1b9a" stroke-width="1.4" marker-end="url(#aN)"/>
+<rect x="965.5" y="1876.0" width="67.0" height="24.0" rx="5" fill="#ffffff" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="999.0" y="1893.0" text-anchor="middle" fill="#6a1b9a">desc[n]</text>
+<path d="M1130.0,1862.0 L1130.0,1854.0 L1360.0,1854.0 L1360.0,1862.0" fill="none" stroke="#6a1b9a" stroke-width="1.4"/>
+<path d="M1245.0,1854.0 L1245.0,1862.0" fill="none" stroke="#6a1b9a" stroke-width="1.4"/>
+<path d="M1245.0,1862.0 L1245.0,1874.0" fill="none" stroke="#6a1b9a" stroke-width="1.4" marker-end="url(#aN)"/>
+<rect x="1204.5" y="1876.0" width="81.0" height="24.0" rx="5" fill="#ffffff" stroke="#6a1b9a" stroke-width="1.4"/>
+<text class="pc" x="1245.0" y="1893.0" text-anchor="middle" fill="#6a1b9a">desc[n+1]</text>
+<text class="cd" x="880.0" y="1920.0" text-anchor="start">dma.c:  for (i = 0; i &lt; nbufs; i += 2, buf += 2)   →   占用描述符数 = (tx_info.nbuf + 1) / 2</text>
+</svg>

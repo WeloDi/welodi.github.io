@@ -174,3 +174,18 @@
     if (e.key === 'Escape' && tocSidebar.classList.contains('open')) toggle(false);
   });
 })();
+
+// Open links inside post content in a new tab
+(function () {
+  var links = document.querySelectorAll('.post-content a[href]');
+  if (!links.length) return;
+
+  Array.prototype.forEach.call(links, function (a) {
+    var href = a.getAttribute('href') || '';
+    // 跳过页内锚点（目录、标题锚链）
+    if (href.charAt(0) === '#') return;
+    if (href.indexOf('mailto:') === 0) return;
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener');
+  });
+})();

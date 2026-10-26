@@ -5,6 +5,9 @@ tags:
   - MIPI
   - CSI-2
   - Camera
+categories:
+  - 协议
+  - MIPI
 ---
 > 参考：https://blog.csdn.net/qq_21842097/article/details/116204313
 

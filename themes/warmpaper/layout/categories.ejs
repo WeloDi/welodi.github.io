@@ -1,12 +1,28 @@
 <div class="archive">
   <h1 class="archive-title">Categories</h1>
-  <% if (site.categories.length) { %>
+  <% var allCats = site.categories.sort('name').toArray(); %>
+  <% var topCats = allCats.filter(function(cat) { return !cat.parent; }); %>
+  <% if (topCats.length) { %>
     <div class="category-list">
-      <% site.categories.sort('name').each(function(cat) { %>
-        <a class="category-list-item" href="<%- url_for(cat.path) %>">
-          <span class="category-list-name"><%= cat.name %></span>
-          <span class="category-list-count"><%= cat.posts.length %></span>
-        </a>
+      <% topCats.forEach(function(cat, index) { %>
+        <%
+          // Evenly spaced hue per category, offset by the accent hue (terracotta)
+          var hue = Math.round((index * 360 / topCats.length + 18) % 360);
+        %>
+        <section class="category-group" style="--cat-hue: <%= hue %>">
+          <h2 class="category-group-title">
+            <a href="<%- url_for(cat.path) %>"><%= cat.name %></a>
+            <span class="category-group-count"><%= cat.posts.length %> 篇</span>
+          </h2>
+          <ul class="category-posts">
+            <% cat.posts.sort('-date').forEach(function(post) { %>
+              <li>
+                <a class="category-post-link" href="<%- url_for(post.path) %>"><%= post.title %></a>
+                <time datetime="<%- date_xml(post.date) %>"><%- date(post.date, 'YYYY-MM-DD') %></time>
+              </li>
+            <% }) %>
+          </ul>
+        </section>
       <% }) %>
     </div>
   <% } else { %>

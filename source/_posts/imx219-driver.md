@@ -2,6 +2,9 @@
 title: imx219_driver
 date: 2026-08-08 20:32:18
 tags: camera
+categories:
+  - Camera
+  - 传感器驱动
 ---
 
 ## 文档概述
@@ -15,7 +18,7 @@ DTS overlay：`linux-6.1/arch/arm64/boot/dts/rockchip/overlays/rock-5b-radxa-cam
 
 ## 一、驱动架构总览
 
-### 1.1 数据结构层次
+### 1.1 数据结构
 
 ```c
 struct imx219 {
@@ -53,7 +56,7 @@ struct imx219 {
     struct mutex lock;
 };
 ```
-
+### 1.2 OPS 
 **v4l2_subdev_ops** :
 ```c
 /*  负责 V4L2 control 变化事件的订阅与退订，这里直接复用 V4L2 框架提供的通用实现
@@ -138,11 +141,11 @@ static const struct v4l2_subdev_internal_ops imx219_internal_ops = {
 ```
 ---
 
-### 1.2 关键工作流程
+### 1.3 Probe
 
 > 以下按实际应用调用时序排列：驱动加载 → 格式协商 → 参数设置 → 启停流。
 
-#### 1.2.1 Probe 初始化流程
+#### 1.3.1 Probe 初始化流程
 
 ```c
 imx219_probe(client)
@@ -178,7 +181,7 @@ imx219_probe(client)
 └─ pm_runtime_set_active/enable/idle()
 ```
 
-#### 1.2.2 **`v4l2_async_register_subdev_sensor()`**
+#### 1.2.2 **异步绑定**
 
 内核的 V4L2 框架采用了异步驱动模型。这是因为在系统启动时，sensor 驱动（通常是 I2C 设备）和 ISP/CSI 驱动（通常是平台设备，挂载在 SoC 内存总线上）的 probe 顺序是不确定的。为了解决这个问题，Linux 引入了 v4l2_async 异步框架：
 
@@ -272,7 +275,7 @@ imx219_set_stream(enable=1)
    ├─ pm_runtime_resume_and_get()          → imx219_power_on() 使能 XVCLK
    ├─ imx219_write_regs(mode_regs)         写入当前模式的整张寄存器表
    ├─ __v4l2_ctrl_handler_setup()          应用用户自定义的 control 值 exposure/gain/flip等
-   ├─ imx219_write(MODE_SELECT, 0x01)      启动图像输出
+   ├─ imx219_write(MODE_SELECT, 0x01)      启动图像输出，芯片会通过 MIPI CSI-2 发射器，自行串行发送到 SoC 端
    ├─ __v4l2_ctrl_grab(vflip, true)        锁定 flip（streaming 期间禁改，会破坏 Bayer 顺序）
    └─ __v4l2_ctrl_grab(hflip, true)
 

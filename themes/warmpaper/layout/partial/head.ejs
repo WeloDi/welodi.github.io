@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-regular/result.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@latest/lxgwwenkaigb-medium/result.css">
   <link rel="stylesheet" href="<%- url_for('/css/style.css') %>?v=<%= css_version() %>">
+  <link rel="stylesheet" href="<%- url_for('/css/image-zoom.css') %>?v=<%= css_version() %>">
+  <% if (page.qna) { %>
+    <link rel="stylesheet" href="<%- url_for('/css/qa.css') %>?v=<%= css_version() %>">
+  <% } %>
   <%# Inline to avoid FOUC. Storage key kept in sync with source/js/main.js %>
   <script>
     (function () {
