@@ -297,40 +297,66 @@ if (device_may_wakeup(dev))
 
 # 四、问题排查
 ## 4.1 suspend问题排查：
-首先查看日志
-**分支 A 日志能明确看出哪个设备报错**
-1. 区分是 suspend 阶段报错，还是 resume 阶段报错。
-看看是哪个设备出错，错误码是什么：
-  -110（ETIMEDOUT，超时，设备未就绪或总线卡死）
-  -16（EBUSY，设备忙或状态机卡住）
-2. 针对错误码排查驱动与电源时序
-   若为-110 ，重点检查该设备依赖的总线控制器（如 I²C 控制器） 是否已恢复可用。
-3. 
-**分支 B 日志看不出明显出错的设备**
-1. 使用 PM Trace 定位最后尝试恢复的设备
-```sh
-echo 1 > /sys/power/pm_trace
-echo mem > /sys/power/state
-```
- --- 
+
+排查总决策流程（先固化现场与日志基线，再按「有无明确失败设备」分流，最后汇合到压力回归）：
+
+<img src="suspend-decision-flow.svg" alt="Suspend-resume 排查总决策流程" style="width:70%; display:block; margin:1em auto;">
+
 
 1. 先分类现象
-- 根本无法进入 suspend
-- 进入后立刻被唤醒
+- 睡不下去：（写 mem 立刻返回 / 刚睡就被叫醒）	**方向**：唤醒源 pending、-EBUSY、freezer 冻结失败
+- 睡下去醒不来：（无串口、黑屏、直接复位）	**方向**：控制台被关、固件/PSCI、CPU bringup、硬件挂死
+- 醒来了但某功能死：（显示/触摸/摄像头/网络）	**方向**：resume 上下文恢复、runtime PM 状态、device links 顺序
+- 流程全成功但功耗不降 	**方向**：genpd/regulator/clk 未下电、竞态、概率性时序
 
-2. 检查日志和状态
-- 看dmesg 看哪个设备报错
-- cat /proc/interrupts 中断计数
-- 检查wakeup_sources
+2. 查看统计信息
+```sh
+cat /sys/kernel/debug/suspend_stats # last_failed_dev / last_failed_errno / last_failed_step
+cat /sys/power/pm_wakeup_irq        # 第一个唤醒 IRQ）
+cat /sys/kernel/debug/wakeup_sources
+sysfs 侧还有 /sys/power/suspend_stats/{success,fail,failed_suspend,...} 可做计数对比
+```
+**情况A**：日志能看出哪个设备报错
+1. 直接从日志种看到设备名、错误码、失败阶段
+2. 错误码速查
+| errno | 高频根因 |
+|---|---|
+| -16 EBUSY | 用户态仍持有 fd；pm_runtime_get 引用没放；delayed_work / 定时器未 cancel_*_sync；wakeup source 未 __pm_relax；->prepare 语义误用 |
+| -110 ETIMEDOUT | 等硬件回包但 clk/regulator/电源域已关；设备链接顺序错（consumer 晚于 supplier）；固件无响应；noirq 阶段等中断 |
+| -22 EINVAL / -ENOSYS | SET_SYSTEM_SLEEP_PM_OPS / SET_NOIRQ_SYSTEM_SLEEP_PM_OPS 用错宏，pm_sleep_ptr 与 CONFIG_PM_SLEEP 组合 |
+| -5 EIO / -19 ENODEV | 总线事务失败、设备已被拔除或复位 |
+| -512 ERESTARTSYS | freezer 阶段被信号打断，通常是用户态冻结策略问题 |
+3. 再看具体的设备休眠唤醒的上下文
+具体看该设备在 suspend 和 resume 各阶段（suspend、suspend_late、suspend_noirq，以及对应的 resume 阶段）是否都有回调执行记录，以及哪一条返回了错误
 
-3. 用 pm_test 分层定位
+**情况B**：日志看不出信息
+1. 用 pm_test 分层定位
 它会走到某阶段后自动返回，不会真正休眠。依次测试：
 freezer -> devices -> platform -> processors -> core，看看在哪一层失败
 ```bash
 echo devices > /sys/power/pm_test # 这次 suspend 不要真的睡下去，只走到devices
 echo mem > /sys/power/state # 开始睡眠
 ```
-4. 查唤醒源/阻止源
+freezer 失败：有任务无法冻结，dmesg 看卡住的任务名
+devices 失败：某设备 suspend/resume 回调有问题；此层失败则上层必然失败，无需再往上测，可二分卸载驱动模块定位
+platform 失败：ACPI 全局控制方法失败（x86 常见），指向固件/BIOS。
+processors 失败：非启动 CPU offline/online 流程有问题（SMP）。
+core 失败：系统级设备 suspend 失败，指向硬件层面严重问题
+--- 
+
+1. 检查日志和状态
+- 看dmesg 看哪个设备报错
+- cat /proc/interrupts 中断计数
+- 检查wakeup_sources
+
+1. 用 pm_test 分层定位
+它会走到某阶段后自动返回，不会真正休眠。依次测试：
+freezer -> devices -> platform -> processors -> core，看看在哪一层失败
+```bash
+echo devices > /sys/power/pm_test # 这次 suspend 不要真的睡下去，只走到devices
+echo mem > /sys/power/state # 开始睡眠
+```
+1. 查唤醒源/阻止源
 ```sh
 cat /sys/devices/.../power/wakeup  # 看某个设备是否允许唤醒
 echo disabled > /sys/devices/.../power/wakeup # 关闭某个设备的唤醒源后再休眠看会不会正常
