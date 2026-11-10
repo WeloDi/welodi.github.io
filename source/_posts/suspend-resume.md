@@ -297,16 +297,30 @@ if (device_may_wakeup(dev))
 
 # 四、问题排查
 ## 4.1 suspend问题排查：
+首先查看日志
+**分支 A 日志能明确看出哪个设备报错**
+1. 区分是 suspend 阶段报错，还是 resume 阶段报错。
+看看是哪个设备出错，错误码是什么：
+  -110（ETIMEDOUT，超时，设备未就绪或总线卡死）
+  -16（EBUSY，设备忙或状态机卡住）
+2. 针对错误码排查驱动与电源时序
+   若为-110 ，重点检查该设备依赖的总线控制器（如 I²C 控制器） 是否已恢复可用。
+3. 
+**分支 B 日志看不出明显出错的设备**
+1. 使用 PM Trace 定位最后尝试恢复的设备
+```sh
+echo 1 > /sys/power/pm_trace
+echo mem > /sys/power/state
+```
+ --- 
+
 1. 先分类现象
 - 根本无法进入 suspend
 - 进入后立刻被唤醒
-- 卡在 suspend 过程中
-- resume 卡死/黑屏/外设失效
-- suspend/resume 耗时异常
 
 2. 检查日志和状态
-- 看dmesg
-- cat /proc/interrupts
+- 看dmesg 看哪个设备报错
+- cat /proc/interrupts 中断计数
 - 检查wakeup_sources
 
 3. 用 pm_test 分层定位
